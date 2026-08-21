@@ -1,0 +1,48 @@
+---
+const { configuracion } = Astro.props;
+const anio = new Date().getFullYear();
+---
+
+<footer class="pie-sitio">
+  <div class="contenedor pie-cuadricula">
+    <div>
+      <a class="marca marca-pie" href="/">
+        <span class="marca-sol" aria-hidden="true"></span>
+        <span>
+          <strong>{configuracion?.nombre_marca || 'Papelería de Sol'}</strong>
+          <small>Ideas que alegran tus días</small>
+        </span>
+      </a>
+      <p class="pie-descripcion">
+        Papelería creativa, stickers y productos personalizados con atención directa en CABA y GBA.
+      </p>
+    </div>
+
+    <div>
+      <h2>Explorá</h2>
+      <ul class="lista-enlaces-pie">
+        <li><a href="/catalogo">Catálogo completo</a></li>
+        <li><a href="/plantillas">Plantillas</a></li>
+        <li><a href="/productos-fisicos">Productos físicos</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Contacto</h2>
+      <ul class="lista-enlaces-pie">
+        <li>
+          <a href={`https://wa.me/${configuracion?.whatsapp || '541164879422'}`} target="_blank" rel="noreferrer">
+            WhatsApp
+          </a>
+        </li>
+        <li><a href={`mailto:${configuracion?.correo || 'Solnat.v@gmail.com'}`}>{configuracion?.correo || 'Solnat.v@gmail.com'}</a></li>
+        {configuracion?.instagram && <li><a href={configuracion.instagram} target="_blank" rel="noreferrer">Instagram</a></li>}
+        {configuracion?.tiktok && <li><a href={configuracion.tiktok} target="_blank" rel="noreferrer">TikTok</a></li>}
+      </ul>
+    </div>
+  </div>
+  <div class="pie-inferior">
+    <p>© {anio} Papelería de Sol. Todos los derechos reservados.</p>
+    <p>CABA y GBA · Argentina</p>
+  </div>
+</footer>

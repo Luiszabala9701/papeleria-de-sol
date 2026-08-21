@@ -1,0 +1,16 @@
+node_modules/
+.npm-cache/
+dist/
+.astro/
+.netlify/
+.env
+.env.*
+!.env.ejemplo
+supabase/.temp/
+supabase/.branches/
+*.log
+.DS_Store
+Thumbs.db
+
+# Copias fuente pesadas: se conservan localmente, pero no se publican ni versionan.
+recursos-originales/

@@ -1,0 +1,75 @@
+{
+  "configuracion": {
+    "nombre_marca": "Papelería de Sol",
+    "descripcion_corta": "Papelería creativa, stickers, plantillas y productos personalizados en CABA y GBA.",
+    "whatsapp": "541164879422",
+    "correo": "Solnat.v@gmail.com",
+    "instagram": "https://www.instagram.com/papeleriadesol?igsh=MTc0ZWg1amd0NTg5bw==",
+    "tiktok": "https://www.tiktok.com/@papeleriadesol?_r=1&_t=ZM-93DMEseSIUW",
+    "pais": "Argentina",
+    "region": "CABA y GBA",
+    "moneda": "ARS",
+    "simbolo_moneda": "$"
+  },
+  "secciones": [
+    {
+      "clave": "inicio_principal",
+      "titulo": "Ideas que alegran tus días",
+      "subtitulo": "Papelería creativa hecha con dedicación",
+      "contenido": "Descubrí stickers, plantillas y productos físicos para regalar, organizar y personalizar. Elegí tus favoritos y consultanos directamente por WhatsApp.",
+      "texto_boton": "Explorar el catálogo",
+      "enlace_boton": "/catalogo",
+      "publicada": true,
+      "orden": 1
+    },
+    {
+      "clave": "inicio_stickers",
+      "titulo": "Stickers para cada idea",
+      "subtitulo": "Más de 1.000 diseños disponibles",
+      "contenido": "Buscá por número, armá tu selección y envianos el pedido por WhatsApp.",
+      "texto_boton": "Ver stickers",
+      "enlace_boton": "/catalogo?tipo=sticker",
+      "publicada": true,
+      "orden": 2
+    },
+    {
+      "clave": "inicio_plantillas",
+      "titulo": "Plantillas creativas",
+      "subtitulo": "Diseños editables e imprimibles",
+      "contenido": "Muy pronto vas a encontrar nuevas colecciones administradas desde nuestro catálogo.",
+      "texto_boton": "Ver plantillas",
+      "enlace_boton": "/plantillas",
+      "publicada": true,
+      "orden": 3
+    }
+  ],
+  "categorias": [
+    {
+      "id": "demostracion-stickers",
+      "nombre": "Stickers",
+      "slug": "stickers",
+      "descripcion": "Colección completa de stickers",
+      "tipo_producto": "sticker",
+      "publicada": true,
+      "orden": 1
+    },
+    {
+      "id": "demostracion-plantillas",
+      "nombre": "Plantillas",
+      "slug": "plantillas",
+      "descripcion": "Plantillas editables e imprimibles",
+      "tipo_producto": "plantilla",
+      "publicada": true,
+      "orden": 2
+    },
+    {
+      "id": "demostracion-fisicos",
+      "nombre": "Productos físicos",
+      "slug": "productos-fisicos",
+      "descripcion": "Productos preparados y personalizados",
+      "tipo_producto": "fisico",
+      "publicada": true,
+      "orden": 3
+    }
+  ]
+}

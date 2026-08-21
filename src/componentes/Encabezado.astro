@@ -1,0 +1,70 @@
+---
+import type { ConfiguracionSitio } from '../tipos/contenidos';
+
+interface Props {
+  configuracion?: ConfiguracionSitio;
+  rutaActual?: string;
+}
+
+const { configuracion, rutaActual = '/' } = Astro.props;
+
+const enlaces = [
+  { href: '/', texto: 'Inicio' },
+  { href: '/catalogo', texto: 'Catálogo' },
+  { href: '/plantillas', texto: 'Plantillas' },
+  { href: '/productos-fisicos', texto: 'Productos físicos' },
+];
+
+const enlaceActivo = (href: string) =>
+  href === '/' ? rutaActual === '/' : rutaActual.startsWith(href);
+---
+
+<header class="encabezado-sitio">
+  <div class="anuncio-superior">
+    <p>Pedidos personalizados en CABA y GBA · Consultanos por WhatsApp</p>
+  </div>
+  <nav class="navegacion-principal" aria-label="Navegación principal">
+    <a class="marca" href="/" aria-label="Papelería de Sol, ir al inicio">
+      <span class="marca-sol" aria-hidden="true"></span>
+      <span>
+        <strong>{configuracion?.nombre_marca || 'Papelería de Sol'}</strong>
+        <small>papelería creativa</small>
+      </span>
+    </a>
+
+    <button
+      id="boton-menu"
+      class="boton-menu"
+      type="button"
+      aria-expanded="false"
+      aria-controls="menu-principal"
+    >
+      <span class="solo-lectores">Abrir menú</span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </button>
+
+    <ul id="menu-principal" class="menu-principal">
+      {
+        enlaces.map((enlace) => (
+          <li>
+            <a
+              href={enlace.href}
+              class:list={{ activo: enlaceActivo(enlace.href) }}
+              aria-current={enlaceActivo(enlace.href) ? 'page' : undefined}
+            >
+              {enlace.texto}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <button id="boton-carrito" class="boton-carrito" type="button" aria-controls="panel-carrito">
+      <span aria-hidden="true">♡</span>
+      <span class="texto-carrito">Mi selección</span>
+      <span id="contador-carrito" class="contador-carrito">0</span>
+    </button>
+  </nav>
+</header>

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /administracion
+
+Sitemap: https://papeleria-de-sol.netlify.app/sitemap-index.xml

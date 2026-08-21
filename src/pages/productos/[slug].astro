@@ -1,0 +1,96 @@
+---
+import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
+import {
+  obtenerConfiguracionSitio,
+  obtenerProductoPorSlug,
+} from '../../servicios/repositorio-contenidos.js';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const [configuracion, producto] = await Promise.all([
+  obtenerConfiguracionSitio(),
+  obtenerProductoPorSlug(slug),
+]) as [ConfiguracionSitio, Producto | null];
+
+if (!producto) {
+  return Astro.redirect('/404');
+}
+
+const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
+const esSticker = producto.tipo_producto === 'sticker';
+const precio = producto.precio === null
+  ? 'Precio a consultar'
+  : new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: producto.moneda || 'ARS',
+      maximumFractionDigits: 0,
+    }).format(producto.precio);
+
+const datosCarrito = JSON.stringify({
+  id: producto.id,
+  nombre: producto.nombre,
+  slug: producto.slug,
+  tipo_producto: producto.tipo_producto,
+  precio: producto.precio,
+  moneda: producto.moneda,
+  imagen: imagen?.url_publica || '/stickers/1.webp',
+});
+
+const datosEstructurados = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: producto.nombre,
+  description: producto.descripcion_corta,
+  image: imagen?.url_publica,
+  sku: producto.sku,
+  brand: { '@type': 'Brand', name: 'Papelería de Sol' },
+}).replace(/</g, '\\u003c');
+---
+
+<DisenoPrincipal
+  titulo={`${producto.nombre} | Papelería de Sol`}
+  descripcion={producto.meta_descripcion || producto.descripcion_corta}
+  configuracion={configuracion}
+  imagenSocial={imagen?.url_publica}
+>
+  <Fragment slot="cabecera">
+    <script is:inline type="application/ld+json" set:html={datosEstructurados}></script>
+  </Fragment>
+
+  <article class="contenedor detalle-producto">
+    <div class="galeria-detalle" data-proteccion-imagen={esSticker ? 'sticker' : undefined}>
+      <img
+        src={imagen?.url_publica || '/stickers/1.webp'}
+        alt={imagen?.texto_alternativo || producto.nombre}
+        width="709"
+        height="709"
+        draggable={esSticker ? 'false' : undefined}
+      />
+    </div>
+
+    <div class="informacion-detalle">
+      <p class="etiqueta">{producto.tipo_producto === 'fisico' ? 'Producto físico' : producto.tipo_producto}</p>
+      <h1>{producto.nombre}</h1>
+      <p class="precio-detalle"><strong>{precio}</strong></p>
+      <p class="descripcion-detalle">{producto.descripcion}</p>
+
+      <ul class="lista-detalle">
+        {producto.sku && <li><strong>Código:</strong> {producto.sku}</li>}
+        {producto.categoria?.nombre && <li><strong>Categoría:</strong> {producto.categoria.nombre}</li>}
+        {producto.controla_stock && <li><strong>Disponibilidad:</strong> {Number(producto.stock) > 0 ? 'En stock' : 'Consultar'}</li>}
+      </ul>
+
+      <p class="aviso-whatsapp">Agregá este producto a tu selección. La disponibilidad, el precio final y la entrega se confirman personalmente por WhatsApp.</p>
+      <button
+        class="boton boton-principal boton-ancho"
+        type="button"
+        data-agregar-producto
+        data-producto={datosCarrito}
+      >
+        Agregar a mi selección
+      </button>
+    </div>
+  </article>
+</DisenoPrincipal>

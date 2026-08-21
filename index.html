@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Papeleria de sol</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <nav class="barra-navegacion">
+        <div class="contenedor-nav">
+            <div class="logo-nav">
+                <h2>Papelería de Sol</h2>
+            </div>
+            <ul class="menu-nav">
+                <li><a href="#inicio" class="enlace-nav activo" data-seccion="inicio">Inicio</a></li>
+                <li><a href="#catalogo" class="enlace-nav" data-seccion="catalogo">Catálogo</a></li>
+                <li><a href="#plantillas" class="enlace-nav" data-seccion="plantillas">Plantillas</a></li>
+                <li><a href="#productos-fisicos" class="enlace-nav" data-seccion="productos-fisicos">Productos Físicos</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Botón flotante del carrito -->
+    <button id="boton-carrito" class="boton-carrito-flotante">
+        <i class="fas fa-shopping-cart icono-carrito"></i>
+        <span id="contador-carrito" class="contador-carrito">0</span>
+    </button>
+
+    <!-- Panel lateral del carrito -->
+    <div id="panel-carrito" class="panel-carrito">
+        <div class="encabezado-carrito">
+            <h2>Mi Carrito</h2>
+            <button id="cerrar-carrito" class="boton-cerrar-carrito">&times;</button>
+        </div>
+        <div id="contenido-carrito" class="contenido-carrito">
+            <p class="carrito-vacio">El carrito está vacío</p>
+        </div>
+        <div class="pie-carrito">
+            <div class="total-carrito">
+                <span>Total de items:</span>
+                <span id="total-items">0</span>
+            </div>
+            <button id="boton-enviar-pedido" class="boton-enviar-pedido">Enviar Pedido por WhatsApp</button>
+            <button id="boton-vaciar-carrito" class="boton-vaciar-carrito">Vaciar Carrito</button>
+        </div>
+    </div>
+
+    <!-- Sección de Inicio -->
+    <section id="seccion-inicio" class="seccion-pagina activa">
+        <header class="encabezado-inicio">
+            <div class="contenido-inicio">
+                <h1 class="titulo-inicio">Bienvenidos a Papelería de Sol</h1>
+                <p class="subtitulo-inicio">Tu tienda de papelería creativa</p>
+                <p class="descripcion-inicio">Descubre nuestra increíble colección de productos creativos: stickers, plantillas editables, imprimibles y más. Encuentra el diseño perfecto para ti y haz tu pedido fácilmente por WhatsApp.</p>
+                <div class="botones-cta">
+                    <a href="#catalogo" class="boton-cta" data-seccion="catalogo">Ver Catálogo Stickers</a>
+                    <a href="#plantillas" class="boton-cta boton-cta-secundario" data-seccion="plantillas">Ver Plantillas</a>
+                    <a href="#productos-fisicos" class="boton-cta boton-cta-terciario" data-seccion="productos-fisicos">Ver Productos Físicos</a>
+                </div>
+            </div>
+        </header>
+        
+        <div class="caracteristicas">
+            <div class="tarjeta-caracteristica">
+                <div class="icono-caracteristica">🎨</div>
+                <h3>Papelería Creativa</h3>
+                <p>Stickers, plantillas editables e imprimibles</p>
+            </div>
+            <div class="tarjeta-caracteristica">
+                <div class="icono-caracteristica">✨</div>
+                <h3>Diseños Únicos</h3>
+                <p>Productos exclusivos para cada ocasión</p>
+            </div>
+            <div class="tarjeta-caracteristica">
+                <div class="icono-caracteristica">💬</div>
+                <h3>Contacto Directo</h3>
+                <p>Atención personalizada por WhatsApp</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección de Catálogo -->
+    <section id="seccion-catalogo" class="seccion-pagina">
+        <header class="encabezado">
+            <h1 class="titulo-principal">Catálogo de Stickers</h1>
+            <p class="descripcion">Explora nuestra colección con +1.000 stickers</p>
+        </header>
+
+        <main class="contenedor-principal">
+        <div class="barra-busqueda">
+            <input type="text" id="buscador" class="campo-busqueda" placeholder="Buscar sticker por número...">
+            <button id="boton-buscar" class="boton-buscar">Buscar</button>
+            <button id="boton-resetear" class="boton-resetear">Ver todos</button>
+        </div>
+
+        <div class="informacion-carga">
+            <p id="texto-cargando" class="mensaje-carga">Cargando stickers...</p>
+        </div>
+
+        <div id="galeria-stickers" class="galeria-stickers">
+            <!-- Los stickers se generarán dinámicamente aquí -->
+        </div>
+
+        <div class="controles-paginacion">
+            <button id="boton-anterior" class="boton-paginacion">Anterior</button>
+            <div class="selector-pagina">
+                <span id="informacion-pagina" class="info-pagina">Página 1</span>
+                <div class="ir-a-pagina">
+                    <label for="input-pagina" class="label-pagina">Ir a:</label>
+                    <input type="number" id="input-pagina" class="input-pagina" min="1" placeholder="#">
+                    <button id="boton-ir-pagina" class="boton-ir">Ir</button>
+                </div>
+            </div>
+            <button id="boton-siguiente" class="boton-paginacion">Siguiente</button>
+        </div>
+        </main>
+    </section>
+
+    <!-- Sección de Plantillas -->
+    <section id="seccion-plantillas" class="seccion-pagina">
+        <header class="encabezado">
+            <h1 class="titulo-principal">Plantillas Creativas</h1>
+            <p class="descripcion">Explora nuestras plantillas editables e imprimibles para cada ocasión</p>
+        </header>
+
+        <main class="contenedor-principal">
+            <div class="grid-categorias-plantillas">
+                <!-- Tarjeta San Valentín -->
+                <div class="tarjeta-categoria-plantilla" data-seccion="san-valentin">
+                    <div class="imagen-categoria">
+                        <img src="plantillas/san-valentin/producto-final.jpeg" alt="San Valentín">
+                    </div>
+                    <div class="contenido-categoria">
+                        <h3 class="titulo-categoria">San Valentín</h3>
+                        <p class="descripcion-categoria">Conos corazón personalizables, plantillas editables y productos armados</p>
+                        <button class="boton-ver-categoria">Ver Plantillas</button>
+                    </div>
+                </div>
+
+                <!-- Espacio para futuras categorías -->
+                <!-- Puedes agregar más tarjetas aquí en el futuro -->
+            </div>
+        </main>
+    </section>
+
+    <!-- Sección de San Valentín -->
+    <section id="seccion-san-valentin" class="seccion-pagina">
+        <header class="encabezado">
+            <h1 class="titulo-principal">San Valentín - Cono Corazón</h1>
+            <p class="descripcion">Plantillas editables e imprimibles para regalar en San Valentín</p>
+        </header>
+
+        <main class="contenedor-principal">
+            <div class="seccion-plantilla">
+                
+                <!-- Galería de imágenes de plantillas -->
+                <div class="galeria-plantillas">
+                    <div class="grupo-imagenes">
+                        <h3 class="subtitulo-galeria">Editable en canva</h3>
+                        <img src="plantillas/san-valentin/editable-canva.jpeg" alt="Plantilla editable en Canva" class="imagen-plantilla-principal">
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <button class="boton-pack-completo" onclick="agregarCanvaAlCarrito()">
+                                Agregar al Carrito - $1.500
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grupo-imagenes">
+                        <h3 class="subtitulo-galeria">Diseños Imprimibles (8 modelos)</h3>
+                        <div id="galeria-plantillas-san-valentin" class="galeria-stickers">
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-01.jpeg', 'Diseño #1')">
+                                    <img src="plantillas/san-valentin/descargable-01.jpeg" alt="Diseño 1" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #1</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-02.jpeg', 'Diseño #2')">
+                                    <img src="plantillas/san-valentin/descargable-02.jpeg" alt="Diseño 2" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #2</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-03.jpeg', 'Diseño #3')">
+                                    <img src="plantillas/san-valentin/descargable-03.jpeg" alt="Diseño 3" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #3</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-04.jpeg', 'Diseño #4')">
+                                    <img src="plantillas/san-valentin/descargable-04.jpeg" alt="Diseño 4" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #4</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-05.jpeg', 'Diseño #5')">
+                                    <img src="plantillas/san-valentin/descargable-05.jpeg" alt="Diseño 5" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #5</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-06.jpeg', 'Diseño #6')">
+                                    <img src="plantillas/san-valentin/descargable-06.jpeg" alt="Diseño 6" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #6</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-07.jpeg', 'Diseño #7')">
+                                    <img src="plantillas/san-valentin/descargable-07.jpeg" alt="Diseño 7" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #7</p>
+                            </div>
+                            <div class="tarjeta-sticker">
+                                <div class="contenedor-imagen" onclick="ampliarPlantilla('plantillas/san-valentin/descargable-08.jpeg', 'Diseño #8')">
+                                    <img src="plantillas/san-valentin/descargable-08.jpeg" alt="Diseño 8" class="imagen-sticker" oncontextmenu="return false" ondragstart="return false">
+                                </div>
+                                <p class="numero-sticker">Diseño #8</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Botón para agregar pack completo -->
+                        <div style="text-align: center; margin-top: 1.5rem;">
+                            <button class="boton-pack-completo" onclick="agregarPackPlantillas()">
+                                Agregar Pack Completo al Carrito - $3.500
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opciones de compra -->
+                <div class="opciones-compra">
+                    <h3 class="titulo-opciones">Opciones Disponibles</h3>
+                    
+                    <div class="grid-opciones">
+                        <!-- Opción 1: Editable Canva -->
+                        <div class="tarjeta-opcion">
+                            <div class="encabezado-opcion">
+                                <h4 class="titulo-opcion">Plantilla Editable en Canva</h4>
+                            </div>
+                            <div class="precio-opcion">$1.500</div>
+                            <ul class="lista-caracteristicas">
+                                <li>Editable desde tu cuenta de Canva</li>
+                                <li>Ideal para personalizar colores, textos o nombres</li>
+                                <li>Descarga ilimitada</li>
+                                <li>No incluye producto físico</li>
+                            </ul>
+                            <button class="boton-comprar" onclick="solicitarPlantilla('San Valentín - Editable Canva', 1500)">Solicitar por WhatsApp</button>
+                        </div>
+
+                        <!-- Opción 2: PDF Imprimible -->
+                        <div class="tarjeta-opcion">
+                            <div class="encabezado-opcion">
+                                <h4 class="titulo-opcion">Plantilla Imprimible en PDF</h4>
+                            </div>
+                            <div class="precio-opcion">$3.500</div>
+                            <ul class="lista-caracteristicas">
+                                <li>Archivo listo para imprimir</li>
+                                <li>Incluye 8 diseños diferentes</li>
+                                <li>Ideal para emprendedores o uso personal</li>
+                                <li>No editable</li>
+                            </ul>
+                            <button class="boton-comprar" onclick="solicitarPlantilla('San Valentín - PDF Imprimible (8 modelos)', 3500)">Solicitar por WhatsApp</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <!-- Sección de Productos Físicos -->
+    <section id="seccion-productos-fisicos" class="seccion-pagina">
+        <header class="encabezado">
+            <h1 class="titulo-principal">Productos Físicos</h1>
+            <p class="descripcion">Productos armados y listos para regalar</p>
+        </header>
+
+        <main class="contenedor-principal">
+            <!-- San Valentín: Cono + Chocolates -->
+            <div class="seccion-producto-fisico">
+                <h2 class="titulo-subseccion">San Valentín - Cono Corazón</h2>
+                
+                <!-- Galería de imágenes del producto -->
+                <div class="galeria-plantillas">
+                    <div class="grupo-imagenes">
+                        <h3 class="subtitulo-galeria">Producto Final</h3>
+                        <img src="plantillas/san-valentin/producto-final.jpeg" alt="Producto final armado" class="imagen-plantilla-principal">
+                    </div>
+                </div>
+
+                <!-- Información del producto -->
+                <div class="opciones-compra">
+                    <div class="grid-opciones">
+                        <div class="tarjeta-opcion destacada">
+                            <div class="etiqueta-destacado"> Producto Físico</div>
+                            <div class="encabezado-opcion">
+                                <h4 class="titulo-opcion">Cono Armado + Chocolates</h4>
+                            </div>
+                            <div class="precio-opcion">$13.000</div>
+                            <ul class="lista-caracteristicas">
+                                <li>Cono corazón armado</li>
+                                <li>Relleno con chocolates surtidos</li>
+                                <li>Listo para regalar</li>
+                                <li>Presentación cuidada (opción celofán y moño)</li>
+                            </ul>
+                            <button class="boton-comprar" onclick="solicitarPlantilla('San Valentín - Cono armado + chocolates', 13000)">Solicitar por WhatsApp</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <footer class="pie-pagina">
+        <div class="contenido-footer">
+            <h3 class="titulo-footer">Papelería de Sol</h3>
+            <div class="contacto-footer">
+                <a href="https://wa.me/541164879422" target="_blank" class="enlace-contacto">
+                    <i class="fab fa-whatsapp icono-contacto"></i>
+                    WhatsApp
+                </a>
+                <a href="https://www.instagram.com/papeleriadesol?igsh=MTc0ZWg1amd0NTg5bw==" target="_blank" class="enlace-contacto">
+                    <i class="fab fa-instagram icono-contacto"></i>
+                    @papeleriadesol
+                </a>
+                <a href="https://www.tiktok.com/@papeleriadesol?_r=1&_t=ZM-93DMEseSIUW" target="_blank" class="enlace-contacto">
+                    <i class="fab fa-tiktok icono-contacto"></i>
+                    @papeleriadesol
+                </a>
+            </div>
+            <p class="copyright-footer">&copy; 2026 Papelería de Sol. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

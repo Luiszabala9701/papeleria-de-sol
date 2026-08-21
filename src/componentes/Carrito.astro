@@ -1,0 +1,40 @@
+---
+const { configuracion } = Astro.props;
+---
+
+<div id="fondo-carrito" class="fondo-carrito" hidden></div>
+<aside
+  id="panel-carrito"
+  class="panel-carrito"
+  aria-labelledby="titulo-carrito"
+  aria-hidden="true"
+  data-whatsapp={configuracion?.whatsapp || '541164879422'}
+>
+  <div class="cabecera-carrito">
+    <div>
+      <p class="etiqueta">Tu pedido</p>
+      <h2 id="titulo-carrito">Mi selección</h2>
+    </div>
+    <button id="cerrar-carrito" class="boton-icono" type="button" aria-label="Cerrar carrito">×</button>
+  </div>
+
+  <div id="contenido-carrito" class="contenido-carrito">
+    <div class="estado-vacio">
+      <span aria-hidden="true">♡</span>
+      <p>Todavía no agregaste productos.</p>
+      <a href="/catalogo" class="enlace-texto">Explorar catálogo</a>
+    </div>
+  </div>
+
+  <div class="pie-carrito">
+    <div class="resumen-carrito">
+      <span>Productos seleccionados</span>
+      <strong id="total-elementos-carrito">0</strong>
+    </div>
+    <button id="enviar-carrito-whatsapp" class="boton boton-principal boton-ancho" type="button" disabled>
+      Consultar por WhatsApp
+    </button>
+    <button id="vaciar-carrito" class="boton-texto" type="button">Vaciar selección</button>
+    <p class="aclaracion-carrito">El pedido se confirma personalmente por WhatsApp. No se realiza ningún pago desde esta página.</p>
+  </div>
+</aside>

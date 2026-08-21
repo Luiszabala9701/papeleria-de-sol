@@ -1,0 +1,47 @@
+---
+import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import TarjetaProducto from '../../componentes/TarjetaProducto.astro';
+import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
+import {
+  obtenerConfiguracionSitio,
+  obtenerProductosPublicados,
+} from '../../servicios/repositorio-contenidos.js';
+
+const [configuracion, plantillas] = await Promise.all([
+  obtenerConfiguracionSitio(),
+  obtenerProductosPublicados({ tipo: 'plantilla' }),
+]) as [ConfiguracionSitio, Producto[]];
+---
+
+<DisenoPrincipal
+  titulo="Plantillas creativas | Papelería de Sol"
+  descripcion="Plantillas creativas editables e imprimibles de Papelería de Sol para CABA, GBA y toda Argentina."
+  configuracion={configuracion}
+>
+  <header class="contenedor cabecera-pagina">
+    <p class="etiqueta">Diseños digitales</p>
+    <h1>Plantillas creativas</h1>
+    <p>Las nuevas colecciones aparecerán aquí cuando sean publicadas desde el dashboard.</p>
+  </header>
+
+  <section class="contenedor seccion-listado">
+    {plantillas.length > 0 ? (
+      <div class="cuadricula-productos">
+        {plantillas.map((producto) => <TarjetaProducto producto={producto} />)}
+      </div>
+    ) : (
+      <div class="estado-informativo">
+        <div>
+          <p class="etiqueta">Estamos preparando novedades</p>
+          <h2>Próximamente habrá nuevas plantillas</h2>
+          <p>Consultanos por WhatsApp si buscás un diseño personalizado.</p>
+          <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">Consultar por WhatsApp</a>
+        </div>
+      </div>
+    )}
+  </section>
+</DisenoPrincipal>
+
+<style>
+  .seccion-listado { padding-bottom: 5rem; }
+</style>

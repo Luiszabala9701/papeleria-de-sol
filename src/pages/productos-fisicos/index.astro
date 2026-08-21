@@ -1,0 +1,47 @@
+---
+import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import TarjetaProducto from '../../componentes/TarjetaProducto.astro';
+import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
+import {
+  obtenerConfiguracionSitio,
+  obtenerProductosPublicados,
+} from '../../servicios/repositorio-contenidos.js';
+
+const [configuracion, productos] = await Promise.all([
+  obtenerConfiguracionSitio(),
+  obtenerProductosPublicados({ tipo: 'fisico' }),
+]) as [ConfiguracionSitio, Producto[]];
+---
+
+<DisenoPrincipal
+  titulo="Productos físicos personalizados | Papelería de Sol"
+  descripcion="Productos físicos de papelería creativa y regalos personalizados de Papelería de Sol en CABA y GBA."
+  configuracion={configuracion}
+>
+  <header class="contenedor cabecera-pagina">
+    <p class="etiqueta">Hechos con dedicación</p>
+    <h1>Productos físicos</h1>
+    <p>Los productos armados y personalizados aparecerán aquí cuando se publiquen desde el dashboard.</p>
+  </header>
+
+  <section class="contenedor seccion-listado">
+    {productos.length > 0 ? (
+      <div class="cuadricula-productos">
+        {productos.map((producto) => <TarjetaProducto producto={producto} />)}
+      </div>
+    ) : (
+      <div class="estado-informativo">
+        <div>
+          <p class="etiqueta">Nuevas creaciones en camino</p>
+          <h2>Muy pronto vas a ver productos físicos</h2>
+          <p>Mientras tanto, podés consultarnos si tenés una idea especial.</p>
+          <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">Contarnos tu idea</a>
+        </div>
+      </div>
+    )}
+  </section>
+</DisenoPrincipal>
+
+<style>
+  .seccion-listado { padding-bottom: 5rem; }
+</style>

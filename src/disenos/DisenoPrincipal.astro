@@ -1,0 +1,67 @@
+---
+import '../estilos/global.css';
+import Encabezado from '../componentes/Encabezado.astro';
+import PiePagina from '../componentes/PiePagina.astro';
+import Carrito from '../componentes/Carrito.astro';
+
+const {
+  titulo = 'Papelería de Sol',
+  descripcion = 'Papelería creativa, stickers y productos personalizados en CABA y GBA.',
+  configuracion,
+  imagenSocial = '/stickers/1.webp',
+  ocultarNavegacion = false,
+  noIndexar = false,
+} = Astro.props;
+
+const rutaActual = Astro.url.pathname;
+const urlCanonica = new URL(Astro.url.pathname, Astro.site || Astro.url.origin);
+const imagenAbsoluta = new URL(imagenSocial, Astro.site || Astro.url.origin);
+---
+
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#98b7ff" />
+    <meta name="description" content={descripcion} />
+    {noIndexar && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={urlCanonica} />
+    <link rel="icon" href="/stickers/1.webp" type="image/webp" />
+
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Papelería de Sol" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={urlCanonica} />
+    <meta property="og:image" content={imagenAbsoluta} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={titulo} />
+    <meta name="twitter:description" content={descripcion} />
+
+    <title>{titulo}</title>
+    <slot name="cabecera" />
+  </head>
+  <body>
+    <a class="salto-contenido" href="#contenido-principal">Saltar al contenido</a>
+    {!ocultarNavegacion && (
+      <Encabezado configuracion={configuracion} rutaActual={rutaActual} />
+    )}
+    <main id="contenido-principal">
+      <slot />
+    </main>
+    {!ocultarNavegacion && <PiePagina configuracion={configuracion} />}
+    {!ocultarNavegacion && <Carrito configuracion={configuracion} />}
+
+    <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
+
+    {!ocultarNavegacion && (
+      <script>
+        import '../scripts/menu.js';
+        import '../scripts/carrito.js';
+        import '../scripts/proteccion-stickers.js';
+      </script>
+    )}
+  </body>
+</html>

@@ -1,0 +1,163 @@
+---
+import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import '../../estilos/administracion.css';
+
+const configuracionDisponible = Boolean(
+  import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_CLAVE_PUBLICA,
+);
+---
+
+<DisenoPrincipal
+  titulo="Administración | Papelería de Sol"
+  descripcion="Panel privado de administración de Papelería de Sol."
+  ocultarNavegacion
+  noIndexar
+>
+  <div class="admin-aplicacion" data-configuracion-disponible={String(configuracionDisponible)}>
+    <header class="admin-cabecera">
+      <a class="marca" href="/" aria-label="Volver a Papelería de Sol">
+        <span class="marca-sol" aria-hidden="true"></span>
+        <span>
+          <strong>Papelería de Sol</strong>
+          <small>administración</small>
+        </span>
+      </a>
+      <div id="datos-sesion" class="datos-sesion" hidden>
+        <span id="tiempo-sesion">Sesión segura</span>
+        <button id="cerrar-sesion-admin" class="boton boton-secundario" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    {!configuracionDisponible && (
+      <div id="aviso-configuracion" class="aviso-configuracion">
+        <strong>Supabase todavía no está conectado.</strong>
+        <p>La tienda pública funciona con datos de demostración. Para habilitar el login y guardar cambios, completá las variables indicadas en <code>.env.ejemplo</code>.</p>
+      </div>
+    )}
+
+    <section id="pantalla-login" class="pantalla-login">
+      <form id="formulario-login" class="tarjeta-login">
+        <p class="etiqueta">Acceso privado</p>
+        <h1>Administración</h1>
+        <p>Ingresá con la cuenta autorizada para administrar los contenidos de la tienda.</p>
+
+        <label class="grupo-campo">
+          <span>Correo electrónico</span>
+          <input id="correo-admin" class="campo" name="correo" type="email" autocomplete="username" required />
+        </label>
+        <label class="grupo-campo">
+          <span>Contraseña</span>
+          <input id="contrasena-admin" class="campo" name="contrasena" type="password" autocomplete="current-password" required />
+        </label>
+        <p id="error-login" class="mensaje-error" role="alert" hidden></p>
+        <button class="boton boton-principal boton-ancho" type="submit" disabled={!configuracionDisponible}>Iniciar sesión</button>
+        <a class="volver-tienda" href="/">← Volver a la tienda</a>
+      </form>
+    </section>
+
+    <div id="panel-administracion" class="panel-administracion" hidden>
+      <aside class="admin-lateral">
+        <p class="admin-lateral-titulo">Contenido</p>
+        <nav aria-label="Secciones de administración">
+          <button class="enlace-admin activo" type="button" data-seccion-admin="resumen">Resumen</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="productos">Productos</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="categorias">Categorías</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="temas">Temas de stickers</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="secciones">Secciones del sitio</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="configuraciones">Datos comerciales</button>
+        </nav>
+        <a class="enlace-ver-tienda" href="/" target="_blank">Ver tienda ↗</a>
+      </aside>
+
+      <main class="admin-contenido">
+        <section class="seccion-admin activa" data-panel-admin="resumen">
+          <header class="cabecera-admin">
+            <div>
+              <p class="etiqueta">Vista general</p>
+              <h1>Resumen</h1>
+              <p>Estado actual de los contenidos administrables.</p>
+            </div>
+          </header>
+          <div id="tarjetas-resumen" class="tarjetas-resumen" aria-live="polite"></div>
+          <div class="tarjeta-ayuda">
+            <h2>Primeros pasos</h2>
+            <ol>
+              <li>Creá categorías y temas para ordenar el catálogo.</li>
+              <li>Agregá productos físicos, plantillas o nuevos stickers.</li>
+              <li>Subí una imagen optimizada y completá la información para SEO.</li>
+              <li>Publicá el producto cuando esté listo para aparecer en la tienda.</li>
+            </ol>
+          </div>
+        </section>
+
+        {['productos', 'categorias', 'temas', 'secciones'].map((recurso) => (
+          <section class="seccion-admin" data-panel-admin={recurso}>
+            <header class="cabecera-admin">
+              <div>
+                <p class="etiqueta">Gestión de contenidos</p>
+                <h1>{recurso === 'temas' ? 'Temas de stickers' : recurso[0].toUpperCase() + recurso.slice(1)}</h1>
+                <p data-descripcion-recurso></p>
+              </div>
+              <button class="boton boton-principal" type="button" data-nuevo-recurso={recurso}>Crear nuevo</button>
+            </header>
+            <div class="barra-listado">
+              <input class="campo" type="search" placeholder="Buscar…" data-buscar-recurso={recurso} />
+              <span data-total-recurso={recurso}>Cargando…</span>
+            </div>
+            <div class="tabla-contenedor">
+              <table class="tabla-admin">
+                <thead data-cabecera-tabla={recurso}></thead>
+                <tbody data-lista-recurso={recurso}></tbody>
+              </table>
+            </div>
+          </section>
+        ))}
+
+        <section class="seccion-admin" data-panel-admin="configuraciones">
+          <header class="cabecera-admin">
+            <div>
+              <p class="etiqueta">Información pública</p>
+              <h1>Datos comerciales</h1>
+              <p>Estos datos aparecen en la tienda y pueden modificarse sin editar código.</p>
+            </div>
+          </header>
+          <form id="formulario-configuraciones" class="formulario-admin formulario-dos-columnas">
+            <label class="grupo-campo"><span>Nombre de la marca</span><input class="campo" name="nombre_marca" required /></label>
+            <label class="grupo-campo"><span>WhatsApp internacional</span><input class="campo" name="whatsapp" inputmode="numeric" required /></label>
+            <label class="grupo-campo"><span>Correo comercial</span><input class="campo" name="correo" type="email" required /></label>
+            <label class="grupo-campo"><span>Instagram</span><input class="campo" name="instagram" type="url" /></label>
+            <label class="grupo-campo"><span>TikTok</span><input class="campo" name="tiktok" type="url" /></label>
+            <label class="grupo-campo"><span>Región</span><input class="campo" name="region" /></label>
+            <label class="grupo-campo campo-completo"><span>Descripción general</span><textarea class="area-texto" name="descripcion_corta" rows="3"></textarea></label>
+            <label class="grupo-campo"><span>Inactividad administrativa (minutos)</span><input class="campo" name="inactividad_administrador_minutos" type="number" min="5" value="30" /></label>
+            <div class="acciones-formulario campo-completo">
+              <button class="boton boton-principal" type="submit">Guardar cambios</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="dialogo-recurso" class="dialogo-recurso">
+    <form id="formulario-recurso" class="formulario-dialogo" method="dialog">
+      <div class="cabecera-dialogo">
+        <div>
+          <p class="etiqueta">Contenido administrable</p>
+          <h2 id="titulo-dialogo">Nuevo registro</h2>
+        </div>
+        <button id="cerrar-dialogo" class="boton-icono" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div id="campos-formulario-recurso" class="formulario-admin formulario-dos-columnas"></div>
+      <p id="error-formulario-recurso" class="mensaje-error" role="alert" hidden></p>
+      <div class="acciones-dialogo">
+        <button id="cancelar-dialogo" class="boton boton-secundario" type="button">Cancelar</button>
+        <button class="boton boton-principal" type="submit">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    import '../../scripts/administracion.js';
+  </script>
+</DisenoPrincipal>

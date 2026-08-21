@@ -1,0 +1,67 @@
+---
+import type { Producto } from '../tipos/contenidos';
+
+interface Props {
+  producto: Producto;
+  compacta?: boolean;
+  sinMarcaAgua?: boolean;
+}
+
+const { producto, compacta = false, sinMarcaAgua = false } = Astro.props;
+const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
+const esSticker = producto.tipo_producto === 'sticker';
+const precio = producto.precio === null
+  ? 'Consultar'
+  : new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: producto.moneda || 'ARS',
+      maximumFractionDigits: 0,
+    }).format(producto.precio);
+---
+
+<article class:list={['tarjeta-producto', { compacta }]} data-tipo={producto.tipo_producto}>
+  <a
+    class="imagen-producto"
+    href={`/productos/${producto.slug}`}
+    tabindex="-1"
+    aria-hidden="true"
+    data-proteccion-imagen={esSticker ? 'sticker' : undefined}
+    data-sin-marca-agua={esSticker && sinMarcaAgua ? '' : undefined}
+  >
+    <img
+      src={imagen?.url_publica || '/stickers/1.webp'}
+      alt={imagen?.texto_alternativo || producto.nombre}
+      width="709"
+      height="709"
+      loading="lazy"
+      decoding="async"
+      draggable={esSticker ? 'false' : undefined}
+    />
+    {producto.destacado && <span class="distintivo-producto">Destacado</span>}
+  </a>
+  <div class="contenido-producto">
+    <p class="tipo-producto">{producto.tipo_producto === 'fisico' ? 'Producto físico' : producto.tipo_producto}</p>
+    <h3><a href={`/productos/${producto.slug}`}>{producto.nombre}</a></h3>
+    {!compacta && <p class="descripcion-producto">{producto.descripcion_corta}</p>}
+    <div class="pie-producto">
+      <strong class="precio-producto">{precio}</strong>
+      <button
+        class="boton-agregar-producto"
+        type="button"
+        data-agregar-producto
+        data-producto={JSON.stringify({
+          id: producto.id,
+          nombre: producto.nombre,
+          slug: producto.slug,
+          tipo_producto: producto.tipo_producto,
+          precio: producto.precio,
+          moneda: producto.moneda,
+          imagen: imagen?.url_publica || '/stickers/1.webp',
+        })}
+        aria-label={`Agregar ${producto.nombre} a mi selección`}
+      >
+        Agregar
+      </button>
+    </div>
+  </div>
+</article>

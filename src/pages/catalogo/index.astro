@@ -1,0 +1,82 @@
+---
+import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import TarjetaProducto from '../../componentes/TarjetaProducto.astro';
+import type { ConfiguracionSitio, Producto, Tema } from '../../tipos/contenidos';
+import {
+  obtenerConfiguracionSitio,
+  obtenerProductosPublicados,
+  obtenerTemasPublicados,
+} from '../../servicios/repositorio-contenidos.js';
+
+const [configuracion, productos, temas] = await Promise.all([
+  obtenerConfiguracionSitio(),
+  obtenerProductosPublicados(),
+  obtenerTemasPublicados(),
+]) as [ConfiguracionSitio, Producto[], Tema[]];
+
+const productosIniciales = productos.slice(0, 48);
+const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
+---
+
+<DisenoPrincipal
+  titulo="Catálogo de stickers y papelería creativa | Papelería de Sol"
+  descripcion="Explorá stickers, plantillas y productos físicos de Papelería de Sol. Armá tu selección y consultá por WhatsApp desde CABA y GBA."
+  configuracion={configuracion}
+>
+  <header class="contenedor cabecera-pagina">
+    <p class="etiqueta">Colecciones de Papelería de Sol</p>
+    <h1>Encontrá tu próximo favorito</h1>
+    <p>Buscá por nombre o número, filtrá por tipo y agregá todo lo que te guste a tu selección.</p>
+  </header>
+
+  <section id="catalogo-resultados" class="contenedor seccion-catalogo">
+    <div class="barra-catalogo" aria-label="Filtros del catálogo">
+      <label>
+        <span class="solo-lectores">Buscar productos</span>
+        <input id="buscador-catalogo" class="campo" type="search" placeholder="Buscar por nombre o número…" autocomplete="off" />
+      </label>
+      <label>
+        <span class="solo-lectores">Tipo de producto</span>
+        <select id="filtro-tipo" class="selector">
+          <option value="">Todos los productos</option>
+          <option value="sticker">Stickers</option>
+          <option value="plantilla">Plantillas</option>
+          <option value="fisico">Productos físicos</option>
+        </select>
+      </label>
+      <label>
+        <span class="solo-lectores">Tema</span>
+        <select id="filtro-tema" class="selector">
+          <option value="">Todos los temas</option>
+          {temas.map((tema) => <option value={tema.slug}>{tema.nombre}</option>)}
+        </select>
+      </label>
+    </div>
+
+    <div class="resultado-catalogo">
+      <span id="informacion-resultados">{productos.length} productos</span>
+      <span>Consultá disponibilidad por WhatsApp</span>
+    </div>
+
+    <div id="galeria-catalogo" class="cuadricula-productos">
+      {productosIniciales.map((producto) => <TarjetaProducto producto={producto} />)}
+    </div>
+
+    <nav class="paginacion" aria-label="Paginación del catálogo">
+      <button id="pagina-anterior" class="boton-paginacion" type="button" disabled>Anterior</button>
+      <span id="informacion-pagina-catalogo">Página 1</span>
+      <button id="pagina-siguiente" class="boton-paginacion" type="button">Siguiente</button>
+    </nav>
+  </section>
+
+  <script is:inline id="datos-catalogo" type="application/json" set:html={datosSeguros}></script>
+  <script>
+    import '../../scripts/catalogo.js';
+  </script>
+</DisenoPrincipal>
+
+<style>
+  .seccion-catalogo {
+    padding-bottom: 5rem;
+  }
+</style>
