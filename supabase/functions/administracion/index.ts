@@ -33,7 +33,7 @@ const RECURSOS = {
     seleccion: '*',
     campos: [
       'clave', 'titulo', 'subtitulo', 'contenido', 'imagen_url', 'texto_boton',
-      'enlace_boton', 'publicada', 'orden', 'meta_titulo', 'meta_descripcion',
+      'enlace_boton', 'publicada', 'orden', 'meta_titulo', 'meta_descripcion', 'estilos',
     ],
   },
   variantes: {
@@ -44,6 +44,14 @@ const RECURSOS = {
 } as const;
 
 type NombreRecurso = keyof typeof RECURSOS;
+
+const CAMPOS_ESTILO_SECCION = ['titulo', 'subtitulo', 'contenido', 'texto_boton'];
+const FUENTES_PERMITIDAS = ['moderna', 'redondeada', 'clasica'];
+const TAMANOS_PERMITIDOS = ['pequeno', 'normal', 'mediano', 'grande', 'extra_grande'];
+const COLORES_CONFIGURABLES = [
+  'color_principal', 'color_secundario', 'color_principal_intenso', 'color_secundario_intenso',
+  'color_fondo', 'color_texto', 'color_texto_suave',
+];
 
 function cabecerasCors(solicitud: Request) {
   const origen = solicitud.headers.get('origin') || '';
@@ -100,6 +108,32 @@ function seleccionarCampos(datos: Record<string, unknown>, campos: readonly stri
   );
 }
 
+function esColorHexadecimal(valor: unknown) {
+  return typeof valor === 'string' && /^#[0-9a-f]{6}$/i.test(valor);
+}
+
+function normalizarEstilosSeccion(valor: unknown) {
+  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+    throw new Error('Los estilos de la sección no tienen un formato válido.');
+  }
+
+  const estilos = valor as Record<string, Record<string, unknown>>;
+  return Object.fromEntries(CAMPOS_ESTILO_SECCION.map((campo) => {
+    const estilo = estilos[campo] || {};
+    const color = esColorHexadecimal(estilo.color) ? estilo.color : '#252434';
+    const fuente = FUENTES_PERMITIDAS.includes(String(estilo.fuente)) ? estilo.fuente : 'moderna';
+    const tamano = TAMANOS_PERMITIDOS.includes(String(estilo.tamano)) ? estilo.tamano : 'normal';
+
+    return [campo, {
+      color,
+      fuente,
+      tamano,
+      negrita: Boolean(estilo.negrita),
+      cursiva: Boolean(estilo.cursiva),
+    }];
+  }));
+}
+
 function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
   if ('nombre' in datos && !String(datos.nombre || '').trim()) {
     throw new Error('El nombre es obligatorio.');
@@ -115,6 +149,11 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
     if (datos.controla_stock && Number(datos.stock) < 0) {
       throw new Error('El stock no puede ser negativo.');
     }
+  }
+
+  if (recurso === 'secciones') {
+    if (!String(datos.titulo || '').trim()) throw new Error('El título de la sección es obligatorio.');
+    if (Object.prototype.hasOwnProperty.call(datos, 'estilos')) normalizarEstilosSeccion(datos.estilos);
   }
 }
 
@@ -253,12 +292,17 @@ async function obtenerResumen() {
   };
 }
 
-async function listarRecurso(recurso: NombreRecurso) {
+async function listarRecurso(recurso: NombreRecurso, filtroArchivados = 'activos') {
   const definicion = RECURSOS[recurso];
   let consulta = clienteServicio.from(definicion.tabla).select(definicion.seleccion);
 
   if (recurso === 'productos') {
-    consulta = consulta.neq('estado', 'archivado').order('actualizado_en', { ascending: false });
+    if (filtroArchivados === 'archivados') {
+      consulta = consulta.eq('estado', 'archivado');
+    } else if (filtroArchivados !== 'todos') {
+      consulta = consulta.neq('estado', 'archivado');
+    }
+    consulta = consulta.order('actualizado_en', { ascending: false });
   } else {
     consulta = consulta.order('orden').order('actualizado_en', { ascending: false });
   }
@@ -277,6 +321,10 @@ async function guardarRecurso(
   validarDatos(recurso, datosOriginales);
   const definicion = RECURSOS[recurso];
   const datos = seleccionarCampos(datosOriginales, definicion.campos);
+
+  if (recurso === 'secciones' && Object.prototype.hasOwnProperty.call(datos, 'estilos')) {
+    datos.estilos = normalizarEstilosSeccion(datos.estilos);
+  }
 
   if ('slug' in datos) {
     datos.slug = crearSlug(datos.slug || datos.nombre);
@@ -341,6 +389,19 @@ async function eliminarRecurso(recurso: NombreRecurso, id: string, usuarioId: st
     recurso,
     id,
   );
+}
+
+async function restaurarRecurso(recurso: NombreRecurso, id: string, usuarioId: string) {
+  if (recurso !== 'productos') throw new Error('Solo se pueden restaurar productos archivados.');
+
+  const { error } = await clienteServicio
+    .from('productos')
+    .update({ estado: 'borrador' })
+    .eq('id', id)
+    .eq('estado', 'archivado');
+  if (error) throw error;
+
+  await registrarAuditoria(usuarioId, 'restaurar', recurso, id, { estado: 'borrador' });
 }
 
 function validarRecurso(valor: unknown): NombreRecurso {
@@ -413,8 +474,17 @@ async function registrarImagen(
 async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId: string) {
   const clavesPermitidas = [
     'nombre_marca', 'descripcion_corta', 'whatsapp', 'correo', 'instagram', 'tiktok',
-    'pais', 'region', 'moneda', 'simbolo_moneda', 'inactividad_administrador_minutos',
+    'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES, 'fuente_principal',
   ];
+
+  COLORES_CONFIGURABLES.forEach((clave) => {
+    if (Object.prototype.hasOwnProperty.call(datos, clave) && !esColorHexadecimal(datos[clave])) {
+      throw new Error('Uno de los colores ingresados no es válido.');
+    }
+  });
+  if (Object.prototype.hasOwnProperty.call(datos, 'fuente_principal') && !FUENTES_PERMITIDAS.includes(String(datos.fuente_principal))) {
+    throw new Error('La tipografía seleccionada no es válida.');
+  }
 
   const filas = Object.entries(datos)
     .filter(([clave]) => clavesPermitidas.includes(clave))
@@ -477,7 +547,7 @@ Deno.serve(async (solicitud) => {
 
     if (accion === 'listar') {
       const recurso = validarRecurso(cuerpo.recurso);
-      return responder(solicitud, { datos: await listarRecurso(recurso) });
+      return responder(solicitud, { datos: await listarRecurso(recurso, String(cuerpo.filtro_archivados || 'activos')) });
     }
 
     if (accion === 'guardar') {
@@ -494,6 +564,12 @@ Deno.serve(async (solicitud) => {
     if (accion === 'eliminar') {
       const recurso = validarRecurso(cuerpo.recurso);
       await eliminarRecurso(recurso, String(cuerpo.id), autenticacion.user.id);
+      return responder(solicitud, { datos: true });
+    }
+
+    if (accion === 'restaurar') {
+      const recurso = validarRecurso(cuerpo.recurso);
+      await restaurarRecurso(recurso, String(cuerpo.id), autenticacion.user.id);
       return responder(solicitud, { datos: true });
     }
 

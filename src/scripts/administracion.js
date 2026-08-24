@@ -1,4 +1,10 @@
 import { obtenerClienteSupabase } from '../servicios/cliente-supabase.js';
+import {
+  CAMPOS_ESTILO_SECCION,
+  OPCIONES_FUENTE,
+  OPCIONES_TAMANO,
+  esColorHexadecimal,
+} from '../servicios/estilos-visuales.ts';
 
 const aplicacion = document.querySelector('.admin-aplicacion');
 const configuracionDisponible = aplicacion?.dataset.configuracionDisponible === 'true';
@@ -9,7 +15,6 @@ const formularioLogin = document.querySelector('#formulario-login');
 const errorLogin = document.querySelector('#error-login');
 const panelAdministracion = document.querySelector('#panel-administracion');
 const datosSesion = document.querySelector('#datos-sesion');
-const tiempoSesion = document.querySelector('#tiempo-sesion');
 const botonCerrarSesion = document.querySelector('#cerrar-sesion-admin');
 const tarjetasResumen = document.querySelector('#tarjetas-resumen');
 const dialogo = document.querySelector('#dialogo-recurso');
@@ -18,6 +23,8 @@ const camposFormulario = document.querySelector('#campos-formulario-recurso');
 const tituloDialogo = document.querySelector('#titulo-dialogo');
 const errorFormulario = document.querySelector('#error-formulario-recurso');
 const formularioConfiguraciones = document.querySelector('#formulario-configuraciones');
+const formularioEstilosGlobales = document.querySelector('#formulario-estilos-globales');
+const botonAlternarContrasena = document.querySelector('#alternar-contrasena-admin');
 
 const DESCRIPCIONES = {
   productos: 'Creá stickers, plantillas y productos físicos; controlá su precio, stock y publicación.',
@@ -94,12 +101,14 @@ const ESQUEMAS = {
     { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
     { nombre: 'meta_titulo', etiqueta: 'Título SEO', tipo: 'text', completo: true },
     { nombre: 'meta_descripcion', etiqueta: 'Descripción SEO', tipo: 'textarea', completo: true },
+    { nombre: 'estilos', etiqueta: 'Apariencia de cada texto', tipo: 'estilos-seccion', completo: true },
   ],
 };
 
 const COLUMNAS = {
   productos: [
     { clave: 'nombre', texto: 'Producto' },
+    { clave: 'imagen_principal', texto: 'Imagen' },
     { clave: 'tipo_producto', texto: 'Tipo' },
     { clave: 'precio', texto: 'Precio' },
     { clave: 'estado', texto: 'Estado' },
@@ -254,6 +263,11 @@ function valorVisible(registro, clave) {
   return valor ?? '—';
 }
 
+function obtenerImagenPrincipal(registro) {
+  const imagenes = [...(registro.imagenes || [])].sort((primera, segunda) => primera.orden - segunda.orden);
+  return imagenes.find((imagen) => imagen.es_principal) || imagenes[0] || null;
+}
+
 function crearBotonAccion(texto, atributo, id) {
   const boton = document.createElement('button');
   boton.type = 'button';
@@ -293,7 +307,21 @@ function renderizarListado(recurso, registros) {
     const fila = document.createElement('tr');
     COLUMNAS[recurso].forEach(({ clave }) => {
       const celda = document.createElement('td');
-      if (['estado', 'publicada', 'publicado'].includes(clave)) {
+      if (clave === 'imagen_principal') {
+        const imagenPrincipal = obtenerImagenPrincipal(registro);
+        if (imagenPrincipal?.url_publica) {
+          const imagen = document.createElement('img');
+          imagen.className = 'miniatura-tabla';
+          imagen.src = imagenPrincipal.url_publica;
+          imagen.alt = `Vista previa de ${registro.nombre}`;
+          imagen.width = 44;
+          imagen.height = 44;
+          imagen.loading = 'lazy';
+          celda.append(imagen);
+        } else {
+          celda.textContent = 'Sin imagen';
+        }
+      } else if (['estado', 'publicada', 'publicado'].includes(clave)) {
         const estado = document.createElement('span');
         estado.className = 'estado-tabla';
         estado.textContent = String(valorVisible(registro, clave));
@@ -307,10 +335,12 @@ function renderizarListado(recurso, registros) {
     const celdaAcciones = document.createElement('td');
     const grupo = document.createElement('div');
     grupo.className = 'acciones-tabla';
-    grupo.append(
-      crearBotonAccion('Editar', 'editar', registro.id),
-      crearBotonAccion(recurso === 'productos' ? 'Archivar' : 'Eliminar', 'eliminar', registro.id),
-    );
+    grupo.append(crearBotonAccion('Editar', 'editar', registro.id));
+    if (recurso === 'productos' && registro.estado === 'archivado') {
+      grupo.append(crearBotonAccion('Restaurar', 'restaurar', registro.id));
+    } else {
+      grupo.append(crearBotonAccion(recurso === 'productos' ? 'Archivar' : 'Eliminar', 'eliminar', registro.id));
+    }
     celdaAcciones.append(grupo);
     fila.append(celdaAcciones);
     cuerpo.append(fila);
@@ -325,7 +355,10 @@ function renderizarListado(recurso, registros) {
 async function cargarRecurso(recurso) {
   const total = document.querySelector(`[data-total-recurso="${recurso}"]`);
   if (total) total.textContent = 'Cargando…';
-  const registros = await invocar('listar', { recurso });
+  const filtroArchivados = recurso === 'productos'
+    ? document.querySelector('[data-filtro-archivados]')?.value || 'activos'
+    : undefined;
+  const registros = await invocar('listar', { recurso, filtro_archivados: filtroArchivados });
   renderizarListado(recurso, registros);
 }
 
@@ -337,7 +370,76 @@ function crearOpcion(valor, texto, seleccionada = false) {
   return opcion;
 }
 
+function crearControlEstilo(etiqueta, control) {
+  const contenedor = document.createElement('label');
+  contenedor.className = 'control-estilo-texto';
+  const texto = document.createElement('span');
+  texto.textContent = etiqueta;
+  contenedor.append(texto, control);
+  return contenedor;
+}
+
+function crearEditorEstilosSeccion(registro = {}) {
+  const contenedor = document.createElement('fieldset');
+  contenedor.className = 'editor-estilos-seccion campo-completo';
+  const titulo = document.createElement('legend');
+  titulo.textContent = 'Apariencia de cada texto';
+  contenedor.append(titulo);
+
+  const ayuda = document.createElement('p');
+  ayuda.textContent = 'Estas opciones aplican formato sin permitir código ni estilos externos.';
+  contenedor.append(ayuda);
+
+  CAMPOS_ESTILO_SECCION.forEach(({ clave, etiqueta }) => {
+    const estiloActual = registro.estilos?.[clave] || {};
+    const grupo = document.createElement('fieldset');
+    grupo.className = 'grupo-estilo-texto';
+    const leyenda = document.createElement('legend');
+    leyenda.textContent = etiqueta;
+    grupo.append(leyenda);
+
+    const color = document.createElement('input');
+    color.type = 'color';
+    color.name = `estilo_${clave}_color`;
+    color.value = esColorHexadecimal(estiloActual.color) ? estiloActual.color : '#252434';
+    grupo.append(crearControlEstilo('Color', color));
+
+    const fuente = document.createElement('select');
+    fuente.className = 'selector';
+    fuente.name = `estilo_${clave}_fuente`;
+    OPCIONES_FUENTE.forEach((opcion) => fuente.append(
+      crearOpcion(opcion.valor, opcion.texto, (estiloActual.fuente || 'moderna') === opcion.valor),
+    ));
+    grupo.append(crearControlEstilo('Fuente', fuente));
+
+    const tamano = document.createElement('select');
+    tamano.className = 'selector';
+    tamano.name = `estilo_${clave}_tamano`;
+    OPCIONES_TAMANO.forEach((opcion) => tamano.append(
+      crearOpcion(opcion.valor, opcion.texto, (estiloActual.tamano || 'normal') === opcion.valor),
+    ));
+    grupo.append(crearControlEstilo('Tamaño', tamano));
+
+    const negrita = document.createElement('input');
+    negrita.type = 'checkbox';
+    negrita.name = `estilo_${clave}_negrita`;
+    negrita.checked = Boolean(estiloActual.negrita);
+    grupo.append(crearControlEstilo('Negrita', negrita));
+
+    const cursiva = document.createElement('input');
+    cursiva.type = 'checkbox';
+    cursiva.name = `estilo_${clave}_cursiva`;
+    cursiva.checked = Boolean(estiloActual.cursiva);
+    grupo.append(crearControlEstilo('Cursiva', cursiva));
+    contenedor.append(grupo);
+  });
+
+  return contenedor;
+}
+
 function crearCampo(definicion, registro = {}) {
+  if (definicion.tipo === 'estilos-seccion') return crearEditorEstilosSeccion(registro);
+
   const contenedor = document.createElement('label');
   contenedor.className = `grupo-campo${definicion.completo ? ' campo-completo' : ''}`;
   const etiqueta = document.createElement('span');
@@ -411,7 +513,7 @@ function obtenerDatosFormulario() {
   const datos = {};
   ESQUEMAS[recursoDialogo].forEach((definicion) => {
     const campo = formularioRecurso.elements[definicion.nombre];
-    if (!campo || definicion.tipo === 'file') return;
+    if (!campo || ['file', 'estilos-seccion'].includes(definicion.tipo)) return;
 
     if (definicion.tipo === 'checkbox') datos[definicion.nombre] = campo.checked;
     else if (definicion.multiple) datos[definicion.nombre] = Array.from(campo.selectedOptions).map((opcion) => opcion.value);
@@ -422,6 +524,16 @@ function obtenerDatosFormulario() {
   if (recursoDialogo === 'productos') {
     datos.moneda = 'ARS';
     if (!datos.controla_stock) datos.stock = null;
+  }
+
+  if (recursoDialogo === 'secciones') {
+    datos.estilos = Object.fromEntries(CAMPOS_ESTILO_SECCION.map(({ clave }) => [clave, {
+      color: formularioRecurso.elements[`estilo_${clave}_color`]?.value,
+      fuente: formularioRecurso.elements[`estilo_${clave}_fuente`]?.value,
+      tamano: formularioRecurso.elements[`estilo_${clave}_tamano`]?.value,
+      negrita: Boolean(formularioRecurso.elements[`estilo_${clave}_negrita`]?.checked),
+      cursiva: Boolean(formularioRecurso.elements[`estilo_${clave}_cursiva`]?.checked),
+    }]));
   }
 
   return datos;
@@ -463,14 +575,16 @@ async function cambiarSeccion(recurso) {
 
   if (recurso === 'resumen') await cargarResumen();
   else if (['productos', 'categorias', 'temas', 'secciones'].includes(recurso)) await cargarRecurso(recurso);
-  else if (recurso === 'configuraciones') await cargarConfiguraciones();
+  else if (['configuraciones', 'estilos'].includes(recurso)) await cargarConfiguraciones();
 }
 
 async function cargarConfiguraciones() {
   const filas = await invocar('obtener_configuraciones');
   filas.forEach(({ clave, valor }) => {
-    const campo = formularioConfiguraciones.elements[clave];
-    if (campo) campo.value = valor ?? '';
+    [formularioConfiguraciones, formularioEstilosGlobales].forEach((formulario) => {
+      const campo = formulario?.elements[clave];
+      if (campo) campo.value = valor ?? '';
+    });
   });
 }
 
@@ -496,6 +610,16 @@ formularioLogin?.addEventListener('submit', async (evento) => {
     boton.disabled = !configuracionDisponible;
     boton.textContent = 'Iniciar sesión';
   }
+});
+
+botonAlternarContrasena?.addEventListener('click', () => {
+  const campo = formularioLogin?.elements.contrasena;
+  if (!campo) return;
+  const mostrar = campo.type === 'password';
+  campo.type = mostrar ? 'text' : 'password';
+  botonAlternarContrasena.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+  botonAlternarContrasena.setAttribute('aria-pressed', String(mostrar));
+  campo.focus();
 });
 
 document.addEventListener('click', async (evento) => {
@@ -529,6 +653,18 @@ document.addEventListener('click', async (evento) => {
       notificar(error.message);
     }
   }
+
+  const restaurar = evento.target.closest('[data-restaurar]');
+  if (restaurar) {
+    if (!confirm('¿Querés restaurar este producto como borrador?')) return;
+    try {
+      await invocar('restaurar', { recurso: recursoActual, id: restaurar.dataset.restaurar });
+      notificar('El producto fue restaurado como borrador.');
+      await cargarRecurso(recursoActual);
+    } catch (error) {
+      notificar(error.message);
+    }
+  }
 });
 
 document.querySelectorAll('[data-descripcion-recurso]').forEach((elemento) => {
@@ -539,6 +675,8 @@ document.querySelectorAll('[data-descripcion-recurso]').forEach((elemento) => {
 document.querySelectorAll('[data-buscar-recurso]').forEach((campo) => {
   campo.addEventListener('input', () => renderizarListado(campo.dataset.buscarRecurso, Array.from(registrosActuales.values())));
 });
+
+document.querySelector('[data-filtro-archivados]')?.addEventListener('change', () => cargarRecurso('productos'));
 
 formularioRecurso?.addEventListener('submit', async (evento) => {
   evento.preventDefault();
@@ -569,11 +707,20 @@ formularioRecurso?.addEventListener('submit', async (evento) => {
 formularioConfiguraciones?.addEventListener('submit', async (evento) => {
   evento.preventDefault();
   const datos = Object.fromEntries(new FormData(formularioConfiguraciones));
-  datos.inactividad_administrador_minutos = Number(datos.inactividad_administrador_minutos || 30);
   try {
     await invocar('guardar_configuraciones', { datos });
-    minutosInactividad = datos.inactividad_administrador_minutos;
     notificar('Datos comerciales actualizados.');
+  } catch (error) {
+    notificar(error.message);
+  }
+});
+
+formularioEstilosGlobales?.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const datos = Object.fromEntries(new FormData(formularioEstilosGlobales));
+  try {
+    await invocar('guardar_configuraciones', { datos });
+    notificar('El estilo visual se guardó. Actualizá la tienda para ver los cambios.');
   } catch (error) {
     notificar(error.message);
   }
@@ -584,11 +731,9 @@ document.querySelector('#cancelar-dialogo')?.addEventListener('click', () => dia
 botonCerrarSesion?.addEventListener('click', cerrarSesionCompleta);
 
 setInterval(() => {
-  if (panelAdministracion?.hidden || !tiempoSesion) return;
+  if (panelAdministracion?.hidden) return;
   const transcurridos = Date.now() - ultimaActividadConfirmada;
   const restantes = Math.max(0, minutosInactividad * 60_000 - transcurridos);
-  const minutos = Math.ceil(restantes / 60_000);
-  tiempoSesion.textContent = restantes > 0 ? `Expira tras ${minutos} min sin actividad` : 'Sesión vencida';
   if (restantes <= 0) cerrarSesionCompleta();
 }, 15_000);
 

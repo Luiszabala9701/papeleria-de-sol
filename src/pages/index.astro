@@ -7,6 +7,7 @@ import {
   obtenerProductosPublicados,
   obtenerSeccionesPublicadas,
 } from '../servicios/repositorio-contenidos.js';
+import { obtenerEstiloTexto } from '../servicios/estilos-visuales';
 
 const [configuracion, secciones, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -46,25 +47,19 @@ const datosEstructurados = {
 
   <section class="contenedor hero">
     <div>
-      <p class="etiqueta">Papelería creativa en CABA y GBA</p>
-      <h1>
+      <p class="etiqueta" style={obtenerEstiloTexto(principal, 'subtitulo')}>
+        {principal?.subtitulo || 'Papelería creativa en CABA y GBA'}
+      </p>
+      <h1 style={obtenerEstiloTexto(principal, 'titulo')}>
         {principal?.titulo || 'Ideas que alegran tus días'}
         <span class="texto-degradado"> con un toque de Sol</span>
       </h1>
-      <p class="hero-descripcion">
+      <p class="hero-descripcion" style={obtenerEstiloTexto(principal, 'contenido')}>
         {principal?.contenido || configuracion.descripcion_corta}
       </p>
       <div class="grupo-botones">
-        <a class="boton boton-principal" href={principal?.enlace_boton || '/catalogo'}>
+        <a class="boton boton-principal" href={principal?.enlace_boton || '/catalogo'} style={obtenerEstiloTexto(principal, 'texto_boton')}>
           {principal?.texto_boton || 'Explorar el catálogo'}
-        </a>
-        <a
-          class="boton boton-secundario"
-          href={`https://wa.me/${configuracion.whatsapp}?text=${encodeURIComponent('¡Hola! Quisiera consultar por los productos de Papelería de Sol.')}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Hablar por WhatsApp
         </a>
       </div>
     </div>
@@ -75,23 +70,6 @@ const datosEstructurados = {
           <img src={`/stickers/${numero}.webp`} alt={`Sticker creativo ${numero}`} width="709" height="709" draggable="false" />
         </div>
       ))}
-    </div>
-  </section>
-
-  <section class="franja-beneficios" aria-label="Beneficios">
-    <div class="contenedor beneficios">
-      <div class="beneficio">
-        <strong>Elegí a tu manera</strong>
-        <span>Armá una selección con tus diseños favoritos</span>
-      </div>
-      <div class="beneficio">
-        <strong>Atención personal</strong>
-        <span>Confirmamos disponibilidad y detalles por WhatsApp</span>
-      </div>
-      <div class="beneficio">
-        <strong>Cerca tuyo</strong>
-        <span>Consultas y pedidos en CABA y GBA</span>
-      </div>
     </div>
   </section>
 
@@ -111,98 +89,4 @@ const datosEstructurados = {
       </div>
     </div>
   </section>
-
-  <section class="seccion seccion-suave">
-    <div class="contenedor">
-      <header class="cabecera-seccion">
-        <div>
-          <p class="etiqueta">Elegí tu categoría</p>
-          <h2>Todo en un solo lugar</h2>
-          <p>El catálogo crecerá desde el panel administrativo, sin tener que editar los archivos del sitio.</p>
-        </div>
-      </header>
-
-      <div class="cuadricula-categorias">
-        <a class="tarjeta-categoria" href="/catalogo?tipo=sticker">
-          <span class="numero-categoria">+1.000</span>
-          <h3>Stickers</h3>
-          <p>Diseños para elegir por número y sumar a tu pedido.</p>
-          <span class="enlace-texto">Explorar stickers</span>
-        </a>
-        <a class="tarjeta-categoria" href="/plantillas">
-          <span class="numero-categoria">Digital</span>
-          <h3>Plantillas</h3>
-          <p>Nuevas colecciones editables e imprimibles.</p>
-          <span class="enlace-texto">Ver plantillas</span>
-        </a>
-        <a class="tarjeta-categoria" href="/productos-fisicos">
-          <span class="numero-categoria">A medida</span>
-          <h3>Productos físicos</h3>
-          <p>Creaciones listas para regalar o personalizar.</p>
-          <span class="enlace-texto">Ver productos</span>
-        </a>
-      </div>
-    </div>
-  </section>
 </DisenoPrincipal>
-
-<style>
-  .cuadricula-categorias {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-
-  .tarjeta-categoria {
-    min-height: 280px;
-    padding: 2rem;
-    border: 1px solid var(--borde);
-    border-radius: var(--radio-grande);
-    background: rgba(255, 255, 255, 0.86);
-    box-shadow: var(--sombra-suave);
-    text-decoration: none;
-    transition: 180ms ease;
-  }
-
-  .tarjeta-categoria:hover {
-    box-shadow: var(--sombra);
-    transform: translateY(-4px);
-  }
-
-  .tarjeta-categoria:nth-child(2) {
-    background: rgba(223, 152, 255, 0.11);
-  }
-
-  .tarjeta-categoria:nth-child(3) {
-    background: rgba(152, 183, 255, 0.13);
-  }
-
-  .numero-categoria {
-    display: block;
-    margin-bottom: 2.5rem;
-    color: var(--lila-profundo);
-    font-size: 0.76rem;
-    font-weight: 850;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .tarjeta-categoria h3 {
-    margin-bottom: 0.7rem;
-    font-size: 1.6rem;
-  }
-
-  .tarjeta-categoria p {
-    color: var(--tinta-suave);
-  }
-
-  @media (max-width: 720px) {
-    .cuadricula-categorias {
-      grid-template-columns: 1fr;
-    }
-
-    .tarjeta-categoria {
-      min-height: auto;
-    }
-  }
-</style>

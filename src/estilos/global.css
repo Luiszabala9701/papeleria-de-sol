@@ -15,9 +15,9 @@
   --radio-grande: 28px;
   --radio: 18px;
   --contenedor: 1200px;
+  --fuente-principal: Inter, ui-rounded, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color-scheme: light;
-  font-family:
-    Inter, ui-rounded, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--fuente-principal);
   font-synthesis: none;
 }
 
@@ -38,8 +38,8 @@ body {
   margin: 0;
   color: var(--tinta);
   background:
-    radial-gradient(circle at 8% 4%, rgba(152, 183, 255, 0.24), transparent 27rem),
-    radial-gradient(circle at 94% 18%, rgba(223, 152, 255, 0.18), transparent 28rem),
+    radial-gradient(circle at 8% 4%, color-mix(in srgb, var(--azul-sol) 24%, transparent), transparent 27rem),
+    radial-gradient(circle at 94% 18%, color-mix(in srgb, var(--lila-sol) 18%, transparent), transparent 28rem),
     var(--fondo);
   line-height: 1.6;
 }
@@ -166,10 +166,10 @@ h3 {
   height: 2.65rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(82, 108, 168, 0.15);
+  border: 1px solid color-mix(in srgb, var(--azul-profundo) 15%, transparent);
   border-radius: 50%;
   background: linear-gradient(135deg, var(--azul-sol), var(--lila-sol));
-  box-shadow: 0 7px 18px rgba(152, 183, 255, 0.34);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--azul-sol) 34%, transparent);
 }
 
 .marca strong,
@@ -211,7 +211,7 @@ h3 {
 .menu-principal a:hover,
 .menu-principal a.activo {
   color: var(--azul-profundo);
-  background: rgba(152, 183, 255, 0.16);
+  background: color-mix(in srgb, var(--azul-sol) 16%, transparent);
 }
 
 .boton-menu {
@@ -265,7 +265,7 @@ h3 {
   width: min(48vw, 590px);
   aspect-ratio: 1;
   border-radius: 45% 55% 58% 42% / 48% 44% 56% 52%;
-  background: linear-gradient(145deg, rgba(152, 183, 255, 0.52), rgba(223, 152, 255, 0.44));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--azul-sol) 52%, transparent), color-mix(in srgb, var(--lila-sol) 44%, transparent));
   content: "";
   filter: blur(0.1px);
 }
@@ -328,7 +328,7 @@ h3 {
 .boton-principal {
   color: var(--blanco);
   background: linear-gradient(115deg, var(--azul-profundo), var(--lila-profundo));
-  box-shadow: 0 10px 24px rgba(106, 86, 171, 0.23);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--lila-profundo) 23%, transparent);
 }
 
 .boton-principal:disabled {
@@ -422,7 +422,7 @@ h3 {
 }
 
 .seccion-suave {
-  background: linear-gradient(180deg, rgba(152, 183, 255, 0.08), rgba(223, 152, 255, 0.07));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--azul-sol) 8%, transparent), color-mix(in srgb, var(--lila-sol) 7%, transparent));
 }
 
 .cabecera-seccion {
@@ -455,7 +455,7 @@ h3 {
   cursor: pointer;
   font-weight: 800;
   text-decoration: underline;
-  text-decoration-color: rgba(82, 108, 168, 0.35);
+  text-decoration-color: color-mix(in srgb, var(--azul-profundo) 35%, transparent);
   text-underline-offset: 0.25em;
 }
 
@@ -484,7 +484,7 @@ h3 {
   display: block;
   aspect-ratio: 1;
   overflow: hidden;
-  background: linear-gradient(145deg, rgba(152, 183, 255, 0.13), rgba(223, 152, 255, 0.13));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--azul-sol) 13%, transparent), color-mix(in srgb, var(--lila-sol) 13%, transparent));
 }
 
 .imagen-producto img {
@@ -512,7 +512,7 @@ h3 {
   z-index: 2;
   left: 50%;
   width: 200%;
-  color: rgba(82, 108, 168, 0.2);
+  color: color-mix(in srgb, var(--azul-profundo) 20%, transparent);
   content: 'Papelería de Sol • Papelería de Sol • Papelería de Sol';
   font-size: clamp(0.48rem, 1.2vw, 0.78rem);
   font-weight: 800;
@@ -646,7 +646,7 @@ h3 {
 .selector:focus,
 .area-texto:focus {
   border-color: var(--azul-sol);
-  box-shadow: 0 0 0 3px rgba(152, 183, 255, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--azul-sol) 20%, transparent);
 }
 
 .resultado-catalogo {
@@ -772,7 +772,7 @@ h3 {
   height: 64px;
   overflow: hidden;
   border-radius: 0.7rem;
-  background: rgba(152, 183, 255, 0.11);
+  background: color-mix(in srgb, var(--azul-sol) 11%, transparent);
 }
 
 .elemento-carrito img {
@@ -861,6 +861,56 @@ h3 {
   background: #f4f0fb;
 }
 
+.lista-contacto-pie {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.25rem;
+}
+
+.lista-contacto-pie a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.icono-contacto {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  fill: currentColor;
+}
+
+.boton-whatsapp-flotante {
+  position: fixed;
+  z-index: 900;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 3.35rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  color: #fff;
+  background: #25d366;
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.28);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  gap: 0.48rem;
+}
+
+.boton-whatsapp-flotante:hover {
+  box-shadow: 0 16px 34px rgba(37, 211, 102, 0.38);
+  transform: translateY(-2px);
+}
+
+.boton-whatsapp-flotante svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: currentColor;
+}
+
 .pie-cuadricula {
   display: grid;
   grid-template-columns: 1.5fr 0.7fr 1fr;
@@ -928,7 +978,7 @@ h3 {
   overflow: hidden;
   border: 1px solid var(--borde);
   border-radius: var(--radio-grande);
-  background: linear-gradient(145deg, rgba(152, 183, 255, 0.12), rgba(223, 152, 255, 0.13));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--azul-sol) 12%, transparent), color-mix(in srgb, var(--lila-sol) 13%, transparent));
   box-shadow: var(--sombra-suave);
 }
 
@@ -968,7 +1018,7 @@ h3 {
   padding: 1rem;
   margin-block: 1rem;
   border-radius: 0.9rem;
-  background: rgba(152, 183, 255, 0.13);
+  background: color-mix(in srgb, var(--azul-sol) 13%, transparent);
   color: var(--tinta-suave);
   font-size: 0.85rem;
 }
@@ -1030,6 +1080,24 @@ h3 {
 
   .pie-cuadricula {
     grid-template-columns: 1.2fr 0.8fr;
+  }
+
+  .lista-contacto-pie {
+    grid-template-columns: 1fr;
+  }
+
+  .boton-whatsapp-flotante {
+    right: 0.85rem;
+    bottom: 0.85rem;
+    width: 3.4rem;
+    height: 3.4rem;
+    min-height: 0;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .boton-whatsapp-flotante span {
+    display: none;
   }
 }
 

@@ -23,7 +23,6 @@ const configuracionDisponible = Boolean(
         </span>
       </a>
       <div id="datos-sesion" class="datos-sesion" hidden>
-        <span id="tiempo-sesion">Sesión segura</span>
         <button id="cerrar-sesion-admin" class="boton boton-secundario" type="button">Cerrar sesión</button>
       </div>
     </header>
@@ -47,7 +46,10 @@ const configuracionDisponible = Boolean(
         </label>
         <label class="grupo-campo">
           <span>Contraseña</span>
-          <input id="contrasena-admin" class="campo" name="contrasena" type="password" autocomplete="current-password" required />
+          <span class="campo-con-accion">
+            <input id="contrasena-admin" class="campo" name="contrasena" type="password" autocomplete="current-password" required />
+            <button id="alternar-contrasena-admin" class="boton-alternar-contrasena" type="button" aria-pressed="false">Mostrar</button>
+          </span>
         </label>
         <p id="error-login" class="mensaje-error" role="alert" hidden></p>
         <button class="boton boton-principal boton-ancho" type="submit" disabled={!configuracionDisponible}>Iniciar sesión</button>
@@ -65,6 +67,7 @@ const configuracionDisponible = Boolean(
           <button class="enlace-admin" type="button" data-seccion-admin="temas">Temas de stickers</button>
           <button class="enlace-admin" type="button" data-seccion-admin="secciones">Secciones del sitio</button>
           <button class="enlace-admin" type="button" data-seccion-admin="configuraciones">Datos comerciales</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="estilos">Estilo visual</button>
         </nav>
         <a class="enlace-ver-tienda" href="/" target="_blank">Ver tienda ↗</a>
       </aside>
@@ -102,6 +105,16 @@ const configuracionDisponible = Boolean(
             </header>
             <div class="barra-listado">
               <input class="campo" type="search" placeholder="Buscar…" data-buscar-recurso={recurso} />
+              {recurso === 'productos' && (
+                <label class="filtro-archivados">
+                  <span>Mostrar</span>
+                  <select class="selector" data-filtro-archivados>
+                    <option value="activos">No archivados</option>
+                    <option value="archivados">Solo archivados</option>
+                    <option value="todos">Todos</option>
+                  </select>
+                </label>
+              )}
               <span data-total-recurso={recurso}>Cargando…</span>
             </div>
             <div class="tabla-contenedor">
@@ -129,9 +142,32 @@ const configuracionDisponible = Boolean(
             <label class="grupo-campo"><span>TikTok</span><input class="campo" name="tiktok" type="url" /></label>
             <label class="grupo-campo"><span>Región</span><input class="campo" name="region" /></label>
             <label class="grupo-campo campo-completo"><span>Descripción general</span><textarea class="area-texto" name="descripcion_corta" rows="3"></textarea></label>
-            <label class="grupo-campo"><span>Inactividad administrativa (minutos)</span><input class="campo" name="inactividad_administrador_minutos" type="number" min="5" value="30" /></label>
             <div class="acciones-formulario campo-completo">
               <button class="boton boton-principal" type="submit">Guardar cambios</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="seccion-admin" data-panel-admin="estilos">
+          <header class="cabecera-admin">
+            <div>
+              <p class="etiqueta">Identidad de marca</p>
+              <h1>Estilo visual</h1>
+              <p>Elegí los colores y la tipografía generales. Para invertir la paleta, intercambiá el color inicial y el final.</p>
+            </div>
+          </header>
+          <form id="formulario-estilos-globales" class="formulario-admin formulario-dos-columnas">
+            <label class="grupo-campo selector-color"><span>Color inicial de la marca</span><input name="color_principal" type="color" value="#98b7ff" /></label>
+            <label class="grupo-campo selector-color"><span>Color final de la marca</span><input name="color_secundario" type="color" value="#df98ff" /></label>
+            <label class="grupo-campo selector-color"><span>Color inicial intenso</span><input name="color_principal_intenso" type="color" value="#526ca8" /></label>
+            <label class="grupo-campo selector-color"><span>Color final intenso</span><input name="color_secundario_intenso" type="color" value="#9358ad" /></label>
+            <label class="grupo-campo selector-color"><span>Fondo del sitio</span><input name="color_fondo" type="color" value="#fbfaff" /></label>
+            <label class="grupo-campo selector-color"><span>Texto principal</span><input name="color_texto" type="color" value="#252434" /></label>
+            <label class="grupo-campo selector-color"><span>Texto secundario</span><input name="color_texto_suave" type="color" value="#676579" /></label>
+            <label class="grupo-campo"><span>Tipografía general</span><select class="selector" name="fuente_principal"><option value="moderna">Moderna</option><option value="redondeada">Redondeada</option><option value="clasica">Clásica</option></select></label>
+            <p class="ayuda-estilos campo-completo">Los cambios se aplican a la tienda cuando guardás. No se permite agregar código ni estilos externos.</p>
+            <div class="acciones-formulario campo-completo">
+              <button class="boton boton-principal" type="submit">Guardar estilo visual</button>
             </div>
           </form>
         </section>

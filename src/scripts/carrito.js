@@ -125,9 +125,9 @@ function crearElementoCarrito(producto) {
   const informacion = document.createElement('div');
   const nombre = document.createElement('h3');
   nombre.textContent = producto.nombre;
-  const tipo = document.createElement('small');
-  tipo.textContent = producto.tipo_producto === 'fisico' ? 'Producto físico' : producto.tipo_producto;
-  informacion.append(nombre, tipo, crearControlesCantidad(producto));
+  const cantidad = document.createElement('small');
+  cantidad.textContent = 'Cantidad';
+  informacion.append(nombre, cantidad, crearControlesCantidad(producto));
 
   const eliminar = document.createElement('button');
   eliminar.type = 'button';

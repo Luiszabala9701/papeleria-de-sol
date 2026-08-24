@@ -3,6 +3,8 @@ import '../estilos/global.css';
 import Encabezado from '../componentes/Encabezado.astro';
 import PiePagina from '../componentes/PiePagina.astro';
 import Carrito from '../componentes/Carrito.astro';
+import BotonWhatsAppFlotante from '../componentes/BotonWhatsAppFlotante.astro';
+import { esColorHexadecimal, obtenerEstiloGlobal } from '../servicios/estilos-visuales';
 
 const {
   titulo = 'Papelería de Sol',
@@ -16,6 +18,10 @@ const {
 const rutaActual = Astro.url.pathname;
 const urlCanonica = new URL(Astro.url.pathname, Astro.site || Astro.url.origin);
 const imagenAbsoluta = new URL(imagenSocial, Astro.site || Astro.url.origin);
+const colorTema = esColorHexadecimal(configuracion?.color_principal)
+  ? configuracion.color_principal
+  : '#98b7ff';
+const estiloGlobal = obtenerEstiloGlobal(configuracion);
 ---
 
 <!doctype html>
@@ -23,7 +29,7 @@ const imagenAbsoluta = new URL(imagenSocial, Astro.site || Astro.url.origin);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#98b7ff" />
+    <meta name="theme-color" content={colorTema} />
     <meta name="description" content={descripcion} />
     {noIndexar && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={urlCanonica} />
@@ -43,7 +49,7 @@ const imagenAbsoluta = new URL(imagenSocial, Astro.site || Astro.url.origin);
     <title>{titulo}</title>
     <slot name="cabecera" />
   </head>
-  <body>
+  <body style={estiloGlobal}>
     <a class="salto-contenido" href="#contenido-principal">Saltar al contenido</a>
     {!ocultarNavegacion && (
       <Encabezado configuracion={configuracion} rutaActual={rutaActual} />
@@ -53,6 +59,7 @@ const imagenAbsoluta = new URL(imagenSocial, Astro.site || Astro.url.origin);
     </main>
     {!ocultarNavegacion && <PiePagina configuracion={configuracion} />}
     {!ocultarNavegacion && <Carrito configuracion={configuracion} />}
+    {!ocultarNavegacion && <BotonWhatsAppFlotante configuracion={configuracion} />}
 
     <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
 

@@ -9,6 +9,14 @@ export interface ConfiguracionSitio {
   region: string;
   moneda: string;
   simbolo_moneda: string;
+  color_principal?: string;
+  color_secundario?: string;
+  color_principal_intenso?: string;
+  color_secundario_intenso?: string;
+  color_fondo?: string;
+  color_texto?: string;
+  color_texto_suave?: string;
+  fuente_principal?: 'moderna' | 'redondeada' | 'clasica';
 }
 
 export interface Categoria {
@@ -84,4 +92,13 @@ export interface SeccionSitio {
   enlace_boton?: string;
   publicada: boolean;
   orden: number;
+  estilos?: Record<string, EstilosTexto>;
+}
+
+export interface EstilosTexto {
+  color?: string;
+  fuente?: 'moderna' | 'redondeada' | 'clasica';
+  tamano?: 'pequeno' | 'normal' | 'mediano' | 'grande' | 'extra_grande';
+  negrita?: boolean;
+  cursiva?: boolean;
 }

@@ -9,7 +9,15 @@
     "pais": "Argentina",
     "region": "CABA y GBA",
     "moneda": "ARS",
-    "simbolo_moneda": "$"
+    "simbolo_moneda": "$",
+    "color_principal": "#98b7ff",
+    "color_secundario": "#df98ff",
+    "color_principal_intenso": "#526ca8",
+    "color_secundario_intenso": "#9358ad",
+    "color_fondo": "#fbfaff",
+    "color_texto": "#252434",
+    "color_texto_suave": "#676579",
+    "fuente_principal": "moderna"
   },
   "secciones": [
     {
