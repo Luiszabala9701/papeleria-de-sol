@@ -27,4 +27,4 @@ Antes de probar la edición de estilos en Supabase de pruebas, abrí **SQL Edito
 
 y ejecutalo una única vez. Agrega la columna de estilos de las secciones y los colores configurables. No borra productos ni cambia los contenidos existentes.
 
-Después de aplicar ese SQL, hay que desplegar de nuevo la función `administracion` en el proyecto de pruebas para que acepte los nuevos campos y el filtro de archivados.
+La función `administracion` de Supabase de pruebas ya fue actualizada junto con estos cambios. No hace falta ejecutar otro comando después de aplicar el SQL.
