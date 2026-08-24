@@ -790,9 +790,19 @@ h3 {
 .controles-cantidad {
   display: inline-flex;
   align-items: center;
-  margin-top: 0.35rem;
   border: 1px solid var(--borde);
   border-radius: 999px;
+}
+
+.fila-cantidad-carrito {
+  display: flex;
+  align-items: center;
+  margin-top: 0.35rem;
+  gap: 15px;
+}
+
+.fila-cantidad-carrito small {
+  color: var(--tinta-suave);
 }
 
 .controles-cantidad button {
@@ -886,8 +896,11 @@ h3 {
   bottom: 1.25rem;
   display: inline-flex;
   align-items: center;
-  min-height: 3.35rem;
-  padding: 0.75rem 1rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  min-height: 0;
+  padding: 0;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 999px;
   color: #fff;
@@ -898,6 +911,10 @@ h3 {
   text-decoration: none;
   transition: transform 160ms ease, box-shadow 160ms ease;
   gap: 0.48rem;
+}
+
+.boton-whatsapp-flotante span {
+  display: none;
 }
 
 .boton-whatsapp-flotante:hover {

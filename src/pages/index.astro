@@ -16,6 +16,7 @@ const [configuracion, secciones, productos] = await Promise.all([
 ]) as [ConfiguracionSitio, SeccionSitio[], Producto[]];
 
 const principal = secciones.find((seccion) => seccion.clave === 'inicio_principal');
+const seccionDestacados = secciones.find((seccion) => seccion.clave === 'inicio_destacados');
 const destacados = productos.filter((producto) => producto.destacado).slice(0, 8);
 const escaparJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
 
@@ -77,11 +78,19 @@ const datosEstructurados = {
     <div class="contenedor">
       <header class="cabecera-seccion">
         <div>
-          <p class="etiqueta">Nuestros favoritos</p>
-          <h2>Stickers destacados</h2>
-          <p>Una pequeña muestra de la colección. En el catálogo podés buscar y combinar los diseños que quieras.</p>
+          <p class="etiqueta" style={obtenerEstiloTexto(seccionDestacados, 'subtitulo')}>
+            {seccionDestacados?.subtitulo || 'Nuestros favoritos'}
+          </p>
+          <h2 style={obtenerEstiloTexto(seccionDestacados, 'titulo')}>
+            {seccionDestacados?.titulo || 'Stickers destacados'}
+          </h2>
+          <p style={obtenerEstiloTexto(seccionDestacados, 'contenido')}>
+            {seccionDestacados?.contenido || 'Una pequeña muestra de la colección. En el catálogo podés buscar y combinar los diseños que quieras.'}
+          </p>
         </div>
-        <a class="enlace-texto" href="/catalogo?tipo=sticker">Ver los 1.000 stickers</a>
+        <a class="enlace-texto" href={seccionDestacados?.enlace_boton || '/catalogo?tipo=sticker'} style={obtenerEstiloTexto(seccionDestacados, 'texto_boton')}>
+          {seccionDestacados?.texto_boton || 'Ver los 1.000 stickers'}
+        </a>
       </header>
 
       <div class="cuadricula-productos">

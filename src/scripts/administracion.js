@@ -27,17 +27,15 @@ const formularioEstilosGlobales = document.querySelector('#formulario-estilos-gl
 const botonAlternarContrasena = document.querySelector('#alternar-contrasena-admin');
 
 const DESCRIPCIONES = {
-  productos: 'Creá stickers, plantillas y productos físicos; controlá su precio, stock y publicación.',
-  categorias: 'Organizá los productos en categorías generales administrables.',
-  temas: 'Creá temas como fútbol, memes o cine y asigná cada sticker a uno o varios.',
-  secciones: 'Modificá títulos, textos, botones y el orden de las secciones públicas.',
+  productos: 'Creá stickers, plantillas y productos físicos con precio, imágenes y publicación.',
+  categorias: 'Creá categorías específicas para cada tipo de producto, como Fútbol para stickers.',
+  secciones: 'Modificá los textos y los estilos de los bloques públicos del sitio.',
 };
 
 const ESQUEMAS = {
   productos: [
     { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', obligatorio: true },
-    { nombre: 'slug', etiqueta: 'Dirección amigable', tipo: 'text', ayuda: 'Se genera automáticamente si queda vacía.' },
-    { nombre: 'sku', etiqueta: 'Código interno', tipo: 'text' },
+    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', ayuda: 'Código opcional para identificar el producto internamente.' },
     {
       nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true,
       opciones: [
@@ -47,12 +45,11 @@ const ESQUEMAS = {
       ],
     },
     { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias' },
-    { nombre: 'temas_ids', etiqueta: 'Temas', tipo: 'select-temas', multiple: true },
-    { nombre: 'descripcion_corta', etiqueta: 'Descripción corta', tipo: 'textarea', obligatorio: true, completo: true },
-    { nombre: 'descripcion', etiqueta: 'Descripción completa', tipo: 'textarea', obligatorio: true, completo: true },
-    { nombre: 'precio', etiqueta: 'Precio en pesos (opcional)', tipo: 'number', minimo: 0 },
+    { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', obligatorio: true, completo: true },
+    { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
     {
-      nombre: 'estado', etiqueta: 'Estado', tipo: 'select', obligatorio: true,
+      nombre: 'estado', etiqueta: 'Estado de publicación', tipo: 'select', obligatorio: true,
+      ayudaEmergente: 'Borrador guarda el producto sin mostrarlo en la tienda. Publicado lo muestra al público y Oculto lo retira temporalmente sin borrarlo.',
       opciones: [
         { valor: 'borrador', texto: 'Borrador' },
         { valor: 'publicado', texto: 'Publicado' },
@@ -60,20 +57,17 @@ const ESQUEMAS = {
       ],
     },
     { nombre: 'controla_stock', etiqueta: 'Controlar stock', tipo: 'checkbox' },
-    { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0 },
+    { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0, dependeDe: 'controla_stock' },
     { nombre: 'destacado', etiqueta: 'Mostrar como destacado', tipo: 'checkbox' },
-    { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
-    { nombre: 'meta_titulo', etiqueta: 'Título SEO', tipo: 'text', completo: true },
-    { nombre: 'meta_descripcion', etiqueta: 'Descripción SEO', tipo: 'textarea', completo: true },
-    { nombre: 'imagen_nueva', etiqueta: 'Nueva imagen (máximo 5 MB)', tipo: 'file', completo: true },
+    { nombre: 'imagenes_nuevas', etiqueta: 'Imágenes del producto (máximo 5)', tipo: 'file', multiple: true, completo: true, ayuda: 'Podés seleccionar varias imágenes a la vez. Cada archivo puede pesar hasta 5 MB.' },
+    { nombre: 'meta_titulo', etiqueta: 'Título para buscadores', tipo: 'text', completo: true, avanzado: true, ayuda: 'Es el título que podría mostrarse en Google. Si se deja vacío, se usa el nombre del producto.' },
+    { nombre: 'meta_descripcion', etiqueta: 'Descripción para buscadores', tipo: 'textarea', completo: true, avanzado: true, ayuda: 'Es el texto breve que podría mostrarse debajo del título en Google. Si se deja vacío, se usa la descripción del producto.' },
   ],
   categorias: [
     { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', obligatorio: true },
-    { nombre: 'slug', etiqueta: 'Dirección amigable', tipo: 'text' },
     {
-      nombre: 'tipo_producto', etiqueta: 'Tipo relacionado', tipo: 'select',
+      nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true,
       opciones: [
-        { valor: '', texto: 'Todos' },
         { valor: 'sticker', texto: 'Sticker' },
         { valor: 'plantilla', texto: 'Plantilla' },
         { valor: 'fisico', texto: 'Producto físico' },
@@ -81,13 +75,6 @@ const ESQUEMAS = {
     },
     { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', completo: true },
     { nombre: 'publicada', etiqueta: 'Publicada', tipo: 'checkbox' },
-    { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
-  ],
-  temas: [
-    { nombre: 'nombre', etiqueta: 'Nombre del tema', tipo: 'text', obligatorio: true },
-    { nombre: 'slug', etiqueta: 'Dirección amigable', tipo: 'text' },
-    { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', completo: true },
-    { nombre: 'publicado', etiqueta: 'Publicado', tipo: 'checkbox' },
     { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
   ],
   secciones: [
@@ -120,11 +107,6 @@ const COLUMNAS = {
     { clave: 'publicada', texto: 'Publicación' },
     { clave: 'orden', texto: 'Orden' },
   ],
-  temas: [
-    { clave: 'nombre', texto: 'Tema' },
-    { clave: 'publicado', texto: 'Publicación' },
-    { clave: 'orden', texto: 'Orden' },
-  ],
   secciones: [
     { clave: 'titulo', texto: 'Sección' },
     { clave: 'clave', texto: 'Clave' },
@@ -138,7 +120,7 @@ let recursoDialogo = null;
 let idEdicion = null;
 let registrosActuales = new Map();
 let categorias = [];
-let temas = [];
+let registroEdicion = null;
 let minutosInactividad = 30;
 let ultimaActividadConfirmada = Date.now();
 
@@ -227,7 +209,6 @@ async function cargarResumen() {
     productos: 'Productos',
     publicados: 'Publicados',
     categorias: 'Categorías',
-    temas: 'Temas',
     secciones: 'Secciones',
   };
 
@@ -244,10 +225,7 @@ async function cargarResumen() {
 }
 
 async function cargarAuxiliares() {
-  [categorias, temas] = await Promise.all([
-    invocar('listar', { recurso: 'categorias' }),
-    invocar('listar', { recurso: 'temas' }),
-  ]);
+  categorias = await invocar('listar', { recurso: 'categorias' });
 }
 
 function valorVisible(registro, clave) {
@@ -370,6 +348,41 @@ function crearOpcion(valor, texto, seleccionada = false) {
   return opcion;
 }
 
+function crearEtiqueta(definicion) {
+  const etiqueta = document.createElement('span');
+  etiqueta.textContent = definicion.etiqueta;
+  if (definicion.obligatorio) {
+    const obligatorio = document.createElement('b');
+    obligatorio.className = 'indicador-obligatorio';
+    obligatorio.textContent = ' *';
+    obligatorio.setAttribute('aria-label', 'Campo obligatorio');
+    etiqueta.append(obligatorio);
+  }
+  return etiqueta;
+}
+
+function actualizarCategoriasDisponibles() {
+  const selectorTipo = formularioRecurso?.elements.tipo_producto;
+  const selectorCategoria = formularioRecurso?.elements.categoria_id;
+  if (!selectorTipo || !selectorCategoria) return;
+
+  const categoriaSeleccionada = selectorCategoria.value;
+  const disponibles = categorias.filter((categoria) => categoria.tipo_producto === selectorTipo.value);
+  selectorCategoria.replaceChildren(crearOpcion('', 'Sin categoría', !categoriaSeleccionada));
+  disponibles.forEach((categoria) => selectorCategoria.append(
+    crearOpcion(categoria.id, categoria.nombre, categoria.id === categoriaSeleccionada),
+  ));
+}
+
+function actualizarCampoStock() {
+  const controlaStock = formularioRecurso?.elements.controla_stock;
+  const stock = formularioRecurso?.elements.stock;
+  if (!controlaStock || !stock) return;
+  stock.disabled = !controlaStock.checked;
+  stock.setAttribute('aria-disabled', String(!controlaStock.checked));
+  if (!controlaStock.checked) stock.value = '';
+}
+
 function crearControlEstilo(etiqueta, control) {
   const contenedor = document.createElement('label');
   contenedor.className = 'control-estilo-texto';
@@ -442,8 +455,7 @@ function crearCampo(definicion, registro = {}) {
 
   const contenedor = document.createElement('label');
   contenedor.className = `grupo-campo${definicion.completo ? ' campo-completo' : ''}`;
-  const etiqueta = document.createElement('span');
-  etiqueta.textContent = definicion.etiqueta;
+  const etiqueta = crearEtiqueta(definicion);
 
   let campo;
   if (definicion.tipo === 'textarea') {
@@ -457,14 +469,10 @@ function crearCampo(definicion, registro = {}) {
     campo.multiple = Boolean(definicion.multiple);
 
     if (definicion.tipo === 'select-categorias') {
+      const tipoProducto = registro.tipo_producto || 'sticker';
       campo.append(crearOpcion('', 'Sin categoría', !registro.categoria_id));
-      categorias.forEach((categoria) => campo.append(
+      categorias.filter((categoria) => categoria.tipo_producto === tipoProducto).forEach((categoria) => campo.append(
         crearOpcion(categoria.id, categoria.nombre, registro.categoria_id === categoria.id),
-      ));
-    } else if (definicion.tipo === 'select-temas') {
-      const elegidos = registro.productos_temas?.map((relacion) => relacion.tema?.id) || [];
-      temas.forEach((tema) => campo.append(
-        crearOpcion(tema.id, tema.nombre, elegidos.includes(tema.id)),
       ));
     } else {
       definicion.opciones.forEach((opcion) => campo.append(
@@ -482,11 +490,18 @@ function crearCampo(definicion, registro = {}) {
       campo.value = registro[definicion.nombre] ?? '';
     }
     if (definicion.minimo !== undefined) campo.min = String(definicion.minimo);
-    if (definicion.tipo === 'file') campo.accept = 'image/jpeg,image/png,image/webp,image/avif';
+    if (definicion.tipo === 'file') {
+      campo.accept = 'image/jpeg,image/png,image/webp,image/avif';
+      campo.multiple = Boolean(definicion.multiple);
+    }
   }
 
   campo.name = definicion.nombre;
   campo.required = Boolean(definicion.obligatorio);
+  if (definicion.dependeDe && !registro[definicion.dependeDe]) {
+    campo.disabled = true;
+    campo.setAttribute('aria-disabled', 'true');
+  }
   contenedor.append(etiqueta, campo);
 
   if (definicion.ayuda) {
@@ -496,17 +511,50 @@ function crearCampo(definicion, registro = {}) {
     contenedor.append(ayuda);
   }
 
+  if (definicion.ayudaEmergente) {
+    const ayuda = document.createElement('details');
+    ayuda.className = 'ayuda-emergente';
+    const resumen = document.createElement('summary');
+    resumen.textContent = '!';
+    resumen.setAttribute('aria-label', 'Explicación sobre este campo');
+    const texto = document.createElement('p');
+    texto.textContent = definicion.ayudaEmergente;
+    ayuda.append(resumen, texto);
+    etiqueta.append(ayuda);
+  }
+
   return contenedor;
 }
 
 function abrirDialogo(recurso, registro = null) {
   recursoDialogo = recurso;
   idEdicion = registro?.id || null;
+  registroEdicion = registro;
   tituloDialogo.textContent = registro ? `Editar ${registro.nombre || registro.titulo}` : 'Crear nuevo registro';
   camposFormulario.replaceChildren();
-  ESQUEMAS[recurso].forEach((definicion) => camposFormulario.append(crearCampo(definicion, registro || {})));
+  const definiciones = ESQUEMAS[recurso];
+  definiciones.filter((definicion) => !definicion.avanzado).forEach((definicion) => {
+    camposFormulario.append(crearCampo(definicion, registro || {}));
+  });
+  const avanzadas = definiciones.filter((definicion) => definicion.avanzado);
+  if (avanzadas.length) {
+    const detalle = document.createElement('details');
+    detalle.className = 'opciones-avanzadas campo-completo';
+    const resumen = document.createElement('summary');
+    resumen.textContent = 'Opciones avanzadas de SEO';
+    const descripcion = document.createElement('p');
+    descripcion.textContent = 'Son opcionales y ayudan a que buscadores como Google entiendan mejor este producto.';
+    const contenido = document.createElement('div');
+    contenido.className = 'contenido-opciones-avanzadas formulario-dos-columnas';
+    avanzadas.forEach((definicion) => contenido.append(crearCampo(definicion, registro || {})));
+    detalle.append(resumen, descripcion, contenido);
+    camposFormulario.append(detalle);
+  }
   ocultarError(errorFormulario);
-  dialogo.showModal();
+  actualizarCategoriasDisponibles();
+  actualizarCampoStock();
+  document.body.classList.add('dialogo-abierto');
+  if (!dialogo.open) dialogo.showModal();
 }
 
 function obtenerDatosFormulario() {
@@ -539,29 +587,33 @@ function obtenerDatosFormulario() {
   return datos;
 }
 
-async function subirImagenSiCorresponde(producto) {
+async function subirImagenesSiCorresponde(producto) {
   if (recursoDialogo !== 'productos') return;
-  const archivo = formularioRecurso.elements.imagen_nueva?.files?.[0];
-  if (!archivo) return;
-  if (archivo.size > 5 * 1024 * 1024) throw new Error('La imagen supera el máximo de 5 MB.');
+  const archivos = Array.from(formularioRecurso.elements.imagenes_nuevas?.files || []);
+  if (!archivos.length) return;
+  const cantidadExistente = registroEdicion?.imagenes?.length || 0;
+  if (cantidadExistente + archivos.length > 5) throw new Error('Un producto puede tener como máximo 5 imágenes.');
 
-  const preparacion = await invocar('preparar_subida', {
-    datos: { producto_id: producto.id, tipo: archivo.type },
-  });
-  const { error } = await cliente.storage
-    .from('productos')
-    .uploadToSignedUrl(preparacion.ruta, preparacion.token, archivo, { contentType: archivo.type });
-  if (error) throw error;
+  for (const [indice, archivo] of archivos.entries()) {
+    if (archivo.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivo.name} supera el máximo de 5 MB.`);
+    const preparacion = await invocar('preparar_subida', {
+      datos: { producto_id: producto.id, tipo: archivo.type },
+    });
+    const { error } = await cliente.storage
+      .from('productos')
+      .uploadToSignedUrl(preparacion.ruta, preparacion.token, archivo, { contentType: archivo.type });
+    if (error) throw error;
 
-  await invocar('registrar_imagen', {
-    datos: {
-      producto_id: producto.id,
-      ruta: preparacion.ruta,
-      texto_alternativo: `${producto.nombre} de Papelería de Sol`,
-      es_principal: true,
-      orden: 1,
-    },
-  });
+    await invocar('registrar_imagen', {
+      datos: {
+        producto_id: producto.id,
+        ruta: preparacion.ruta,
+        texto_alternativo: `${producto.nombre} de Papelería de Sol`,
+        es_principal: cantidadExistente === 0 && indice === 0,
+        orden: cantidadExistente + indice + 1,
+      },
+    });
+  }
 }
 
 async function cambiarSeccion(recurso) {
@@ -574,8 +626,11 @@ async function cambiarSeccion(recurso) {
   );
 
   if (recurso === 'resumen') await cargarResumen();
-  else if (['productos', 'categorias', 'temas', 'secciones'].includes(recurso)) await cargarRecurso(recurso);
-  else if (['configuraciones', 'estilos'].includes(recurso)) await cargarConfiguraciones();
+  else if (recurso === 'secciones') {
+    await Promise.all([cargarRecurso(recurso), cargarConfiguraciones()]);
+  } else if (['productos', 'categorias'].includes(recurso)) {
+    await cargarRecurso(recurso);
+  }
 }
 
 async function cargarConfiguraciones() {
@@ -678,6 +733,11 @@ document.querySelectorAll('[data-buscar-recurso]').forEach((campo) => {
 
 document.querySelector('[data-filtro-archivados]')?.addEventListener('change', () => cargarRecurso('productos'));
 
+formularioRecurso?.addEventListener('change', (evento) => {
+  if (evento.target.name === 'tipo_producto') actualizarCategoriasDisponibles();
+  if (evento.target.name === 'controla_stock') actualizarCampoStock();
+});
+
 formularioRecurso?.addEventListener('submit', async (evento) => {
   evento.preventDefault();
   ocultarError(errorFormulario);
@@ -691,10 +751,11 @@ formularioRecurso?.addEventListener('submit', async (evento) => {
       id: idEdicion,
       datos: obtenerDatosFormulario(),
     });
-    await subirImagenSiCorresponde(producto);
+    await subirImagenesSiCorresponde(producto);
     dialogo.close();
+    document.body.classList.remove('dialogo-abierto');
     notificar('Contenido guardado correctamente.');
-    if (['categorias', 'temas'].includes(recursoDialogo)) await cargarAuxiliares();
+    if (recursoDialogo === 'categorias') await cargarAuxiliares();
     await cargarRecurso(recursoDialogo);
   } catch (error) {
     mostrarError(errorFormulario, error.message);
@@ -726,8 +787,14 @@ formularioEstilosGlobales?.addEventListener('submit', async (evento) => {
   }
 });
 
-document.querySelector('#cerrar-dialogo')?.addEventListener('click', () => dialogo.close());
-document.querySelector('#cancelar-dialogo')?.addEventListener('click', () => dialogo.close());
+function cerrarDialogo() {
+  dialogo.close();
+  document.body.classList.remove('dialogo-abierto');
+}
+
+document.querySelector('#cerrar-dialogo')?.addEventListener('click', cerrarDialogo);
+document.querySelector('#cancelar-dialogo')?.addEventListener('click', cerrarDialogo);
+dialogo?.addEventListener('close', () => document.body.classList.remove('dialogo-abierto'));
 botonCerrarSesion?.addEventListener('click', cerrarSesionCompleta);
 
 setInterval(() => {

@@ -2,7 +2,6 @@ const datosCatalogo = document.querySelector('#datos-catalogo');
 const galeria = document.querySelector('#galeria-catalogo');
 const buscador = document.querySelector('#buscador-catalogo');
 const filtroTipo = document.querySelector('#filtro-tipo');
-const filtroTema = document.querySelector('#filtro-tema');
 const informacionResultados = document.querySelector('#informacion-resultados');
 const informacionPagina = document.querySelector('#informacion-pagina-catalogo');
 const botonAnterior = document.querySelector('#pagina-anterior');
@@ -85,19 +84,17 @@ function crearTarjeta(producto) {
 
   const descripcion = document.createElement('p');
   descripcion.className = 'descripcion-producto';
-  descripcion.textContent = producto.descripcion_corta || '';
+  descripcion.textContent = producto.descripcion || '';
 
   const pie = document.createElement('div');
   pie.className = 'pie-producto';
   const precio = document.createElement('strong');
   precio.className = 'precio-producto';
-  precio.textContent = producto.precio == null
-    ? 'Consultar'
-    : new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: producto.moneda || 'ARS',
-        maximumFractionDigits: 0,
-      }).format(producto.precio);
+  precio.textContent = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: producto.moneda || 'ARS',
+    maximumFractionDigits: 0,
+  }).format(producto.precio);
 
   const agregar = document.createElement('button');
   agregar.type = 'button';
@@ -116,16 +113,14 @@ function crearTarjeta(producto) {
 function productosFiltrados() {
   const termino = textoNormalizado(buscador?.value);
   const tipo = filtroTipo?.value || '';
-  const tema = filtroTema?.value || '';
 
   return productos.filter((producto) => {
     const coincideTipo = !tipo || producto.tipo_producto === tipo;
-    const coincideTema = !tema || producto.temas?.some((elemento) => elemento.slug === tema);
     const texto = textoNormalizado(
-      [producto.nombre, producto.sku, producto.descripcion_corta, ...(producto.temas || []).map((elemento) => elemento.nombre)].join(' '),
+      [producto.nombre, producto.sku, producto.descripcion].join(' '),
     );
     const coincideBusqueda = !termino || texto.includes(termino);
-    return coincideTipo && coincideTema && coincideBusqueda;
+    return coincideTipo && coincideBusqueda;
   });
 }
 
@@ -133,7 +128,6 @@ function actualizarDireccion() {
   const parametros = new URLSearchParams();
   if (buscador?.value) parametros.set('buscar', buscador.value);
   if (filtroTipo?.value) parametros.set('tipo', filtroTipo.value);
-  if (filtroTema?.value) parametros.set('tema', filtroTema.value);
   const consulta = parametros.toString();
   history.replaceState(null, '', `${location.pathname}${consulta ? `?${consulta}` : ''}`);
 }
@@ -179,11 +173,9 @@ function reiniciarYRenderizar() {
 const parametros = new URLSearchParams(location.search);
 if (buscador) buscador.value = parametros.get('buscar') || '';
 if (filtroTipo) filtroTipo.value = parametros.get('tipo') || '';
-if (filtroTema) filtroTema.value = parametros.get('tema') || '';
 
 buscador?.addEventListener('input', reiniciarYRenderizar);
 filtroTipo?.addEventListener('change', reiniciarYRenderizar);
-filtroTema?.addEventListener('change', reiniciarYRenderizar);
 
 botonAnterior?.addEventListener('click', () => {
   paginaActual -= 1;

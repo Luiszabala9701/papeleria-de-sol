@@ -20,18 +20,16 @@ function crearStickersDemostracion() {
       nombre: `Sticker #${numero}`,
       slug: `sticker-${numero}`,
       sku: `ST-${String(numero).padStart(4, '0')}`,
-      descripcion_corta: `Sticker creativo número ${numero}.`,
       descripcion: `Diseño de sticker número ${numero} disponible para consultar por WhatsApp.`,
       tipo_producto: 'sticker',
-      precio: null,
+      precio: 100,
       moneda: 'ARS',
       controla_stock: false,
       stock: null,
       destacado: numero <= 8,
       estado: 'publicado',
       orden: numero,
-      categoria: contenidoDemostracion.categorias[0],
-      temas: [],
+      categoria: null,
       imagenes: [
         {
           id: `imagen-sticker-${numero}`,
@@ -48,11 +46,7 @@ function crearStickersDemostracion() {
 function normalizarProducto(producto) {
   return {
     ...producto,
-    precio:
-      producto.precio === null || producto.precio === undefined
-        ? null
-        : Number(producto.precio),
-    temas: producto.productos_temas?.map((relacion) => relacion.tema) || producto.temas || [],
+    precio: Number(producto.precio),
     imagenes: [...(producto.imagenes || [])].sort(
       (primera, segunda) => primera.orden - segunda.orden,
     ),
@@ -127,19 +121,6 @@ export async function obtenerCategoriasPublicadas() {
   );
 }
 
-export async function obtenerTemasPublicados() {
-  return ejecutarConRespaldo(
-    'No se pudieron obtener los temas',
-    (cliente) =>
-      cliente
-        .from('temas')
-        .select('*')
-        .eq('publicado', true)
-        .order('orden'),
-    () => [],
-  );
-}
-
 export async function obtenerProductosPublicados({ tipo } = {}) {
   const datos = await ejecutarConRespaldo(
     'No se pudieron obtener los productos',
@@ -150,8 +131,7 @@ export async function obtenerProductosPublicados({ tipo } = {}) {
           `
             *,
             categoria:categorias(*),
-            imagenes(*),
-            productos_temas(tema:temas(*))
+            imagenes(*)
           `,
         )
         .eq('estado', 'publicado')
@@ -184,8 +164,7 @@ export async function obtenerProductoPorSlug(slug) {
             *,
             categoria:categorias(*),
             imagenes(*),
-            variantes(*),
-            productos_temas(tema:temas(*))
+            variantes(*)
           `,
         )
         .eq('slug', slug)

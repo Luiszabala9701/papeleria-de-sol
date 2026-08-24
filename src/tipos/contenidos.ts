@@ -9,6 +9,11 @@ export interface ConfiguracionSitio {
   region: string;
   moneda: string;
   simbolo_moneda: string;
+  lema_marca?: string;
+  aviso_superior?: string;
+  descripcion_footer?: string;
+  titulo_footer_explorar?: string;
+  titulo_footer_contacto?: string;
   color_principal?: string;
   color_secundario?: string;
   color_principal_intenso?: string;
@@ -26,15 +31,6 @@ export interface Categoria {
   descripcion?: string;
   tipo_producto?: TipoProducto;
   publicada: boolean;
-  orden: number;
-}
-
-export interface Tema {
-  id: string;
-  nombre: string;
-  slug: string;
-  descripcion?: string;
-  publicado: boolean;
   orden: number;
 }
 
@@ -65,9 +61,8 @@ export interface Producto {
   nombre: string;
   slug: string;
   sku?: string;
-  descripcion_corta: string;
   descripcion: string;
-  precio: number | null;
+  precio: number;
   moneda: string;
   controla_stock: boolean;
   stock: number | null;
@@ -76,7 +71,6 @@ export interface Producto {
   orden: number;
   meta_titulo?: string;
   meta_descripcion?: string;
-  temas: Tema[];
   imagenes: ImagenProducto[];
   variantes?: VarianteProducto[];
 }

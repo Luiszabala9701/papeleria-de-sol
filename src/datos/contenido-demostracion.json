@@ -10,6 +10,11 @@
     "region": "CABA y GBA",
     "moneda": "ARS",
     "simbolo_moneda": "$",
+    "lema_marca": "Papelería creativa",
+    "aviso_superior": "Pedidos personalizados en CABA y GBA · Consultanos por WhatsApp",
+    "descripcion_footer": "Papelería creativa, stickers y productos personalizados con atención directa en CABA y GBA.",
+    "titulo_footer_explorar": "Explorá",
+    "titulo_footer_contacto": "Contacto",
     "color_principal": "#98b7ff",
     "color_secundario": "#df98ff",
     "color_principal_intenso": "#526ca8",
@@ -31,53 +36,15 @@
       "orden": 1
     },
     {
-      "clave": "inicio_stickers",
-      "titulo": "Stickers para cada idea",
-      "subtitulo": "Más de 1.000 diseños disponibles",
-      "contenido": "Buscá por número, armá tu selección y envianos el pedido por WhatsApp.",
-      "texto_boton": "Ver stickers",
+      "clave": "inicio_destacados",
+      "titulo": "Stickers destacados",
+      "subtitulo": "Nuestros favoritos",
+      "contenido": "Una pequeña muestra de la colección. En el catálogo podés buscar y combinar los diseños que quieras.",
+      "texto_boton": "Ver los 1.000 stickers",
       "enlace_boton": "/catalogo?tipo=sticker",
       "publicada": true,
       "orden": 2
-    },
-    {
-      "clave": "inicio_plantillas",
-      "titulo": "Plantillas creativas",
-      "subtitulo": "Diseños editables e imprimibles",
-      "contenido": "Muy pronto vas a encontrar nuevas colecciones administradas desde nuestro catálogo.",
-      "texto_boton": "Ver plantillas",
-      "enlace_boton": "/plantillas",
-      "publicada": true,
-      "orden": 3
     }
   ],
-  "categorias": [
-    {
-      "id": "demostracion-stickers",
-      "nombre": "Stickers",
-      "slug": "stickers",
-      "descripcion": "Colección completa de stickers",
-      "tipo_producto": "sticker",
-      "publicada": true,
-      "orden": 1
-    },
-    {
-      "id": "demostracion-plantillas",
-      "nombre": "Plantillas",
-      "slug": "plantillas",
-      "descripcion": "Plantillas editables e imprimibles",
-      "tipo_producto": "plantilla",
-      "publicada": true,
-      "orden": 2
-    },
-    {
-      "id": "demostracion-fisicos",
-      "nombre": "Productos físicos",
-      "slug": "productos-fisicos",
-      "descripcion": "Productos preparados y personalizados",
-      "tipo_producto": "fisico",
-      "publicada": true,
-      "orden": 3
-    }
-  ]
+  "categorias": []
 }

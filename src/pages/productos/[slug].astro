@@ -20,13 +20,12 @@ if (!producto) {
 
 const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
 const esSticker = producto.tipo_producto === 'sticker';
-const precio = producto.precio === null
-  ? 'Precio a consultar'
-  : new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: producto.moneda || 'ARS',
-      maximumFractionDigits: 0,
-    }).format(producto.precio);
+const precio = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: producto.moneda || 'ARS',
+  maximumFractionDigits: 0,
+}).format(producto.precio);
+const tituloSeo = producto.meta_titulo?.trim() || `${producto.nombre} | Papelería de Sol`;
 
 const datosCarrito = JSON.stringify({
   id: producto.id,
@@ -42,7 +41,7 @@ const datosEstructurados = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: producto.nombre,
-  description: producto.descripcion_corta,
+  description: producto.descripcion,
   image: imagen?.url_publica,
   sku: producto.sku,
   brand: { '@type': 'Brand', name: 'Papelería de Sol' },
@@ -50,8 +49,8 @@ const datosEstructurados = JSON.stringify({
 ---
 
 <DisenoPrincipal
-  titulo={`${producto.nombre} | Papelería de Sol`}
-  descripcion={producto.meta_descripcion || producto.descripcion_corta}
+  titulo={tituloSeo}
+  descripcion={producto.meta_descripcion || producto.descripcion}
   configuracion={configuracion}
   imagenSocial={imagen?.url_publica}
 >
@@ -77,7 +76,7 @@ const datosEstructurados = JSON.stringify({
       <p class="descripcion-detalle">{producto.descripcion}</p>
 
       <ul class="lista-detalle">
-        {producto.sku && <li><strong>Código:</strong> {producto.sku}</li>}
+        {producto.sku && <li><strong>SKU:</strong> {producto.sku}</li>}
         {producto.categoria?.nombre && <li><strong>Categoría:</strong> {producto.categoria.nombre}</li>}
         {producto.controla_stock && <li><strong>Disponibilidad:</strong> {Number(producto.stock) > 0 ? 'En stock' : 'Consultar'}</li>}
       </ul>

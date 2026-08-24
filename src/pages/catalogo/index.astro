@@ -1,18 +1,16 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import TarjetaProducto from '../../componentes/TarjetaProducto.astro';
-import type { ConfiguracionSitio, Producto, Tema } from '../../tipos/contenidos';
+import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
   obtenerProductosPublicados,
-  obtenerTemasPublicados,
 } from '../../servicios/repositorio-contenidos.js';
 
-const [configuracion, productos, temas] = await Promise.all([
+const [configuracion, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
   obtenerProductosPublicados(),
-  obtenerTemasPublicados(),
-]) as [ConfiguracionSitio, Producto[], Tema[]];
+]) as [ConfiguracionSitio, Producto[]];
 
 const productosIniciales = productos.slice(0, 48);
 const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
@@ -42,13 +40,6 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
           <option value="sticker">Stickers</option>
           <option value="plantilla">Plantillas</option>
           <option value="fisico">Productos físicos</option>
-        </select>
-      </label>
-      <label>
-        <span class="solo-lectores">Tema</span>
-        <select id="filtro-tema" class="selector">
-          <option value="">Todos los temas</option>
-          {temas.map((tema) => <option value={tema.slug}>{tema.nombre}</option>)}
         </select>
       </label>
     </div>

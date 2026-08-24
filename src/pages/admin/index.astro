@@ -64,10 +64,7 @@ const configuracionDisponible = Boolean(
           <button class="enlace-admin activo" type="button" data-seccion-admin="resumen">Resumen</button>
           <button class="enlace-admin" type="button" data-seccion-admin="productos">Productos</button>
           <button class="enlace-admin" type="button" data-seccion-admin="categorias">Categorías</button>
-          <button class="enlace-admin" type="button" data-seccion-admin="temas">Temas de stickers</button>
-          <button class="enlace-admin" type="button" data-seccion-admin="secciones">Secciones del sitio</button>
-          <button class="enlace-admin" type="button" data-seccion-admin="configuraciones">Datos comerciales</button>
-          <button class="enlace-admin" type="button" data-seccion-admin="estilos">Estilo visual</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="secciones">Contenido del sitio</button>
         </nav>
         <a class="enlace-ver-tienda" href="/" target="_blank">Ver tienda ↗</a>
       </aside>
@@ -85,7 +82,7 @@ const configuracionDisponible = Boolean(
           <div class="tarjeta-ayuda">
             <h2>Primeros pasos</h2>
             <ol>
-              <li>Creá categorías y temas para ordenar el catálogo.</li>
+              <li>Creá categorías según el tipo de producto, por ejemplo Fútbol para stickers.</li>
               <li>Agregá productos físicos, plantillas o nuevos stickers.</li>
               <li>Subí una imagen optimizada y completá la información para SEO.</li>
               <li>Publicá el producto cuando esté listo para aparecer en la tienda.</li>
@@ -93,12 +90,12 @@ const configuracionDisponible = Boolean(
           </div>
         </section>
 
-        {['productos', 'categorias', 'temas', 'secciones'].map((recurso) => (
+        {['productos', 'categorias', 'secciones'].map((recurso) => (
           <section class="seccion-admin" data-panel-admin={recurso}>
             <header class="cabecera-admin">
               <div>
                 <p class="etiqueta">Gestión de contenidos</p>
-                <h1>{recurso === 'temas' ? 'Temas de stickers' : recurso[0].toUpperCase() + recurso.slice(1)}</h1>
+                <h1>{recurso === 'secciones' ? 'Contenido del sitio' : recurso[0].toUpperCase() + recurso.slice(1)}</h1>
                 <p data-descripcion-recurso></p>
               </div>
               <button class="boton boton-principal" type="button" data-nuevo-recurso={recurso}>Crear nuevo</button>
@@ -123,54 +120,53 @@ const configuracionDisponible = Boolean(
                 <tbody data-lista-recurso={recurso}></tbody>
               </table>
             </div>
+            {recurso === 'secciones' && (
+              <div class="contenidos-globales">
+                <section class="tarjeta-contenido-global">
+                  <p class="etiqueta">Marca, cabecera y pie</p>
+                  <h2>Contacto y textos generales</h2>
+                  <p>Estos datos se muestran en la cabecera, el footer y los enlaces de contacto de la tienda.</p>
+                  <form id="formulario-configuraciones" class="formulario-dos-columnas">
+                    <label class="grupo-campo"><span>Nombre de la marca</span><input class="campo" name="nombre_marca" required /></label>
+                    <label class="grupo-campo"><span>Lema debajo del logo</span><input class="campo" name="lema_marca" /></label>
+                    <label class="grupo-campo campo-completo"><span>Mensaje superior</span><input class="campo" name="aviso_superior" /></label>
+                    <label class="grupo-campo"><span>WhatsApp internacional</span><input class="campo" name="whatsapp" inputmode="numeric" required /></label>
+                    <label class="grupo-campo"><span>Correo comercial</span><input class="campo" name="correo" type="email" required /></label>
+                    <label class="grupo-campo"><span>Instagram</span><input class="campo" name="instagram" type="url" /></label>
+                    <label class="grupo-campo"><span>TikTok</span><input class="campo" name="tiktok" type="url" /></label>
+                    <label class="grupo-campo"><span>Región</span><input class="campo" name="region" /></label>
+                    <label class="grupo-campo campo-completo"><span>Descripción general</span><textarea class="area-texto" name="descripcion_corta" rows="3"></textarea></label>
+                    <label class="grupo-campo campo-completo"><span>Texto descriptivo del footer</span><textarea class="area-texto" name="descripcion_footer" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Título de enlaces del footer</span><input class="campo" name="titulo_footer_explorar" /></label>
+                    <label class="grupo-campo"><span>Título de contacto del footer</span><input class="campo" name="titulo_footer_contacto" /></label>
+                    <div class="acciones-formulario campo-completo">
+                      <button class="boton boton-principal" type="submit">Guardar contenido general</button>
+                    </div>
+                  </form>
+                </section>
+
+                <details class="tarjeta-contenido-global opciones-contenido-global">
+                  <summary>Paleta y tipografía general</summary>
+                  <p>Estos colores se usan en todo el sitio. Para invertir la paleta, intercambiá el color inicial y el final.</p>
+                  <form id="formulario-estilos-globales" class="formulario-dos-columnas">
+                    <label class="grupo-campo selector-color"><span>Color inicial de la marca</span><input name="color_principal" type="color" value="#98b7ff" /></label>
+                    <label class="grupo-campo selector-color"><span>Color final de la marca</span><input name="color_secundario" type="color" value="#df98ff" /></label>
+                    <label class="grupo-campo selector-color"><span>Color inicial intenso</span><input name="color_principal_intenso" type="color" value="#526ca8" /></label>
+                    <label class="grupo-campo selector-color"><span>Color final intenso</span><input name="color_secundario_intenso" type="color" value="#9358ad" /></label>
+                    <label class="grupo-campo selector-color"><span>Fondo del sitio</span><input name="color_fondo" type="color" value="#fbfaff" /></label>
+                    <label class="grupo-campo selector-color"><span>Texto principal</span><input name="color_texto" type="color" value="#252434" /></label>
+                    <label class="grupo-campo selector-color"><span>Texto secundario</span><input name="color_texto_suave" type="color" value="#676579" /></label>
+                    <label class="grupo-campo"><span>Tipografía general</span><select class="selector" name="fuente_principal"><option value="moderna">Moderna</option><option value="redondeada">Redondeada</option><option value="clasica">Clásica</option></select></label>
+                    <div class="acciones-formulario campo-completo">
+                      <button class="boton boton-principal" type="submit">Guardar paleta y tipografía</button>
+                    </div>
+                  </form>
+                </details>
+              </div>
+            )}
           </section>
         ))}
 
-        <section class="seccion-admin" data-panel-admin="configuraciones">
-          <header class="cabecera-admin">
-            <div>
-              <p class="etiqueta">Información pública</p>
-              <h1>Datos comerciales</h1>
-              <p>Estos datos aparecen en la tienda y pueden modificarse sin editar código.</p>
-            </div>
-          </header>
-          <form id="formulario-configuraciones" class="formulario-admin formulario-dos-columnas">
-            <label class="grupo-campo"><span>Nombre de la marca</span><input class="campo" name="nombre_marca" required /></label>
-            <label class="grupo-campo"><span>WhatsApp internacional</span><input class="campo" name="whatsapp" inputmode="numeric" required /></label>
-            <label class="grupo-campo"><span>Correo comercial</span><input class="campo" name="correo" type="email" required /></label>
-            <label class="grupo-campo"><span>Instagram</span><input class="campo" name="instagram" type="url" /></label>
-            <label class="grupo-campo"><span>TikTok</span><input class="campo" name="tiktok" type="url" /></label>
-            <label class="grupo-campo"><span>Región</span><input class="campo" name="region" /></label>
-            <label class="grupo-campo campo-completo"><span>Descripción general</span><textarea class="area-texto" name="descripcion_corta" rows="3"></textarea></label>
-            <div class="acciones-formulario campo-completo">
-              <button class="boton boton-principal" type="submit">Guardar cambios</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="seccion-admin" data-panel-admin="estilos">
-          <header class="cabecera-admin">
-            <div>
-              <p class="etiqueta">Identidad de marca</p>
-              <h1>Estilo visual</h1>
-              <p>Elegí los colores y la tipografía generales. Para invertir la paleta, intercambiá el color inicial y el final.</p>
-            </div>
-          </header>
-          <form id="formulario-estilos-globales" class="formulario-admin formulario-dos-columnas">
-            <label class="grupo-campo selector-color"><span>Color inicial de la marca</span><input name="color_principal" type="color" value="#98b7ff" /></label>
-            <label class="grupo-campo selector-color"><span>Color final de la marca</span><input name="color_secundario" type="color" value="#df98ff" /></label>
-            <label class="grupo-campo selector-color"><span>Color inicial intenso</span><input name="color_principal_intenso" type="color" value="#526ca8" /></label>
-            <label class="grupo-campo selector-color"><span>Color final intenso</span><input name="color_secundario_intenso" type="color" value="#9358ad" /></label>
-            <label class="grupo-campo selector-color"><span>Fondo del sitio</span><input name="color_fondo" type="color" value="#fbfaff" /></label>
-            <label class="grupo-campo selector-color"><span>Texto principal</span><input name="color_texto" type="color" value="#252434" /></label>
-            <label class="grupo-campo selector-color"><span>Texto secundario</span><input name="color_texto_suave" type="color" value="#676579" /></label>
-            <label class="grupo-campo"><span>Tipografía general</span><select class="selector" name="fuente_principal"><option value="moderna">Moderna</option><option value="redondeada">Redondeada</option><option value="clasica">Clásica</option></select></label>
-            <p class="ayuda-estilos campo-completo">Los cambios se aplican a la tienda cuando guardás. No se permite agregar código ni estilos externos.</p>
-            <div class="acciones-formulario campo-completo">
-              <button class="boton boton-principal" type="submit">Guardar estilo visual</button>
-            </div>
-          </form>
-        </section>
       </main>
     </div>
   </div>

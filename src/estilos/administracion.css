@@ -8,6 +8,10 @@
   display: none !important;
 }
 
+body.dialogo-abierto {
+  overflow: hidden;
+}
+
 .admin-cabecera {
   position: sticky;
   z-index: 100;
@@ -226,7 +230,7 @@
 
 .tarjetas-resumen {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -383,6 +387,97 @@
 .formulario-dos-columnas .campo,
 .formulario-dos-columnas .selector {
   height: 46px;
+}
+
+.indicador-obligatorio {
+  color: var(--peligro);
+}
+
+.ayuda-emergente {
+  position: relative;
+  display: inline-block;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.ayuda-emergente summary {
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  border: 1px solid var(--azul-profundo);
+  border-radius: 50%;
+  color: var(--azul-profundo);
+  cursor: pointer;
+  font-size: 0.72rem;
+  list-style: none;
+}
+
+.ayuda-emergente summary::-webkit-details-marker {
+  display: none;
+}
+
+.ayuda-emergente p {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(300px, 70vw);
+  padding: 0.75rem;
+  margin: 0;
+  border: 1px solid var(--borde);
+  border-radius: 0.7rem;
+  color: var(--tinta-suave);
+  background: var(--blanco);
+  box-shadow: var(--sombra);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.opciones-avanzadas,
+.opciones-contenido-global {
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: color-mix(in srgb, var(--azul-sol) 5%, var(--blanco));
+}
+
+.opciones-avanzadas summary,
+.opciones-contenido-global summary {
+  cursor: pointer;
+  color: var(--tinta);
+  font-weight: 850;
+}
+
+.opciones-avanzadas > p,
+.opciones-contenido-global > p,
+.tarjeta-contenido-global > p:not(.etiqueta) {
+  margin: 0.65rem 0 1rem;
+  color: var(--tinta-suave);
+  font-size: 0.84rem;
+}
+
+.contenido-opciones-avanzadas {
+  margin-top: 1rem;
+}
+
+.contenidos-globales {
+  display: grid;
+  margin-top: 1.5rem;
+  gap: 1rem;
+}
+
+.tarjeta-contenido-global {
+  padding: 1.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  box-shadow: var(--sombra-suave);
+}
+
+.tarjeta-contenido-global h2 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
 }
 
 .campo-completo {

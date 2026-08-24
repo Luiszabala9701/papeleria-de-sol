@@ -39,9 +39,9 @@ La nueva base conserva la identidad de Papelería de Sol —azul `#98b7ff`, lila
 
 ## Modelo funcional
 
-La base incluye administradores, categorías, temas, productos, relación producto-tema, variantes, secciones, imágenes, historial de precios, movimientos de stock, configuración del sitio, sesiones administrativas y auditoría.
+La base incluye administradores, categorías, productos, variantes, secciones, imágenes, historial de precios, movimientos de stock, configuración del sitio, sesiones administrativas y auditoría.
 
-Los temas permiten que el administrador cree agrupaciones como fútbol, memes o Star Wars sin cambiar código. Los tipos de producto permiten usar el mismo panel para stickers, productos físicos y plantillas. Las variantes quedan preparadas para tamaño, terminación u otra opción, aunque no es obligatorio usarlas desde el primer día.
+Las categorías permiten crear agrupaciones específicas como Fútbol para stickers, Memes para stickers o Agendas para productos físicos sin cambiar código. Los tipos de producto permiten usar el mismo panel para stickers, productos físicos y plantillas. Las variantes quedan preparadas para tamaño, terminación u otra opción, aunque no es obligatorio usarlas desde el primer día.
 
 ## Flujo de venta actual
 
@@ -64,7 +64,7 @@ No se recomienda prometer stock en tiempo real mientras el pedido termina en Wha
 ### Etapa 2 — Supabase y administración
 
 - Ejecutar el esquema, crear el primer administrador y desplegar la función privada.
-- Configurar categorías, temas, productos, imágenes, secciones y datos comerciales.
+- Configurar categorías, productos, imágenes, secciones y datos comerciales.
 - Probar permisos con usuario administrador y visitante anónimo.
 
 ### Etapa 3 — Publicación

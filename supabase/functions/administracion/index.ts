@@ -11,22 +11,17 @@ const clienteServicio = createClient(URL_SUPABASE, CLAVE_SERVICIO, {
 const RECURSOS = {
   productos: {
     tabla: 'productos',
-    seleccion: '*, categoria:categorias(id,nombre), imagenes(*), productos_temas(tema:temas(id,nombre,slug))',
+    seleccion: '*, categoria:categorias(id,nombre), imagenes(*)',
     campos: [
-      'categoria_id', 'tipo_producto', 'nombre', 'slug', 'sku', 'descripcion_corta',
+      'categoria_id', 'tipo_producto', 'nombre', 'sku',
       'descripcion', 'precio', 'moneda', 'controla_stock', 'stock', 'estado',
-      'destacado', 'orden', 'mensaje_whatsapp', 'meta_titulo', 'meta_descripcion',
+      'destacado', 'mensaje_whatsapp', 'meta_titulo', 'meta_descripcion',
     ],
   },
   categorias: {
     tabla: 'categorias',
     seleccion: '*',
     campos: ['nombre', 'slug', 'descripcion', 'tipo_producto', 'imagen_url', 'publicada', 'orden'],
-  },
-  temas: {
-    tabla: 'temas',
-    seleccion: '*',
-    campos: ['nombre', 'slug', 'descripcion', 'imagen_url', 'publicado', 'orden'],
   },
   secciones: {
     tabla: 'secciones',
@@ -140,14 +135,35 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
   }
 
   if (recurso === 'productos') {
+    if (!String(datos.nombre || '').trim()) {
+      throw new Error('El nombre del producto es obligatorio.');
+    }
     if (!['sticker', 'plantilla', 'fisico'].includes(String(datos.tipo_producto))) {
       throw new Error('El tipo de producto no es válido.');
     }
-    if (datos.precio !== null && datos.precio !== undefined && Number(datos.precio) < 0) {
-      throw new Error('El precio no puede ser negativo.');
+    if (
+      datos.precio === null ||
+      datos.precio === undefined ||
+      datos.precio === '' ||
+      !Number.isFinite(Number(datos.precio)) ||
+      Number(datos.precio) < 0
+    ) {
+      throw new Error('El precio en pesos es obligatorio y no puede ser negativo.');
     }
-    if (datos.controla_stock && Number(datos.stock) < 0) {
-      throw new Error('El stock no puede ser negativo.');
+    if (!String(datos.descripcion || '').trim()) {
+      throw new Error('La descripción del producto es obligatoria.');
+    }
+    if (
+      datos.controla_stock &&
+      (!Number.isFinite(Number(datos.stock)) || Number(datos.stock) < 0)
+    ) {
+      throw new Error('El stock es obligatorio al activar el control de stock y no puede ser negativo.');
+    }
+  }
+
+  if (recurso === 'categorias') {
+    if (!['sticker', 'plantilla', 'fisico'].includes(String(datos.tipo_producto))) {
+      throw new Error('Elegí el tipo de producto de esta categoría.');
     }
   }
 
@@ -155,6 +171,50 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
     if (!String(datos.titulo || '').trim()) throw new Error('El título de la sección es obligatorio.');
     if (Object.prototype.hasOwnProperty.call(datos, 'estilos')) normalizarEstilosSeccion(datos.estilos);
   }
+}
+
+async function crearSlugDisponible(tabla: string, texto: unknown, id?: string) {
+  const base = crearSlug(texto) || 'elemento';
+
+  for (let numero = 1; numero <= 1000; numero += 1) {
+    const candidato = numero === 1 ? base : `${base}-${numero}`;
+    const { data, error } = await clienteServicio
+      .from(tabla)
+      .select('id')
+      .eq('slug', candidato)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data || data.id === id) return candidato;
+  }
+
+  throw new Error('No se pudo generar una dirección interna única.');
+}
+
+async function validarCategoriaDeProducto(categoriaId: unknown, tipoProducto: unknown) {
+  if (!categoriaId) return;
+
+  const { data, error } = await clienteServicio
+    .from('categorias')
+    .select('tipo_producto')
+    .eq('id', String(categoriaId))
+    .maybeSingle();
+
+  if (error || !data) throw new Error('La categoría seleccionada no existe.');
+  if (data.tipo_producto !== tipoProducto) {
+    throw new Error('La categoría seleccionada no corresponde al tipo de producto.');
+  }
+}
+
+async function siguienteOrdenProducto() {
+  const { data, error } = await clienteServicio
+    .from('productos')
+    .select('orden')
+    .order('orden', { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+  return Number(data?.[0]?.orden || 0) + 1;
 }
 
 async function registrarAuditoria(
@@ -275,11 +335,10 @@ async function validarActividad(usuarioId: string, sesionId: string) {
 }
 
 async function obtenerResumen() {
-  const [productos, publicados, categorias, temas, secciones] = await Promise.all([
+  const [productos, publicados, categorias, secciones] = await Promise.all([
     clienteServicio.from('productos').select('*', { count: 'exact', head: true }).neq('estado', 'archivado'),
     clienteServicio.from('productos').select('*', { count: 'exact', head: true }).eq('estado', 'publicado'),
     clienteServicio.from('categorias').select('*', { count: 'exact', head: true }),
-    clienteServicio.from('temas').select('*', { count: 'exact', head: true }),
     clienteServicio.from('secciones').select('*', { count: 'exact', head: true }),
   ]);
 
@@ -287,7 +346,6 @@ async function obtenerResumen() {
     productos: productos.count || 0,
     publicados: publicados.count || 0,
     categorias: categorias.count || 0,
-    temas: temas.count || 0,
     secciones: secciones.count || 0,
   };
 }
@@ -326,7 +384,15 @@ async function guardarRecurso(
     datos.estilos = normalizarEstilosSeccion(datos.estilos);
   }
 
-  if ('slug' in datos) {
+  if (recurso === 'productos') {
+    datos.slug = await crearSlugDisponible('productos', datos.nombre, id);
+    datos.descripcion_corta = String(datos.descripcion || '').trim();
+    datos.stock = datos.controla_stock ? Number(datos.stock) : null;
+    await validarCategoriaDeProducto(datos.categoria_id, datos.tipo_producto);
+    if (!id) datos.orden = await siguienteOrdenProducto();
+  } else if (recurso === 'categorias') {
+    datos.slug = await crearSlugDisponible('categorias', datos.slug || datos.nombre, id);
+  } else if ('slug' in datos) {
     datos.slug = crearSlug(datos.slug || datos.nombre);
   }
   if (recurso === 'secciones' && !datos.clave) {
@@ -350,17 +416,6 @@ async function guardarRecurso(
   if (error) throw error;
 
   if (recurso === 'productos') {
-    const temasIds = Array.isArray(datosOriginales.temas_ids)
-      ? datosOriginales.temas_ids.filter(Boolean)
-      : [];
-
-    await clienteServicio.from('productos_temas').delete().eq('producto_id', data.id);
-    if (temasIds.length > 0) {
-      const relaciones = temasIds.map((temaId) => ({ producto_id: data.id, tema_id: temaId }));
-      const resultadoTemas = await clienteServicio.from('productos_temas').insert(relaciones);
-      if (resultadoTemas.error) throw resultadoTemas.error;
-    }
-
     if (id && precioAnterior !== data.precio) {
       await clienteServicio.from('historial_precios').insert({
         producto_id: data.id,
@@ -425,6 +480,13 @@ async function prepararSubida(datos: Record<string, unknown>) {
     throw new Error('El producto o el formato de imagen no son válidos.');
   }
 
+  const { count, error: errorConteo } = await clienteServicio
+    .from('imagenes')
+    .select('*', { count: 'exact', head: true })
+    .eq('producto_id', productoId);
+  if (errorConteo) throw errorConteo;
+  if ((count || 0) >= 5) throw new Error('Un producto puede tener como máximo 5 imágenes.');
+
   const ruta = `${productoId}/${crypto.randomUUID()}.${extensiones[tipo]}`;
   const { data, error } = await clienteServicio.storage
     .from('productos')
@@ -441,6 +503,13 @@ async function registrarImagen(
   const ruta = String(datos.ruta || '');
   const productoId = String(datos.producto_id || '');
   if (!ruta || !productoId) throw new Error('Faltan datos de la imagen.');
+
+  const { count, error: errorConteo } = await clienteServicio
+    .from('imagenes')
+    .select('*', { count: 'exact', head: true })
+    .eq('producto_id', productoId);
+  if (errorConteo) throw errorConteo;
+  if ((count || 0) >= 5) throw new Error('Un producto puede tener como máximo 5 imágenes.');
 
   const { data: url } = clienteServicio.storage.from('productos').getPublicUrl(ruta);
   const principal = Boolean(datos.es_principal);
@@ -473,7 +542,8 @@ async function registrarImagen(
 
 async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId: string) {
   const clavesPermitidas = [
-    'nombre_marca', 'descripcion_corta', 'whatsapp', 'correo', 'instagram', 'tiktok',
+    'nombre_marca', 'lema_marca', 'aviso_superior', 'descripcion_corta', 'descripcion_footer',
+    'titulo_footer_explorar', 'titulo_footer_contacto', 'whatsapp', 'correo', 'instagram', 'tiktok',
     'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES, 'fuente_principal',
   ];
 

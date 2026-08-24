@@ -116,7 +116,7 @@ con envío
 por WhatsApp
 
 PLANTILLA PARA CADA PRODUCTO
-Nombre concreto del producto + tipo + tema
+Nombre concreto del producto + tipo + categoría
 Ejemplo: Sticker de fútbol [descripción concreta]
 Título SEO sugerido: [Nombre del producto] | Papelería de Sol
 Descripción sugerida: Comprá [nombre y característica] en Papelería de Sol. Consultá disponibilidad y envío en CABA y GBA por WhatsApp.
@@ -129,4 +129,4 @@ oficial / licenciado: no usar en personajes o marcas sin autorización.
 mejor / número uno: evitar afirmaciones no comprobables.
 
 NOTA SOBRE MARCAS Y PERSONAJES
-Nombres como Star Wars, clubes, artistas o personajes pueden tener marcas y derechos de autor. Usarlos como tema en el dashboard no otorga permiso comercial. Antes de publicar o vender material de terceros, verificar licencias y evitar indicar que el producto es oficial si no lo es.
+Nombres como Star Wars, clubes, artistas o personajes pueden tener marcas y derechos de autor. Usarlos como categoría en el dashboard no otorga permiso comercial. Antes de publicar o vender material de terceros, verificar licencias y evitar indicar que el producto es oficial si no lo es.
