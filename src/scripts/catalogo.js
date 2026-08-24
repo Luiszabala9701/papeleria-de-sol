@@ -1,7 +1,7 @@
 const datosCatalogo = document.querySelector('#datos-catalogo');
 const galeria = document.querySelector('#galeria-catalogo');
 const buscador = document.querySelector('#buscador-catalogo');
-const filtroTipo = document.querySelector('#filtro-tipo');
+const filtroCategoria = document.querySelector('#filtro-categoria');
 const informacionResultados = document.querySelector('#informacion-resultados');
 const informacionPagina = document.querySelector('#informacion-pagina-catalogo');
 const botonAnterior = document.querySelector('#pagina-anterior');
@@ -112,22 +112,22 @@ function crearTarjeta(producto) {
 
 function productosFiltrados() {
   const termino = textoNormalizado(buscador?.value);
-  const tipo = filtroTipo?.value || '';
+  const categoria = filtroCategoria?.value || '';
 
   return productos.filter((producto) => {
-    const coincideTipo = !tipo || producto.tipo_producto === tipo;
+    const coincideCategoria = !categoria || producto.categoria?.id === categoria;
     const texto = textoNormalizado(
       [producto.nombre, producto.sku, producto.descripcion].join(' '),
     );
     const coincideBusqueda = !termino || texto.includes(termino);
-    return coincideTipo && coincideBusqueda;
+    return coincideCategoria && coincideBusqueda;
   });
 }
 
 function actualizarDireccion() {
   const parametros = new URLSearchParams();
   if (buscador?.value) parametros.set('buscar', buscador.value);
-  if (filtroTipo?.value) parametros.set('tipo', filtroTipo.value);
+  if (filtroCategoria?.value) parametros.set('categoria', filtroCategoria.value);
   const consulta = parametros.toString();
   history.replaceState(null, '', `${location.pathname}${consulta ? `?${consulta}` : ''}`);
 }
@@ -172,10 +172,10 @@ function reiniciarYRenderizar() {
 
 const parametros = new URLSearchParams(location.search);
 if (buscador) buscador.value = parametros.get('buscar') || '';
-if (filtroTipo) filtroTipo.value = parametros.get('tipo') || '';
+if (filtroCategoria) filtroCategoria.value = parametros.get('categoria') || '';
 
 buscador?.addEventListener('input', reiniciarYRenderizar);
-filtroTipo?.addEventListener('change', reiniciarYRenderizar);
+filtroCategoria?.addEventListener('change', reiniciarYRenderizar);
 
 botonAnterior?.addEventListener('click', () => {
   paginaActual -= 1;

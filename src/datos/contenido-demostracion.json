@@ -12,7 +12,7 @@
     "simbolo_moneda": "$",
     "lema_marca": "Papelería creativa",
     "aviso_superior": "Pedidos personalizados en CABA y GBA · Consultanos por WhatsApp",
-    "descripcion_footer": "Papelería creativa, stickers y productos personalizados con atención directa en CABA y GBA.",
+    "mostrar_aviso_superior": true,
     "titulo_footer_explorar": "Explorá",
     "titulo_footer_contacto": "Contacto",
     "color_principal": "#98b7ff",

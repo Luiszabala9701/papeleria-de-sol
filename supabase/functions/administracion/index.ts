@@ -47,6 +47,11 @@ const COLORES_CONFIGURABLES = [
   'color_principal', 'color_secundario', 'color_principal_intenso', 'color_secundario_intenso',
   'color_fondo', 'color_texto', 'color_texto_suave',
 ];
+const PREFIJOS_SKU: Record<string, string> = {
+  sticker: 'ST',
+  plantilla: 'PL',
+  fisico: 'PF',
+};
 
 function cabecerasCors(solicitud: Request) {
   const origen = solicitud.headers.get('origin') || '';
@@ -95,6 +100,12 @@ function crearSlug(texto: unknown) {
     .replace(/^-|-$/g, '');
 }
 
+function obtenerPrefijoSku(tipoProducto: unknown) {
+  const prefijo = PREFIJOS_SKU[String(tipoProducto)];
+  if (!prefijo) throw new Error('El tipo de producto no es válido.');
+  return prefijo;
+}
+
 function seleccionarCampos(datos: Record<string, unknown>, campos: readonly string[]) {
   return Object.fromEntries(
     campos
@@ -141,6 +152,12 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
     if (!['sticker', 'plantilla', 'fisico'].includes(String(datos.tipo_producto))) {
       throw new Error('El tipo de producto no es válido.');
     }
+    const prefijoSku = obtenerPrefijoSku(datos.tipo_producto);
+    const sku = String(datos.sku || '').trim().toUpperCase();
+    if (!sku) throw new Error('El SKU es obligatorio.');
+    if (!new RegExp(`^${prefijoSku}-\\d+$`).test(sku)) {
+      throw new Error(`El SKU para este tipo debe comenzar con ${prefijoSku}- y terminar con números.`);
+    }
     if (
       datos.precio === null ||
       datos.precio === undefined ||
@@ -159,6 +176,9 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
     ) {
       throw new Error('El stock es obligatorio al activar el control de stock y no puede ser negativo.');
     }
+    if (!['borrador', 'publicado'].includes(String(datos.estado))) {
+      throw new Error('Elegí si el producto está publicado o no publicado.');
+    }
   }
 
   if (recurso === 'categorias') {
@@ -171,6 +191,40 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
     if (!String(datos.titulo || '').trim()) throw new Error('El título de la sección es obligatorio.');
     if (Object.prototype.hasOwnProperty.call(datos, 'estilos')) normalizarEstilosSeccion(datos.estilos);
   }
+}
+
+async function obtenerSugerenciaSku(tipoProducto: unknown) {
+  const tipo = String(tipoProducto);
+  const prefijo = obtenerPrefijoSku(tipo);
+  const { data, error } = await clienteServicio
+    .from('productos')
+    .select('sku')
+    .eq('tipo_producto', tipo)
+    .not('sku', 'is', null);
+  if (error) throw error;
+
+  const expresion = new RegExp(`^${prefijo}-(\\d+)$`, 'i');
+  let numeroMayor = 0;
+  let digitosSku = 4;
+  let ultimoSku: string | null = null;
+
+  (data || []).forEach(({ sku }) => {
+    const coincidencia = expresion.exec(String(sku || '').trim());
+    if (!coincidencia) return;
+    const numero = Number(coincidencia[1]);
+    if (numero > numeroMayor) {
+      numeroMayor = numero;
+      digitosSku = Math.max(4, coincidencia[1].length);
+      ultimoSku = `${prefijo}-${String(numero).padStart(digitosSku, '0')}`;
+    }
+  });
+
+  const digitos = Math.max(digitosSku, String(numeroMayor + 1).length);
+  return {
+    tipo_producto: tipo,
+    ultimo_sku: ultimoSku,
+    siguiente_sku: `${prefijo}-${String(numeroMayor + 1).padStart(digitos, '0')}`,
+  };
 }
 
 async function crearSlugDisponible(tabla: string, texto: unknown, id?: string) {
@@ -386,6 +440,7 @@ async function guardarRecurso(
 
   if (recurso === 'productos') {
     datos.slug = await crearSlugDisponible('productos', datos.nombre, id);
+    datos.sku = String(datos.sku || '').trim().toUpperCase();
     datos.descripcion_corta = String(datos.descripcion || '').trim();
     datos.stock = datos.controla_stock ? Number(datos.stock) : null;
     await validarCategoriaDeProducto(datos.categoria_id, datos.tipo_producto);
@@ -542,7 +597,7 @@ async function registrarImagen(
 
 async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId: string) {
   const clavesPermitidas = [
-    'nombre_marca', 'lema_marca', 'aviso_superior', 'descripcion_corta', 'descripcion_footer',
+    'nombre_marca', 'lema_marca', 'aviso_superior', 'mostrar_aviso_superior', 'descripcion_corta',
     'titulo_footer_explorar', 'titulo_footer_contacto', 'whatsapp', 'correo', 'instagram', 'tiktok',
     'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES, 'fuente_principal',
   ];
@@ -558,7 +613,7 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
 
   const filas = Object.entries(datos)
     .filter(([clave]) => clavesPermitidas.includes(clave))
-    .map(([clave, valor]) => ({ clave, valor }));
+    .map(([clave, valor]) => ({ clave, valor, publica: true }));
 
   const { error } = await clienteServicio
     .from('configuraciones_sitio')
@@ -613,6 +668,10 @@ Deno.serve(async (solicitud) => {
 
     if (accion === 'resumen') {
       return responder(solicitud, { datos: await obtenerResumen() });
+    }
+
+    if (accion === 'obtener_sugerencia_sku') {
+      return responder(solicitud, { datos: await obtenerSugerenciaSku(cuerpo.tipo_producto) });
     }
 
     if (accion === 'listar') {

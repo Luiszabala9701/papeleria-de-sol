@@ -24,7 +24,7 @@ El precio es obligatorio al crear y editar. El número de orden se asigna autom�
 
 Al elegir el tipo de producto, el selector de categoría muestra únicamente categorías del mismo tipo. Por ejemplo, una categoría **Fútbol** creada como **Sticker** solo aparece al cargar un sticker.
 
-El ícono `!` junto a **Estado de publicación** explica la diferencia entre borrador, publicado y oculto.
+El ícono `!` junto a **Estado de publicación** explica la diferencia entre no publicado, publicado y archivado.
 
 ## Opciones avanzadas de SEO
 

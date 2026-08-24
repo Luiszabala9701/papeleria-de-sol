@@ -3,14 +3,18 @@ import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import TarjetaProducto from '../../componentes/TarjetaProducto.astro';
 import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
 import {
+  obtenerCategoriasPublicadas,
   obtenerConfiguracionSitio,
   obtenerProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
 
-const [configuracion, productos] = await Promise.all([
+const [configuracion, productos, categorias] = await Promise.all([
   obtenerConfiguracionSitio(),
-  obtenerProductosPublicados(),
-]) as [ConfiguracionSitio, Producto[]];
+  obtenerProductosPublicados({ tipo: 'sticker' }),
+  obtenerCategoriasPublicadas(),
+]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: string }[]];
+
+const categoriasStickers = categorias.filter((categoria) => categoria.tipo_producto === 'sticker');
 
 const productosIniciales = productos.slice(0, 48);
 const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
@@ -18,13 +22,13 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
 
 <DisenoPrincipal
   titulo="Catálogo de stickers y papelería creativa | Papelería de Sol"
-  descripcion="Explorá stickers, plantillas y productos físicos de Papelería de Sol. Armá tu selección y consultá por WhatsApp desde CABA y GBA."
+  descripcion="Explorá stickers de Papelería de Sol. Armá tu selección y continuá tu compra por WhatsApp desde CABA y GBA."
   configuracion={configuracion}
 >
   <header class="contenedor cabecera-pagina">
     <p class="etiqueta">Colecciones de Papelería de Sol</p>
     <h1>Encontrá tu próximo favorito</h1>
-    <p>Buscá por nombre o número, filtrá por tipo y agregá todo lo que te guste a tu selección.</p>
+    <p>Buscá por nombre o número, elegí una categoría y agregá tus stickers favoritos a la selección.</p>
   </header>
 
   <section id="catalogo-resultados" class="contenedor seccion-catalogo">
@@ -34,12 +38,10 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
         <input id="buscador-catalogo" class="campo" type="search" placeholder="Buscar por nombre o número…" autocomplete="off" />
       </label>
       <label>
-        <span class="solo-lectores">Tipo de producto</span>
-        <select id="filtro-tipo" class="selector">
-          <option value="">Todos los productos</option>
-          <option value="sticker">Stickers</option>
-          <option value="plantilla">Plantillas</option>
-          <option value="fisico">Productos físicos</option>
+        <span class="solo-lectores">Categoría de stickers</span>
+        <select id="filtro-categoria" class="selector">
+          <option value="">Todas las categorías</option>
+          {categoriasStickers.map((categoria) => <option value={categoria.id}>{categoria.nombre}</option>)}
         </select>
       </label>
     </div>

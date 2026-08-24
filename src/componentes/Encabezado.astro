@@ -20,9 +20,11 @@ const enlaceActivo = (href: string) =>
 ---
 
 <header class="encabezado-sitio">
-  <div class="anuncio-superior">
-    <p>{configuracion?.aviso_superior || 'Pedidos personalizados en CABA y GBA · Consultanos por WhatsApp'}</p>
-  </div>
+  {configuracion?.mostrar_aviso_superior !== false && (
+    <div class="anuncio-superior">
+      <p>{configuracion?.aviso_superior || 'Pedidos personalizados en CABA y GBA · Consultanos por WhatsApp'}</p>
+    </div>
+  )}
   <nav class="navegacion-principal" aria-label="Navegación principal">
     <a class="marca" href="/" aria-label="Papelería de Sol, ir al inicio">
       <span class="marca-sol" aria-hidden="true"></span>

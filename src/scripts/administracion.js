@@ -35,25 +35,25 @@ const DESCRIPCIONES = {
 const ESQUEMAS = {
   productos: [
     { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', obligatorio: true },
-    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', ayuda: 'Código opcional para identificar el producto internamente.' },
     {
       nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true,
       opciones: [
+        { valor: '', texto: 'Elegí un tipo de producto' },
         { valor: 'sticker', texto: 'Sticker' },
         { valor: 'plantilla', texto: 'Plantilla' },
         { valor: 'fisico', texto: 'Producto físico' },
       ],
     },
-    { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias' },
+    { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias', dependeDe: 'tipo_producto' },
+    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, ayudaEmergente: 'Para ver el último SKU y recibir una sugerencia, primero elegí el tipo de producto.' },
     { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', obligatorio: true, completo: true },
     { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
     {
       nombre: 'estado', etiqueta: 'Estado de publicación', tipo: 'select', obligatorio: true,
-      ayudaEmergente: 'Borrador guarda el producto sin mostrarlo en la tienda. Publicado lo muestra al público y Oculto lo retira temporalmente sin borrarlo.',
+      ayudaEmergente: 'No publicado guarda el producto sin mostrarlo en la tienda. Publicado lo muestra al público. Archivar se usa cuando querés retirarlo sin perderlo.',
       opciones: [
-        { valor: 'borrador', texto: 'Borrador' },
+        { valor: 'borrador', texto: 'No publicado' },
         { valor: 'publicado', texto: 'Publicado' },
-        { valor: 'oculto', texto: 'Oculto' },
       ],
     },
     { nombre: 'controla_stock', etiqueta: 'Controlar stock', tipo: 'checkbox' },
@@ -78,14 +78,12 @@ const ESQUEMAS = {
     { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
   ],
   secciones: [
-    { nombre: 'clave', etiqueta: 'Clave interna', tipo: 'text', ayuda: 'No conviene cambiarla después de crear la sección.' },
     { nombre: 'titulo', etiqueta: 'Título', tipo: 'text', obligatorio: true },
     { nombre: 'subtitulo', etiqueta: 'Subtítulo', tipo: 'text', completo: true },
     { nombre: 'contenido', etiqueta: 'Contenido', tipo: 'textarea', completo: true },
     { nombre: 'texto_boton', etiqueta: 'Texto del botón', tipo: 'text' },
     { nombre: 'enlace_boton', etiqueta: 'Enlace del botón', tipo: 'text' },
     { nombre: 'publicada', etiqueta: 'Publicada', tipo: 'checkbox' },
-    { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
     { nombre: 'meta_titulo', etiqueta: 'Título SEO', tipo: 'text', completo: true },
     { nombre: 'meta_descripcion', etiqueta: 'Descripción SEO', tipo: 'textarea', completo: true },
     { nombre: 'estilos', etiqueta: 'Apariencia de cada texto', tipo: 'estilos-seccion', completo: true },
@@ -236,6 +234,7 @@ function valorVisible(registro, clave) {
       : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(valor);
   }
   if (clave === 'stock') return registro.controla_stock ? String(valor ?? 0) : 'Sin control';
+  if (clave === 'estado' && valor === 'borrador') return 'No publicado';
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
   if (clave === 'tipo_producto' && valor === 'fisico') return 'Producto físico';
   return valor ?? '—';
@@ -275,9 +274,14 @@ function renderizarListado(recurso, registros) {
   cabecera.append(filaCabecera);
 
   const termino = document.querySelector(`[data-buscar-recurso="${recurso}"]`)?.value.toLowerCase().trim() || '';
-  const filtrados = registros.filter((registro) =>
-    JSON.stringify(registro).toLowerCase().includes(termino),
-  );
+  const tipoCategoria = recurso === 'categorias'
+    ? document.querySelector('[data-filtro-tipo-categoria]')?.value || ''
+    : '';
+  const filtrados = registros.filter((registro) => {
+    const coincideBusqueda = JSON.stringify(registro).toLowerCase().includes(termino);
+    const coincideTipoCategoria = !tipoCategoria || registro.tipo_producto === tipoCategoria;
+    return coincideBusqueda && coincideTipoCategoria;
+  });
   const visibles = filtrados.slice(0, 200);
   cuerpo.replaceChildren();
 
@@ -366,8 +370,17 @@ function actualizarCategoriasDisponibles() {
   const selectorCategoria = formularioRecurso?.elements.categoria_id;
   if (!selectorTipo || !selectorCategoria) return;
 
+  if (!selectorTipo.value) {
+    selectorCategoria.replaceChildren(crearOpcion('', 'Primero elegí un tipo de producto', true));
+    selectorCategoria.disabled = true;
+    selectorCategoria.setAttribute('aria-disabled', 'true');
+    return;
+  }
+
   const categoriaSeleccionada = selectorCategoria.value;
   const disponibles = categorias.filter((categoria) => categoria.tipo_producto === selectorTipo.value);
+  selectorCategoria.disabled = false;
+  selectorCategoria.setAttribute('aria-disabled', 'false');
   selectorCategoria.replaceChildren(crearOpcion('', 'Sin categoría', !categoriaSeleccionada));
   disponibles.forEach((categoria) => selectorCategoria.append(
     crearOpcion(categoria.id, categoria.nombre, categoria.id === categoriaSeleccionada),
@@ -381,6 +394,41 @@ function actualizarCampoStock() {
   stock.disabled = !controlaStock.checked;
   stock.setAttribute('aria-disabled', String(!controlaStock.checked));
   if (!controlaStock.checked) stock.value = '';
+}
+
+async function actualizarSugerenciaSku({ cambioTipo = false } = {}) {
+  const selectorTipo = formularioRecurso?.elements.tipo_producto;
+  const campoSku = formularioRecurso?.elements.sku;
+  const ayuda = formularioRecurso?.querySelector('[data-ayuda-sku] p');
+  if (!selectorTipo || !campoSku || !ayuda) return;
+
+  if (!selectorTipo.value) {
+    campoSku.placeholder = 'Primero elegí el tipo de producto';
+    ayuda.textContent = 'Para ver el último SKU y recibir una sugerencia, primero elegí el tipo de producto.';
+    return;
+  }
+
+  if (cambioTipo && !idEdicion) {
+    campoSku.value = '';
+    delete campoSku.dataset.editado;
+  }
+
+  ayuda.textContent = 'Buscando el último SKU usado…';
+  try {
+    const sugerencia = await invocar('obtener_sugerencia_sku', {
+      tipo_producto: selectorTipo.value,
+    });
+    if (selectorTipo.value !== sugerencia.tipo_producto) return;
+
+    campoSku.placeholder = sugerencia.siguiente_sku;
+    ayuda.textContent = sugerencia.ultimo_sku
+      ? `Último SKU usado: ${sugerencia.ultimo_sku}. Sugerencia para el nuevo producto: ${sugerencia.siguiente_sku}.`
+      : `Todavía no hay SKUs para este tipo. Sugerencia inicial: ${sugerencia.siguiente_sku}.`;
+
+    if (!idEdicion && !campoSku.dataset.editado) campoSku.value = sugerencia.siguiente_sku;
+  } catch {
+    ayuda.textContent = 'No se pudo obtener la sugerencia. Escribí un SKU con el prefijo del tipo elegido.';
+  }
 }
 
 function crearControlEstilo(etiqueta, control) {
@@ -469,11 +517,15 @@ function crearCampo(definicion, registro = {}) {
     campo.multiple = Boolean(definicion.multiple);
 
     if (definicion.tipo === 'select-categorias') {
-      const tipoProducto = registro.tipo_producto || 'sticker';
-      campo.append(crearOpcion('', 'Sin categoría', !registro.categoria_id));
-      categorias.filter((categoria) => categoria.tipo_producto === tipoProducto).forEach((categoria) => campo.append(
-        crearOpcion(categoria.id, categoria.nombre, registro.categoria_id === categoria.id),
-      ));
+      const tipoProducto = registro.tipo_producto || '';
+      if (!tipoProducto) {
+        campo.append(crearOpcion('', 'Primero elegí un tipo de producto', true));
+      } else {
+        campo.append(crearOpcion('', 'Sin categoría', !registro.categoria_id));
+        categorias.filter((categoria) => categoria.tipo_producto === tipoProducto).forEach((categoria) => campo.append(
+          crearOpcion(categoria.id, categoria.nombre, registro.categoria_id === categoria.id),
+        ));
+      }
     } else {
       definicion.opciones.forEach((opcion) => campo.append(
         crearOpcion(opcion.valor, opcion.texto, String(registro[definicion.nombre] ?? '') === opcion.valor),
@@ -519,8 +571,9 @@ function crearCampo(definicion, registro = {}) {
     resumen.setAttribute('aria-label', 'Explicación sobre este campo');
     const texto = document.createElement('p');
     texto.textContent = definicion.ayudaEmergente;
+    if (definicion.nombre === 'sku') ayuda.dataset.ayudaSku = '';
     ayuda.append(resumen, texto);
-    etiqueta.append(ayuda);
+    contenedor.append(ayuda);
   }
 
   return contenedor;
@@ -553,6 +606,7 @@ function abrirDialogo(recurso, registro = null) {
   ocultarError(errorFormulario);
   actualizarCategoriasDisponibles();
   actualizarCampoStock();
+  actualizarSugerenciaSku();
   document.body.classList.add('dialogo-abierto');
   if (!dialogo.open) dialogo.showModal();
 }
@@ -638,7 +692,9 @@ async function cargarConfiguraciones() {
   filas.forEach(({ clave, valor }) => {
     [formularioConfiguraciones, formularioEstilosGlobales].forEach((formulario) => {
       const campo = formulario?.elements[clave];
-      if (campo) campo.value = valor ?? '';
+      if (!campo) return;
+      if (campo.type === 'checkbox') campo.checked = Boolean(valor);
+      else campo.value = valor ?? '';
     });
   });
 }
@@ -711,10 +767,10 @@ document.addEventListener('click', async (evento) => {
 
   const restaurar = evento.target.closest('[data-restaurar]');
   if (restaurar) {
-    if (!confirm('¿Querés restaurar este producto como borrador?')) return;
+    if (!confirm('¿Querés restaurar este producto como no publicado?')) return;
     try {
       await invocar('restaurar', { recurso: recursoActual, id: restaurar.dataset.restaurar });
-      notificar('El producto fue restaurado como borrador.');
+      notificar('El producto fue restaurado como no publicado.');
       await cargarRecurso(recursoActual);
     } catch (error) {
       notificar(error.message);
@@ -732,10 +788,20 @@ document.querySelectorAll('[data-buscar-recurso]').forEach((campo) => {
 });
 
 document.querySelector('[data-filtro-archivados]')?.addEventListener('change', () => cargarRecurso('productos'));
+document.querySelector('[data-filtro-tipo-categoria]')?.addEventListener('change', () => {
+  renderizarListado('categorias', Array.from(registrosActuales.values()));
+});
 
-formularioRecurso?.addEventListener('change', (evento) => {
-  if (evento.target.name === 'tipo_producto') actualizarCategoriasDisponibles();
+formularioRecurso?.addEventListener('change', async (evento) => {
+  if (evento.target.name === 'tipo_producto') {
+    actualizarCategoriasDisponibles();
+    await actualizarSugerenciaSku({ cambioTipo: true });
+  }
   if (evento.target.name === 'controla_stock') actualizarCampoStock();
+});
+
+formularioRecurso?.addEventListener('input', (evento) => {
+  if (evento.target.name === 'sku') evento.target.dataset.editado = 'true';
 });
 
 formularioRecurso?.addEventListener('submit', async (evento) => {
@@ -768,6 +834,7 @@ formularioRecurso?.addEventListener('submit', async (evento) => {
 formularioConfiguraciones?.addEventListener('submit', async (evento) => {
   evento.preventDefault();
   const datos = Object.fromEntries(new FormData(formularioConfiguraciones));
+  datos.mostrar_aviso_superior = Boolean(formularioConfiguraciones.elements.mostrar_aviso_superior?.checked);
   try {
     await invocar('guardar_configuraciones', { datos });
     notificar('Datos comerciales actualizados.');

@@ -31,8 +31,12 @@ const { configuracion } = Astro.props;
       <span>Productos seleccionados</span>
       <strong id="total-elementos-carrito">0</strong>
     </div>
+    <div class="resumen-carrito resumen-total-carrito">
+      <span>Total estimado</span>
+      <strong id="total-dinero-carrito">$0</strong>
+    </div>
     <button id="enviar-carrito-whatsapp" class="boton boton-principal boton-ancho" type="button" disabled>
-      Consultar por WhatsApp
+      Continuar compra por WhatsApp
     </button>
     <button id="vaciar-carrito" class="boton-texto" type="button">Vaciar selección</button>
     <p class="aclaracion-carrito">El pedido se confirma personalmente por WhatsApp. No se realiza ningún pago desde esta página.</p>

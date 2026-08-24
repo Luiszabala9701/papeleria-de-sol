@@ -98,10 +98,21 @@ const configuracionDisponible = Boolean(
                 <h1>{recurso === 'secciones' ? 'Contenido del sitio' : recurso[0].toUpperCase() + recurso.slice(1)}</h1>
                 <p data-descripcion-recurso></p>
               </div>
-              <button class="boton boton-principal" type="button" data-nuevo-recurso={recurso}>Crear nuevo</button>
+              {recurso !== 'secciones' && <button class="boton boton-principal" type="button" data-nuevo-recurso={recurso}>Crear nuevo</button>}
             </header>
             <div class="barra-listado">
               <input class="campo" type="search" placeholder="Buscar…" data-buscar-recurso={recurso} />
+              {recurso === 'categorias' && (
+                <label class="filtro-archivados">
+                  <span>Tipo de producto</span>
+                  <select class="selector" data-filtro-tipo-categoria>
+                    <option value="">Todos los tipos</option>
+                    <option value="sticker">Stickers</option>
+                    <option value="plantilla">Plantillas</option>
+                    <option value="fisico">Productos físicos</option>
+                  </select>
+                </label>
+              )}
               {recurso === 'productos' && (
                 <label class="filtro-archivados">
                   <span>Mostrar</span>
@@ -130,13 +141,12 @@ const configuracionDisponible = Boolean(
                     <label class="grupo-campo"><span>Nombre de la marca</span><input class="campo" name="nombre_marca" required /></label>
                     <label class="grupo-campo"><span>Lema debajo del logo</span><input class="campo" name="lema_marca" /></label>
                     <label class="grupo-campo campo-completo"><span>Mensaje superior</span><input class="campo" name="aviso_superior" /></label>
+                    <label class="grupo-checkbox campo-completo"><input name="mostrar_aviso_superior" type="checkbox" checked /><span>Mostrar el mensaje superior en la tienda</span></label>
                     <label class="grupo-campo"><span>WhatsApp internacional</span><input class="campo" name="whatsapp" inputmode="numeric" required /></label>
                     <label class="grupo-campo"><span>Correo comercial</span><input class="campo" name="correo" type="email" required /></label>
                     <label class="grupo-campo"><span>Instagram</span><input class="campo" name="instagram" type="url" /></label>
                     <label class="grupo-campo"><span>TikTok</span><input class="campo" name="tiktok" type="url" /></label>
-                    <label class="grupo-campo"><span>Región</span><input class="campo" name="region" /></label>
                     <label class="grupo-campo campo-completo"><span>Descripción general</span><textarea class="area-texto" name="descripcion_corta" rows="3"></textarea></label>
-                    <label class="grupo-campo campo-completo"><span>Texto descriptivo del footer</span><textarea class="area-texto" name="descripcion_footer" rows="3"></textarea></label>
                     <label class="grupo-campo"><span>Título de enlaces del footer</span><input class="campo" name="titulo_footer_explorar" /></label>
                     <label class="grupo-campo"><span>Título de contacto del footer</span><input class="campo" name="titulo_footer_contacto" /></label>
                     <div class="acciones-formulario campo-completo">

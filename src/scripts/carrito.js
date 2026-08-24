@@ -7,6 +7,7 @@ const cerrarCarrito = document.querySelector('#cerrar-carrito');
 const contenidoCarrito = document.querySelector('#contenido-carrito');
 const contadorCarrito = document.querySelector('#contador-carrito');
 const totalElementos = document.querySelector('#total-elementos-carrito');
+const totalDineroCarrito = document.querySelector('#total-dinero-carrito');
 const botonEnviar = document.querySelector('#enviar-carrito-whatsapp');
 const botonVaciar = document.querySelector('#vaciar-carrito');
 
@@ -27,6 +28,21 @@ function guardarCarrito() {
 
 function cantidadTotal() {
   return carrito.reduce((total, producto) => total + producto.cantidad, 0);
+}
+
+function totalDinero() {
+  return carrito.reduce((total, producto) => {
+    const precio = Number(producto.precio);
+    return total + (Number.isFinite(precio) ? precio : 0) * producto.cantidad;
+  }, 0);
+}
+
+function formatearDinero(valor) {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(valor);
 }
 
 function mostrarNotificacion(mensaje) {
@@ -158,8 +174,10 @@ function renderizarCarrito() {
   }
 
   const total = cantidadTotal();
+  const totalEnDinero = totalDinero();
   if (contadorCarrito) contadorCarrito.textContent = String(total);
   if (totalElementos) totalElementos.textContent = String(total);
+  if (totalDineroCarrito) totalDineroCarrito.textContent = formatearDinero(totalEnDinero);
   if (botonEnviar) botonEnviar.disabled = total === 0;
 }
 
@@ -198,10 +216,17 @@ function crearMensajeWhatsApp() {
   ];
 
   carrito.forEach((producto) => {
-    lineas.push(`• ${producto.nombre} — Cantidad: ${producto.cantidad}`);
+    const subtotal = Number(producto.precio) * producto.cantidad;
+    lineas.push(`• ${producto.nombre} — Cantidad: ${producto.cantidad} — ${formatearDinero(subtotal)}`);
   });
 
-  lineas.push('', `Total de productos: ${cantidadTotal()}`, '', '¿Podrían confirmarme disponibilidad y precio final?');
+  lineas.push(
+    '',
+    `Total de productos: ${cantidadTotal()}`,
+    `Total estimado: ${formatearDinero(totalDinero())}`,
+    '',
+    '¿Podrían confirmarme disponibilidad y precio final?',
+  );
   return lineas.join('\n');
 }
 

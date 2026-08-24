@@ -11,7 +11,7 @@ export interface ConfiguracionSitio {
   simbolo_moneda: string;
   lema_marca?: string;
   aviso_superior?: string;
-  descripcion_footer?: string;
+  mostrar_aviso_superior?: boolean;
   titulo_footer_explorar?: string;
   titulo_footer_contacto?: string;
   color_principal?: string;
@@ -51,7 +51,7 @@ export interface VarianteProducto {
 }
 
 export type TipoProducto = 'sticker' | 'plantilla' | 'fisico';
-export type EstadoProducto = 'borrador' | 'publicado' | 'oculto' | 'archivado';
+export type EstadoProducto = 'borrador' | 'publicado' | 'archivado';
 
 export interface Producto {
   id: string;
