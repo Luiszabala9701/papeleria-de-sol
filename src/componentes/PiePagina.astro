@@ -1,6 +1,8 @@
 ---
 const { configuracion } = Astro.props;
 const anio = new Date().getFullYear();
+
+import { obtenerTextoPublico } from '../servicios/textos-publicos';
 ---
 
 <footer class="pie-sitio">
@@ -21,9 +23,10 @@ const anio = new Date().getFullYear();
     <div>
       <h2>{configuracion?.titulo_footer_explorar || 'Explorá'}</h2>
       <ul class="lista-enlaces-pie">
-        <li><a href="/catalogo">Catálogo completo</a></li>
-        <li><a href="/plantillas">Plantillas</a></li>
-        <li><a href="/productos-fisicos">Productos físicos</a></li>
+        <li><a href="/catalogo">{obtenerTextoPublico(configuracion, 'footer_catalogo')}</a></li>
+        <li><a href="/plantillas">{obtenerTextoPublico(configuracion, 'footer_plantillas')}</a></li>
+        <li><a href="/productos-fisicos">{obtenerTextoPublico(configuracion, 'footer_productos_fisicos')}</a></li>
+        <li><a href="/ayuda">{obtenerTextoPublico(configuracion, 'footer_ayuda')}</a></li>
       </ul>
     </div>
 
@@ -43,7 +46,7 @@ const anio = new Date().getFullYear();
     </div>
   </div>
   <div class="pie-inferior">
-    <p>© {anio} Papelería de Sol. Todos los derechos reservados.</p>
+    <p>© {anio} Papelería de Sol. {obtenerTextoPublico(configuracion, 'pie_derechos_reservados')}</p>
     <p>{configuracion?.region || 'CABA y GBA'} · {configuracion?.pais || 'Argentina'}</p>
   </div>
 </footer>

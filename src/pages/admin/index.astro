@@ -65,6 +65,7 @@ const configuracionDisponible = Boolean(
           <button class="enlace-admin" type="button" data-seccion-admin="productos">Productos</button>
           <button class="enlace-admin" type="button" data-seccion-admin="categorias">Categorías</button>
           <button class="enlace-admin" type="button" data-seccion-admin="secciones">Contenido del sitio</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="ayuda">Ayuda</button>
         </nav>
         <a class="enlace-ver-tienda" href="/" target="_blank">Ver tienda ↗</a>
       </aside>
@@ -137,7 +138,7 @@ const configuracionDisponible = Boolean(
                   <p class="etiqueta">Marca, cabecera y pie</p>
                   <h2>Contacto y textos generales</h2>
                   <p>Estos datos se muestran en la cabecera, el footer y los enlaces de contacto de la tienda.</p>
-                  <form id="formulario-configuraciones" class="formulario-dos-columnas">
+                  <form class="formulario-dos-columnas" data-formulario-configuraciones>
                     <label class="grupo-campo"><span>Nombre de la marca</span><input class="campo" name="nombre_marca" required /></label>
                     <label class="grupo-campo"><span>Lema debajo del logo</span><input class="campo" name="lema_marca" /></label>
                     <label class="grupo-campo campo-completo"><span>Mensaje superior</span><input class="campo" name="aviso_superior" /></label>
@@ -172,10 +173,151 @@ const configuracionDisponible = Boolean(
                     </div>
                   </form>
                 </details>
+
+                <details class="tarjeta-contenido-global opciones-contenido-global">
+                  <summary>Navegación y footer</summary>
+                  <p>Estos nombres se muestran en el menú superior y en los enlaces del pie de la tienda. Las direcciones de las páginas no cambian.</p>
+                  <form class="formulario-dos-columnas" data-formulario-configuraciones>
+                    <label class="grupo-campo"><span>Menú: inicio</span><input class="campo" name="navegacion_inicio" /></label>
+                    <label class="grupo-campo"><span>Menú: catálogo</span><input class="campo" name="navegacion_catalogo" /></label>
+                    <label class="grupo-campo"><span>Menú: plantillas</span><input class="campo" name="navegacion_plantillas" /></label>
+                    <label class="grupo-campo"><span>Menú: productos físicos</span><input class="campo" name="navegacion_productos_fisicos" /></label>
+                    <label class="grupo-campo"><span>Menú: ayuda</span><input class="campo" name="navegacion_ayuda" /></label>
+                    <label class="grupo-campo"><span>Botón del carrito</span><input class="campo" name="carrito_boton" /></label>
+                    <label class="grupo-campo"><span>Footer: catálogo</span><input class="campo" name="footer_catalogo" /></label>
+                    <label class="grupo-campo"><span>Footer: plantillas</span><input class="campo" name="footer_plantillas" /></label>
+                    <label class="grupo-campo"><span>Footer: productos físicos</span><input class="campo" name="footer_productos_fisicos" /></label>
+                    <label class="grupo-campo"><span>Footer: ayuda</span><input class="campo" name="footer_ayuda" /></label>
+                    <label class="grupo-campo campo-completo"><span>Texto de derechos reservados</span><input class="campo" name="pie_derechos_reservados" /></label>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar navegación y footer</button></div>
+                  </form>
+                </details>
+
+                <details class="tarjeta-contenido-global opciones-contenido-global">
+                  <summary>Páginas de catálogo y colecciones</summary>
+                  <p>Cada campo corresponde a un texto público. Podés cambiar solo el que necesites y guardar este bloque.</p>
+                  <form class="formulario-dos-columnas" data-formulario-configuraciones>
+                    <label class="grupo-campo"><span>Catálogo: etiqueta</span><input class="campo" name="catalogo_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Catálogo: título</span><input class="campo" name="catalogo_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Catálogo: descripción</span><textarea class="area-texto" name="catalogo_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Catálogo: texto de búsqueda</span><input class="campo" name="catalogo_busqueda_placeholder" /></label>
+                    <label class="grupo-campo"><span>Catálogo: todas las categorías</span><input class="campo" name="catalogo_todas_categorias" /></label>
+                    <label class="grupo-campo"><span>Catálogo: aviso de disponibilidad</span><input class="campo" name="catalogo_aviso_disponibilidad" /></label>
+                    <label class="grupo-campo"><span>Catálogo: página anterior</span><input class="campo" name="catalogo_pagina_anterior" /></label>
+                    <label class="grupo-campo"><span>Catálogo: página siguiente</span><input class="campo" name="catalogo_pagina_siguiente" /></label>
+                    <label class="grupo-campo"><span>Plantillas: etiqueta</span><input class="campo" name="plantillas_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Plantillas: título</span><input class="campo" name="plantillas_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Plantillas: descripción</span><textarea class="area-texto" name="plantillas_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Plantillas sin productos: etiqueta</span><input class="campo" name="plantillas_vacio_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Plantillas sin productos: título</span><input class="campo" name="plantillas_vacio_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Plantillas sin productos: descripción</span><textarea class="area-texto" name="plantillas_vacio_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Plantillas sin productos: botón</span><input class="campo" name="plantillas_vacio_boton" /></label>
+                    <label class="grupo-campo"><span>Productos físicos: etiqueta</span><input class="campo" name="fisicos_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Productos físicos: título</span><input class="campo" name="fisicos_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Productos físicos: descripción</span><textarea class="area-texto" name="fisicos_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Productos físicos sin productos: etiqueta</span><input class="campo" name="fisicos_vacio_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Productos físicos sin productos: título</span><input class="campo" name="fisicos_vacio_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Productos físicos sin productos: descripción</span><textarea class="area-texto" name="fisicos_vacio_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Productos físicos sin productos: botón</span><input class="campo" name="fisicos_vacio_boton" /></label>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar páginas de catálogo y colecciones</button></div>
+                  </form>
+                </details>
+
+                <details class="tarjeta-contenido-global opciones-contenido-global">
+                  <summary>Productos, selección y mensaje de WhatsApp</summary>
+                  <p>Son los textos que acompañan las tarjetas, el detalle del producto, la selección y el mensaje que se prepara para WhatsApp.</p>
+                  <form class="formulario-dos-columnas" data-formulario-configuraciones>
+                    <label class="grupo-campo"><span>Producto destacado</span><input class="campo" name="producto_destacado" /></label>
+                    <label class="grupo-campo"><span>Tipo de producto físico</span><input class="campo" name="producto_tipo_fisico" /></label>
+                    <label class="grupo-campo"><span>Botón de agregar</span><input class="campo" name="producto_agregar" /></label>
+                    <label class="grupo-campo"><span>Botón de agregar a la selección</span><input class="campo" name="producto_agregar_seleccion" /></label>
+                    <label class="grupo-campo"><span>Etiqueta SKU</span><input class="campo" name="producto_sku" /></label>
+                    <label class="grupo-campo"><span>Etiqueta categoría</span><input class="campo" name="producto_categoria" /></label>
+                    <label class="grupo-campo"><span>Etiqueta disponibilidad</span><input class="campo" name="producto_disponibilidad" /></label>
+                    <label class="grupo-campo"><span>Texto en stock</span><input class="campo" name="producto_en_stock" /></label>
+                    <label class="grupo-campo"><span>Texto para consultar</span><input class="campo" name="producto_consultar" /></label>
+                    <label class="grupo-campo campo-completo"><span>Aclaración de la ficha de producto</span><textarea class="area-texto" name="producto_aviso_whatsapp" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Selección: etiqueta</span><input class="campo" name="carrito_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Selección: título</span><input class="campo" name="carrito_titulo" /></label>
+                    <label class="grupo-campo"><span>Selección vacía</span><input class="campo" name="carrito_vacio" /></label>
+                    <label class="grupo-campo"><span>Selección vacía: enlace</span><input class="campo" name="carrito_explorar_catalogo" /></label>
+                    <label class="grupo-campo"><span>Productos seleccionados</span><input class="campo" name="carrito_productos_seleccionados" /></label>
+                    <label class="grupo-campo"><span>Etiqueta total</span><input class="campo" name="carrito_total" /></label>
+                    <label class="grupo-campo"><span>Botón de WhatsApp</span><input class="campo" name="carrito_continuar_whatsapp" /></label>
+                    <label class="grupo-campo"><span>Botón de vaciar</span><input class="campo" name="carrito_vaciar" /></label>
+                    <label class="grupo-campo"><span>Etiqueta cantidad</span><input class="campo" name="carrito_cantidad" /></label>
+                    <label class="grupo-campo"><span>Confirmación al agregar</span><input class="campo" name="carrito_agregado" /></label>
+                    <label class="grupo-campo campo-completo"><span>Aclaración debajo de la selección</span><textarea class="area-texto" name="carrito_aclaracion" rows="3"></textarea></label>
+                    <label class="grupo-campo campo-completo"><span>Mensaje de WhatsApp: inicio</span><textarea class="area-texto" name="mensaje_whatsapp_inicio" rows="2"></textarea></label>
+                    <label class="grupo-campo"><span>Mensaje de WhatsApp: total de productos</span><input class="campo" name="mensaje_whatsapp_total_productos" /></label>
+                    <label class="grupo-campo"><span>Mensaje de WhatsApp: total de dinero</span><input class="campo" name="mensaje_whatsapp_total" /></label>
+                    <label class="grupo-campo campo-completo"><span>Mensaje de WhatsApp: cierre</span><textarea class="area-texto" name="mensaje_whatsapp_cierre" rows="2"></textarea></label>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar textos de productos y selección</button></div>
+                  </form>
+                </details>
+
+                <details class="tarjeta-contenido-global opciones-contenido-global">
+                  <summary>Página de ayuda para clientes</summary>
+                  <p>Esta guía aparece públicamente en la última opción del menú. Editá cada paso de forma independiente.</p>
+                  <form class="formulario-dos-columnas" data-formulario-configuraciones>
+                    <label class="grupo-campo"><span>Ayuda: etiqueta</span><input class="campo" name="ayuda_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Ayuda: título</span><input class="campo" name="ayuda_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Ayuda: descripción</span><textarea class="area-texto" name="ayuda_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Paso 1: título</span><input class="campo" name="ayuda_paso_1_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Paso 1: explicación</span><textarea class="area-texto" name="ayuda_paso_1_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Paso 2: título</span><input class="campo" name="ayuda_paso_2_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Paso 2: explicación</span><textarea class="area-texto" name="ayuda_paso_2_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Paso 3: título</span><input class="campo" name="ayuda_paso_3_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Paso 3: explicación</span><textarea class="area-texto" name="ayuda_paso_3_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Bloque final: título</span><input class="campo" name="ayuda_consultas_titulo" /></label>
+                    <label class="grupo-campo"><span>Bloque final: botón</span><input class="campo" name="ayuda_consultas_boton" /></label>
+                    <label class="grupo-campo campo-completo"><span>Bloque final: explicación</span><textarea class="area-texto" name="ayuda_consultas_descripcion" rows="3"></textarea></label>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar página de ayuda</button></div>
+                  </form>
+                </details>
               </div>
             )}
           </section>
         ))}
+
+        <section class="seccion-admin" data-panel-admin="ayuda">
+          <header class="cabecera-admin">
+            <div>
+              <p class="etiqueta">Guía interna</p>
+              <h1>Ayuda para administrar</h1>
+              <p>Resumen de las tareas habituales para mantener la tienda actualizada.</p>
+            </div>
+          </header>
+          <div class="tarjeta-ayuda guia-administracion">
+            <section>
+              <h2>Productos y categorías</h2>
+              <ol>
+                <li>Primero creá una categoría del tipo correcto: sticker, plantilla o producto físico.</li>
+                <li>Al crear un producto, elegí el tipo y usá la sugerencia del SKU. El precio y la descripción son obligatorios.</li>
+                <li>Subí hasta cinco imágenes y dejá el producto como No publicado hasta que esté listo.</li>
+                <li>Marcá Destacado solo cuando quieras que aparezca entre los stickers del inicio.</li>
+              </ol>
+            </section>
+            <section>
+              <h2>Contenido y apariencia</h2>
+              <ol>
+                <li>En Contenido del sitio se editan los bloques del inicio y la apariencia individual de sus textos.</li>
+                <li>Los desplegables agrupan los textos por página. Guardá cada bloque después de modificarlo.</li>
+                <li>Paleta y tipografía general cambia la identidad visual completa; los estilos de una sección afectan solo a esa sección.</li>
+                <li>Actualizá la tienda abierta en otra pestaña para ver los cambios ya publicados.</li>
+              </ol>
+            </section>
+            <section>
+              <h2>Publicación segura</h2>
+              <ol>
+                <li>Publicado muestra el producto al público. No publicado lo conserva en el dashboard sin mostrarlo.</li>
+                <li>Archivar retira un producto sin borrarlo; podés restaurarlo después como No publicado.</li>
+                <li>Las opciones de SEO son opcionales. Usalas solo si necesitás un título o descripción distintos para buscadores.</li>
+                <li>Cerrá sesión al terminar, especialmente si usás una computadora compartida.</li>
+              </ol>
+            </section>
+          </div>
+        </section>
 
       </main>
     </div>

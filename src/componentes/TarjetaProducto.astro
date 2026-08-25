@@ -1,13 +1,16 @@
 ---
 import type { Producto } from '../tipos/contenidos';
+import type { ConfiguracionSitio } from '../tipos/contenidos';
+import { obtenerTextoPublico } from '../servicios/textos-publicos';
 
 interface Props {
   producto: Producto;
   compacta?: boolean;
   sinMarcaAgua?: boolean;
+  configuracion?: ConfiguracionSitio;
 }
 
-const { producto, compacta = false, sinMarcaAgua = false } = Astro.props;
+const { producto, compacta = false, sinMarcaAgua = false, configuracion } = Astro.props;
 const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
 const esSticker = producto.tipo_producto === 'sticker';
 const precio = new Intl.NumberFormat('es-AR', {
@@ -35,10 +38,10 @@ const precio = new Intl.NumberFormat('es-AR', {
       decoding="async"
       draggable={esSticker ? 'false' : undefined}
     />
-    {producto.destacado && <span class="distintivo-producto">Destacado</span>}
+    {producto.destacado && <span class="distintivo-producto">{obtenerTextoPublico(configuracion, 'producto_destacado')}</span>}
   </a>
   <div class="contenido-producto">
-    <p class="tipo-producto">{producto.tipo_producto === 'fisico' ? 'Producto físico' : producto.tipo_producto}</p>
+    <p class="tipo-producto">{producto.tipo_producto === 'fisico' ? obtenerTextoPublico(configuracion, 'producto_tipo_fisico') : producto.tipo_producto}</p>
     <h3><a href={`/productos/${producto.slug}`}>{producto.nombre}</a></h3>
     {!compacta && <p class="descripcion-producto">{producto.descripcion}</p>}
     <div class="pie-producto">
@@ -56,9 +59,9 @@ const precio = new Intl.NumberFormat('es-AR', {
           moneda: producto.moneda,
           imagen: imagen?.url_publica || '/stickers/1.webp',
         })}
-        aria-label={`Agregar ${producto.nombre} a mi selección`}
+        aria-label={`${obtenerTextoPublico(configuracion, 'producto_agregar')} ${producto.nombre} a mi selección`}
       >
-        Agregar
+        {obtenerTextoPublico(configuracion, 'producto_agregar')}
       </button>
     </div>
   </div>

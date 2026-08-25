@@ -6,6 +6,7 @@ import {
   obtenerConfiguracionSitio,
   obtenerProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
+import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
 const [configuracion, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -19,23 +20,23 @@ const [configuracion, productos] = await Promise.all([
   configuracion={configuracion}
 >
   <header class="contenedor cabecera-pagina">
-    <p class="etiqueta">Hechos con dedicación</p>
-    <h1>Productos físicos</h1>
-    <p>Los productos armados y personalizados aparecerán aquí cuando se publiquen desde el dashboard.</p>
+    <p class="etiqueta">{obtenerTextoPublico(configuracion, 'fisicos_etiqueta')}</p>
+    <h1>{obtenerTextoPublico(configuracion, 'fisicos_titulo')}</h1>
+    <p>{obtenerTextoPublico(configuracion, 'fisicos_descripcion')}</p>
   </header>
 
   <section class="contenedor seccion-listado">
     {productos.length > 0 ? (
       <div class="cuadricula-productos">
-        {productos.map((producto) => <TarjetaProducto producto={producto} />)}
+        {productos.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
       </div>
     ) : (
       <div class="estado-informativo">
         <div>
-          <p class="etiqueta">Nuevas creaciones en camino</p>
-          <h2>Muy pronto vas a ver productos físicos</h2>
-          <p>Mientras tanto, podés consultarnos si tenés una idea especial.</p>
-          <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">Contanos tu idea</a>
+          <p class="etiqueta">{obtenerTextoPublico(configuracion, 'fisicos_vacio_etiqueta')}</p>
+          <h2>{obtenerTextoPublico(configuracion, 'fisicos_vacio_titulo')}</h2>
+          <p>{obtenerTextoPublico(configuracion, 'fisicos_vacio_descripcion')}</p>
+          <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">{obtenerTextoPublico(configuracion, 'fisicos_vacio_boton')}</a>
         </div>
       </div>
     )}

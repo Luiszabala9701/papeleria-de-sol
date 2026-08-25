@@ -10,8 +10,24 @@ const totalElementos = document.querySelector('#total-elementos-carrito');
 const totalDineroCarrito = document.querySelector('#total-dinero-carrito');
 const botonEnviar = document.querySelector('#enviar-carrito-whatsapp');
 const botonVaciar = document.querySelector('#vaciar-carrito');
+const textos = obtenerTextosCarrito();
 
 let carrito = cargarCarrito();
+
+function obtenerTextosCarrito() {
+  try {
+    const datos = JSON.parse(panelCarrito?.dataset.textos || '{}');
+    return typeof datos === 'object' && datos ? datos : {};
+  } catch {
+    return {};
+  }
+}
+
+function texto(clave, respaldo) {
+  return typeof textos[clave] === 'string' && textos[clave].trim()
+    ? textos[clave].trim()
+    : respaldo;
+}
 
 function cargarCarrito() {
   try {
@@ -84,15 +100,15 @@ function crearEstadoVacio() {
   icono.setAttribute('aria-hidden', 'true');
   icono.textContent = '♡';
 
-  const texto = document.createElement('p');
-  texto.textContent = 'Todavía no agregaste productos.';
+  const mensaje = document.createElement('p');
+  mensaje.textContent = texto('vacio', 'Todavía no agregaste productos.');
 
   const enlace = document.createElement('a');
   enlace.className = 'enlace-texto';
   enlace.href = '/catalogo';
-  enlace.textContent = 'Explorar catálogo';
+  enlace.textContent = texto('explorarCatalogo', 'Explorar catálogo');
 
-  estado.append(icono, texto, enlace);
+  estado.append(icono, mensaje, enlace);
   return estado;
 }
 
@@ -142,7 +158,7 @@ function crearElementoCarrito(producto) {
   const nombre = document.createElement('h3');
   nombre.textContent = producto.nombre;
   const cantidad = document.createElement('small');
-  cantidad.textContent = 'Cantidad';
+  cantidad.textContent = texto('cantidad', 'Cantidad');
   const filaCantidad = document.createElement('div');
   filaCantidad.className = 'fila-cantidad-carrito';
   filaCantidad.append(cantidad, crearControlesCantidad(producto));
@@ -193,7 +209,7 @@ function agregarProducto(producto) {
 
   guardarCarrito();
   renderizarCarrito();
-  mostrarNotificacion(`${producto.nombre} se agregó a tu selección.`);
+  mostrarNotificacion(`${producto.nombre} ${texto('agregado', 'se agregó a tu selección.')}`);
 }
 
 function modificarCantidad(idProducto, cambio) {
@@ -211,7 +227,7 @@ function modificarCantidad(idProducto, cambio) {
 
 function crearMensajeWhatsApp() {
   const lineas = [
-    '¡Hola! Quisiera consultar por los siguientes productos de Papelería de Sol:',
+    texto('mensajeInicio', '¡Hola! Quisiera consultar por los siguientes productos de Papelería de Sol:'),
     '',
   ];
 
@@ -222,10 +238,10 @@ function crearMensajeWhatsApp() {
 
   lineas.push(
     '',
-    `Total de productos: ${cantidadTotal()}`,
-    `Total estimado: ${formatearDinero(totalDinero())}`,
+    `${texto('mensajeTotalProductos', 'Total de productos')}: ${cantidadTotal()}`,
+    `${texto('mensajeTotal', 'Total')}: ${formatearDinero(totalDinero())}`,
     '',
-    '¿Podrían confirmarme disponibilidad y precio final?',
+    texto('mensajeCierre', '¿Podrían confirmarme disponibilidad y precio final?'),
   );
   return lineas.join('\n');
 }

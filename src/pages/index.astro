@@ -8,6 +8,7 @@ import {
   obtenerSeccionesPublicadas,
 } from '../servicios/repositorio-contenidos.js';
 import { obtenerEstiloTexto } from '../servicios/estilos-visuales';
+import { obtenerTextoPublico } from '../servicios/textos-publicos';
 
 const [configuracion, secciones, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -53,7 +54,7 @@ const datosEstructurados = {
       </p>
       <h1 style={obtenerEstiloTexto(principal, 'titulo')}>
         {principal?.titulo || 'Ideas que alegran tus días'}
-        <span class="texto-degradado"> con un toque de Sol</span>
+        <span class="texto-degradado"> {obtenerTextoPublico(configuracion, 'inicio_texto_destacado')}</span>
       </h1>
       <p class="hero-descripcion" style={obtenerEstiloTexto(principal, 'contenido')}>
         {principal?.contenido || configuracion.descripcion_corta}
@@ -94,7 +95,7 @@ const datosEstructurados = {
       </header>
 
       <div class="cuadricula-productos">
-        {destacados.map((producto) => <TarjetaProducto producto={producto} compacta />)}
+        {destacados.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} compacta />)}
       </div>
     </div>
   </section>

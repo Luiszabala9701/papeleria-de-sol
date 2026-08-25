@@ -47,6 +47,35 @@ const COLORES_CONFIGURABLES = [
   'color_principal', 'color_secundario', 'color_principal_intenso', 'color_secundario_intenso',
   'color_fondo', 'color_texto', 'color_texto_suave',
 ];
+const CLAVES_TEXTO_PUBLICO = [
+  'navegacion_inicio', 'navegacion_catalogo', 'navegacion_plantillas',
+  'navegacion_productos_fisicos', 'navegacion_ayuda', 'carrito_boton',
+  'footer_catalogo', 'footer_plantillas', 'footer_productos_fisicos', 'footer_ayuda',
+  'pie_derechos_reservados', 'inicio_texto_destacado',
+  'catalogo_etiqueta', 'catalogo_titulo', 'catalogo_descripcion',
+  'catalogo_busqueda_placeholder', 'catalogo_todas_categorias',
+  'catalogo_aviso_disponibilidad', 'catalogo_pagina_anterior', 'catalogo_pagina_siguiente',
+  'plantillas_etiqueta', 'plantillas_titulo', 'plantillas_descripcion',
+  'plantillas_vacio_etiqueta', 'plantillas_vacio_titulo',
+  'plantillas_vacio_descripcion', 'plantillas_vacio_boton',
+  'fisicos_etiqueta', 'fisicos_titulo', 'fisicos_descripcion',
+  'fisicos_vacio_etiqueta', 'fisicos_vacio_titulo',
+  'fisicos_vacio_descripcion', 'fisicos_vacio_boton',
+  'producto_destacado', 'producto_tipo_fisico', 'producto_agregar',
+  'producto_agregar_seleccion', 'producto_sku', 'producto_categoria',
+  'producto_disponibilidad', 'producto_en_stock', 'producto_consultar',
+  'producto_aviso_whatsapp',
+  'carrito_etiqueta', 'carrito_titulo', 'carrito_vacio', 'carrito_explorar_catalogo',
+  'carrito_productos_seleccionados', 'carrito_total', 'carrito_continuar_whatsapp',
+  'carrito_vaciar', 'carrito_aclaracion', 'carrito_cantidad', 'carrito_agregado',
+  'mensaje_whatsapp_inicio', 'mensaje_whatsapp_total_productos',
+  'mensaje_whatsapp_total', 'mensaje_whatsapp_cierre',
+  'ayuda_etiqueta', 'ayuda_titulo', 'ayuda_descripcion',
+  'ayuda_paso_1_titulo', 'ayuda_paso_1_descripcion',
+  'ayuda_paso_2_titulo', 'ayuda_paso_2_descripcion',
+  'ayuda_paso_3_titulo', 'ayuda_paso_3_descripcion',
+  'ayuda_consultas_titulo', 'ayuda_consultas_descripcion', 'ayuda_consultas_boton',
+];
 const PREFIJOS_SKU: Record<string, string> = {
   sticker: 'ST',
   plantilla: 'PL',
@@ -600,6 +629,7 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
     'nombre_marca', 'lema_marca', 'aviso_superior', 'mostrar_aviso_superior', 'descripcion_corta',
     'titulo_footer_explorar', 'titulo_footer_contacto', 'whatsapp', 'correo', 'instagram', 'tiktok',
     'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES, 'fuente_principal',
+    ...CLAVES_TEXTO_PUBLICO,
   ];
 
   COLORES_CONFIGURABLES.forEach((clave) => {
@@ -610,6 +640,11 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
   if (Object.prototype.hasOwnProperty.call(datos, 'fuente_principal') && !FUENTES_PERMITIDAS.includes(String(datos.fuente_principal))) {
     throw new Error('La tipografía seleccionada no es válida.');
   }
+  CLAVES_TEXTO_PUBLICO.forEach((clave) => {
+    if (Object.prototype.hasOwnProperty.call(datos, clave) && typeof datos[clave] !== 'string') {
+      throw new Error('Uno de los textos ingresados no es válido.');
+    }
+  });
 
   const filas = Object.entries(datos)
     .filter(([clave]) => clavesPermitidas.includes(clave))

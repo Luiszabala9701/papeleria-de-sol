@@ -5,6 +5,7 @@ import {
   obtenerConfiguracionSitio,
   obtenerProductoPorSlug,
 } from '../../servicios/repositorio-contenidos.js';
+import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
 export const prerender = false;
 
@@ -70,25 +71,25 @@ const datosEstructurados = JSON.stringify({
     </div>
 
     <div class="informacion-detalle">
-      <p class="etiqueta">{producto.tipo_producto === 'fisico' ? 'Producto físico' : producto.tipo_producto}</p>
+      <p class="etiqueta">{producto.tipo_producto === 'fisico' ? obtenerTextoPublico(configuracion, 'producto_tipo_fisico') : producto.tipo_producto}</p>
       <h1>{producto.nombre}</h1>
       <p class="precio-detalle"><strong>{precio}</strong></p>
       <p class="descripcion-detalle">{producto.descripcion}</p>
 
       <ul class="lista-detalle">
-        {producto.sku && <li><strong>SKU:</strong> {producto.sku}</li>}
-        {producto.categoria?.nombre && <li><strong>Categoría:</strong> {producto.categoria.nombre}</li>}
-        {producto.controla_stock && <li><strong>Disponibilidad:</strong> {Number(producto.stock) > 0 ? 'En stock' : 'Consultar'}</li>}
+        {producto.sku && <li><strong>{obtenerTextoPublico(configuracion, 'producto_sku')}:</strong> {producto.sku}</li>}
+        {producto.categoria?.nombre && <li><strong>{obtenerTextoPublico(configuracion, 'producto_categoria')}:</strong> {producto.categoria.nombre}</li>}
+        {producto.controla_stock && <li><strong>{obtenerTextoPublico(configuracion, 'producto_disponibilidad')}:</strong> {Number(producto.stock) > 0 ? obtenerTextoPublico(configuracion, 'producto_en_stock') : obtenerTextoPublico(configuracion, 'producto_consultar')}</li>}
       </ul>
 
-      <p class="aviso-whatsapp">Agregá este producto a tu selección. La disponibilidad, el precio final y la entrega se confirman personalmente por WhatsApp.</p>
+      <p class="aviso-whatsapp">{obtenerTextoPublico(configuracion, 'producto_aviso_whatsapp')}</p>
       <button
         class="boton boton-principal boton-ancho"
         type="button"
         data-agregar-producto
         data-producto={datosCarrito}
       >
-        Agregar a mi selección
+        {obtenerTextoPublico(configuracion, 'producto_agregar_seleccion')}
       </button>
     </div>
   </article>

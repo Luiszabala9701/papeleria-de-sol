@@ -1,4 +1,5 @@
 export interface ConfiguracionSitio {
+  [clave: string]: string | boolean | undefined;
   nombre_marca: string;
   descripcion_corta: string;
   whatsapp: string;

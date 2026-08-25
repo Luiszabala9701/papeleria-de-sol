@@ -6,6 +6,7 @@ import {
   obtenerConfiguracionSitio,
   obtenerProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
+import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
 const [configuracion, plantillas] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -19,23 +20,23 @@ const [configuracion, plantillas] = await Promise.all([
   configuracion={configuracion}
 >
   <header class="contenedor cabecera-pagina">
-    <p class="etiqueta">Diseños digitales</p>
-    <h1>Plantillas creativas</h1>
-    <p>Las nuevas colecciones aparecerán aquí cuando sean publicadas desde el dashboard.</p>
+    <p class="etiqueta">{obtenerTextoPublico(configuracion, 'plantillas_etiqueta')}</p>
+    <h1>{obtenerTextoPublico(configuracion, 'plantillas_titulo')}</h1>
+    <p>{obtenerTextoPublico(configuracion, 'plantillas_descripcion')}</p>
   </header>
 
   <section class="contenedor seccion-listado">
     {plantillas.length > 0 ? (
       <div class="cuadricula-productos">
-        {plantillas.map((producto) => <TarjetaProducto producto={producto} />)}
+        {plantillas.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
       </div>
     ) : (
       <div class="estado-informativo">
         <div>
-          <p class="etiqueta">Estamos preparando novedades</p>
-          <h2>Próximamente habrá nuevas plantillas</h2>
-          <p>Consultanos por WhatsApp si buscás un diseño personalizado.</p>
-          <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">Consultar por WhatsApp</a>
+          <p class="etiqueta">{obtenerTextoPublico(configuracion, 'plantillas_vacio_etiqueta')}</p>
+          <h2>{obtenerTextoPublico(configuracion, 'plantillas_vacio_titulo')}</h2>
+          <p>{obtenerTextoPublico(configuracion, 'plantillas_vacio_descripcion')}</p>
+          <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">{obtenerTextoPublico(configuracion, 'plantillas_vacio_boton')}</a>
         </div>
       </div>
     )}

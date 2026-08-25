@@ -1,0 +1,135 @@
+---
+import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import type { ConfiguracionSitio } from '../../tipos/contenidos';
+import { obtenerConfiguracionSitio } from '../../servicios/repositorio-contenidos.js';
+import { obtenerTextoPublico } from '../../servicios/textos-publicos';
+
+const configuracion = await obtenerConfiguracionSitio() as ConfiguracionSitio;
+const whatsapp = configuracion.whatsapp || '541164879422';
+const enlaceWhatsApp = `https://wa.me/${whatsapp}?text=${encodeURIComponent('¡Hola! Tengo una consulta sobre Papelería de Sol.')}`;
+
+const pasos = [
+  {
+    titulo: obtenerTextoPublico(configuracion, 'ayuda_paso_1_titulo'),
+    descripcion: obtenerTextoPublico(configuracion, 'ayuda_paso_1_descripcion'),
+  },
+  {
+    titulo: obtenerTextoPublico(configuracion, 'ayuda_paso_2_titulo'),
+    descripcion: obtenerTextoPublico(configuracion, 'ayuda_paso_2_descripcion'),
+  },
+  {
+    titulo: obtenerTextoPublico(configuracion, 'ayuda_paso_3_titulo'),
+    descripcion: obtenerTextoPublico(configuracion, 'ayuda_paso_3_descripcion'),
+  },
+];
+---
+
+<DisenoPrincipal
+  titulo={`${obtenerTextoPublico(configuracion, 'navegacion_ayuda')} | ${configuracion.nombre_marca || 'Papelería de Sol'}`}
+  descripcion={obtenerTextoPublico(configuracion, 'ayuda_descripcion')}
+  configuracion={configuracion}
+>
+  <header class="contenedor cabecera-pagina pagina-ayuda-cabecera">
+    <p class="etiqueta">{obtenerTextoPublico(configuracion, 'ayuda_etiqueta')}</p>
+    <h1>{obtenerTextoPublico(configuracion, 'ayuda_titulo')}</h1>
+    <p>{obtenerTextoPublico(configuracion, 'ayuda_descripcion')}</p>
+  </header>
+
+  <section class="contenedor seccion-ayuda" aria-label="Pasos para consultar productos">
+    <div class="cuadricula-ayuda">
+      {
+        pasos.map((paso) => (
+          <article class="tarjeta-ayuda-publica">
+            <h2>{paso.titulo}</h2>
+            <p>{paso.descripcion}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <aside class="bloque-consultas">
+      <div>
+        <p class="etiqueta">Consultas</p>
+        <h2>{obtenerTextoPublico(configuracion, 'ayuda_consultas_titulo')}</h2>
+        <p>{obtenerTextoPublico(configuracion, 'ayuda_consultas_descripcion')}</p>
+      </div>
+      <a class="boton boton-principal" href={enlaceWhatsApp} target="_blank" rel="noreferrer">
+        {obtenerTextoPublico(configuracion, 'ayuda_consultas_boton')}
+      </a>
+    </aside>
+  </section>
+</DisenoPrincipal>
+
+<style>
+  .pagina-ayuda-cabecera {
+    padding-block: clamp(3rem, 8vw, 6rem) 2rem;
+  }
+
+  .pagina-ayuda-cabecera h1 {
+    max-width: 760px;
+  }
+
+  .pagina-ayuda-cabecera p:not(.etiqueta) {
+    max-width: 760px;
+    color: var(--tinta-suave);
+    font-size: 1.08rem;
+  }
+
+  .seccion-ayuda {
+    padding-bottom: 5rem;
+  }
+
+  .cuadricula-ayuda {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .tarjeta-ayuda-publica,
+  .bloque-consultas {
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: var(--sombra-suave);
+  }
+
+  .tarjeta-ayuda-publica {
+    padding: clamp(1.25rem, 3vw, 1.8rem);
+  }
+
+  .tarjeta-ayuda-publica h2,
+  .bloque-consultas h2 {
+    margin-bottom: 0.65rem;
+    font-size: 1.2rem;
+  }
+
+  .tarjeta-ayuda-publica p,
+  .bloque-consultas p:not(.etiqueta) {
+    margin-bottom: 0;
+    color: var(--tinta-suave);
+  }
+
+  .bloque-consultas {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(1.25rem, 4vw, 2rem);
+    margin-top: 1rem;
+    gap: 1.5rem;
+  }
+
+  .bloque-consultas > div {
+    max-width: 720px;
+  }
+
+  @media (max-width: 720px) {
+    .cuadricula-ayuda {
+      grid-template-columns: 1fr;
+    }
+
+    .bloque-consultas {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+</style>

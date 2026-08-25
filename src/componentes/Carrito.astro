@@ -1,5 +1,17 @@
 ---
 const { configuracion } = Astro.props;
+import { obtenerTextoPublico } from '../servicios/textos-publicos';
+
+const textosCarrito = {
+  vacio: obtenerTextoPublico(configuracion, 'carrito_vacio'),
+  explorarCatalogo: obtenerTextoPublico(configuracion, 'carrito_explorar_catalogo'),
+  cantidad: obtenerTextoPublico(configuracion, 'carrito_cantidad'),
+  agregado: obtenerTextoPublico(configuracion, 'carrito_agregado'),
+  mensajeInicio: obtenerTextoPublico(configuracion, 'mensaje_whatsapp_inicio'),
+  mensajeTotalProductos: obtenerTextoPublico(configuracion, 'mensaje_whatsapp_total_productos'),
+  mensajeTotal: obtenerTextoPublico(configuracion, 'mensaje_whatsapp_total'),
+  mensajeCierre: obtenerTextoPublico(configuracion, 'mensaje_whatsapp_cierre'),
+};
 ---
 
 <div id="fondo-carrito" class="fondo-carrito" hidden></div>
@@ -9,11 +21,12 @@ const { configuracion } = Astro.props;
   aria-labelledby="titulo-carrito"
   aria-hidden="true"
   data-whatsapp={configuracion?.whatsapp || '541164879422'}
+  data-textos={JSON.stringify(textosCarrito)}
 >
   <div class="cabecera-carrito">
     <div>
-      <p class="etiqueta">Tu pedido</p>
-      <h2 id="titulo-carrito">Mi selección</h2>
+      <p class="etiqueta">{obtenerTextoPublico(configuracion, 'carrito_etiqueta')}</p>
+      <h2 id="titulo-carrito">{obtenerTextoPublico(configuracion, 'carrito_titulo')}</h2>
     </div>
     <button id="cerrar-carrito" class="boton-icono" type="button" aria-label="Cerrar carrito">×</button>
   </div>
@@ -21,24 +34,24 @@ const { configuracion } = Astro.props;
   <div id="contenido-carrito" class="contenido-carrito">
     <div class="estado-vacio">
       <span aria-hidden="true">♡</span>
-      <p>Todavía no agregaste productos.</p>
-      <a href="/catalogo" class="enlace-texto">Explorar catálogo</a>
+      <p>{textosCarrito.vacio}</p>
+      <a href="/catalogo" class="enlace-texto">{textosCarrito.explorarCatalogo}</a>
     </div>
   </div>
 
   <div class="pie-carrito">
     <div class="resumen-carrito">
-      <span>Productos seleccionados</span>
+      <span>{obtenerTextoPublico(configuracion, 'carrito_productos_seleccionados')}</span>
       <strong id="total-elementos-carrito">0</strong>
     </div>
     <div class="resumen-carrito resumen-total-carrito">
-      <span>Total estimado</span>
+      <span>{obtenerTextoPublico(configuracion, 'carrito_total')}</span>
       <strong id="total-dinero-carrito">$0</strong>
     </div>
     <button id="enviar-carrito-whatsapp" class="boton boton-principal boton-ancho" type="button" disabled>
-      Continuar compra por WhatsApp
+      {obtenerTextoPublico(configuracion, 'carrito_continuar_whatsapp')}
     </button>
-    <button id="vaciar-carrito" class="boton-texto" type="button">Vaciar selección</button>
-    <p class="aclaracion-carrito">El pedido se confirma personalmente por WhatsApp. No se realiza ningún pago desde esta página.</p>
+    <button id="vaciar-carrito" class="boton-texto" type="button">{obtenerTextoPublico(configuracion, 'carrito_vaciar')}</button>
+    <p class="aclaracion-carrito">{obtenerTextoPublico(configuracion, 'carrito_aclaracion')}</p>
   </div>
 </aside>

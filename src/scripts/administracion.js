@@ -22,7 +22,7 @@ const formularioRecurso = document.querySelector('#formulario-recurso');
 const camposFormulario = document.querySelector('#campos-formulario-recurso');
 const tituloDialogo = document.querySelector('#titulo-dialogo');
 const errorFormulario = document.querySelector('#error-formulario-recurso');
-const formularioConfiguraciones = document.querySelector('#formulario-configuraciones');
+const formulariosConfiguraciones = document.querySelectorAll('[data-formulario-configuraciones]');
 const formularioEstilosGlobales = document.querySelector('#formulario-estilos-globales');
 const botonAlternarContrasena = document.querySelector('#alternar-contrasena-admin');
 
@@ -690,7 +690,7 @@ async function cambiarSeccion(recurso) {
 async function cargarConfiguraciones() {
   const filas = await invocar('obtener_configuraciones');
   filas.forEach(({ clave, valor }) => {
-    [formularioConfiguraciones, formularioEstilosGlobales].forEach((formulario) => {
+    [...formulariosConfiguraciones, formularioEstilosGlobales].forEach((formulario) => {
       const campo = formulario?.elements[clave];
       if (!campo) return;
       if (campo.type === 'checkbox') campo.checked = Boolean(valor);
@@ -831,17 +831,19 @@ formularioRecurso?.addEventListener('submit', async (evento) => {
   }
 });
 
-formularioConfiguraciones?.addEventListener('submit', async (evento) => {
+formulariosConfiguraciones.forEach((formulario) => formulario.addEventListener('submit', async (evento) => {
   evento.preventDefault();
-  const datos = Object.fromEntries(new FormData(formularioConfiguraciones));
-  datos.mostrar_aviso_superior = Boolean(formularioConfiguraciones.elements.mostrar_aviso_superior?.checked);
+  const datos = Object.fromEntries(new FormData(formulario));
+  if (formulario.elements.mostrar_aviso_superior) {
+    datos.mostrar_aviso_superior = Boolean(formulario.elements.mostrar_aviso_superior.checked);
+  }
   try {
     await invocar('guardar_configuraciones', { datos });
-    notificar('Datos comerciales actualizados.');
+    notificar('Contenido guardado. Actualizá la tienda para ver los cambios.');
   } catch (error) {
     notificar(error.message);
   }
-});
+}));
 
 formularioEstilosGlobales?.addEventListener('submit', async (evento) => {
   evento.preventDefault();

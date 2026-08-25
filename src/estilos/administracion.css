@@ -275,6 +275,26 @@ body.dialogo-abierto {
   color: var(--tinta-suave);
 }
 
+.guia-administracion {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.guia-administracion section + section {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--borde);
+}
+
+.guia-administracion h2 {
+  margin-bottom: 0.65rem;
+}
+
+.guia-administracion ol {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
 .barra-listado {
   display: grid;
   grid-template-columns: minmax(220px, 420px) minmax(160px, 220px) auto;
@@ -651,6 +671,17 @@ body.dialogo-abierto {
 
   .tarjetas-resumen {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .guia-administracion {
+    grid-template-columns: 1fr;
+  }
+
+  .guia-administracion section + section {
+    padding-top: 1.25rem;
+    padding-left: 0;
+    border-top: 1px solid var(--borde);
+    border-left: 0;
   }
 }
 

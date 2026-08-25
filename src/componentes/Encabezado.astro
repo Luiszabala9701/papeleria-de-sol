@@ -1,5 +1,6 @@
 ---
 import type { ConfiguracionSitio } from '../tipos/contenidos';
+import { obtenerTextoPublico } from '../servicios/textos-publicos';
 
 interface Props {
   configuracion?: ConfiguracionSitio;
@@ -9,10 +10,11 @@ interface Props {
 const { configuracion, rutaActual = '/' } = Astro.props;
 
 const enlaces = [
-  { href: '/', texto: 'Inicio' },
-  { href: '/catalogo', texto: 'Catálogo' },
-  { href: '/plantillas', texto: 'Plantillas' },
-  { href: '/productos-fisicos', texto: 'Productos físicos' },
+  { href: '/', texto: obtenerTextoPublico(configuracion, 'navegacion_inicio') },
+  { href: '/catalogo', texto: obtenerTextoPublico(configuracion, 'navegacion_catalogo') },
+  { href: '/plantillas', texto: obtenerTextoPublico(configuracion, 'navegacion_plantillas') },
+  { href: '/productos-fisicos', texto: obtenerTextoPublico(configuracion, 'navegacion_productos_fisicos') },
+  { href: '/ayuda', texto: obtenerTextoPublico(configuracion, 'navegacion_ayuda') },
 ];
 
 const enlaceActivo = (href: string) =>
@@ -65,7 +67,7 @@ const enlaceActivo = (href: string) =>
 
     <button id="boton-carrito" class="boton-carrito" type="button" aria-controls="panel-carrito">
       <span aria-hidden="true">♡</span>
-      <span class="texto-carrito">Mi selección</span>
+      <span class="texto-carrito">{obtenerTextoPublico(configuracion, 'carrito_boton')}</span>
       <span id="contador-carrito" class="contador-carrito">0</span>
     </button>
   </nav>

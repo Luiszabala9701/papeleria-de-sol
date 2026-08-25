@@ -7,6 +7,7 @@ import {
   obtenerConfiguracionSitio,
   obtenerProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
+import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
 const [configuracion, productos, categorias] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -26,21 +27,21 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
   configuracion={configuracion}
 >
   <header class="contenedor cabecera-pagina">
-    <p class="etiqueta">Colecciones de Papelería de Sol</p>
-    <h1>Encontrá tu próximo favorito</h1>
-    <p>Buscá por nombre o número, elegí una categoría y agregá tus stickers favoritos a la selección.</p>
+    <p class="etiqueta">{obtenerTextoPublico(configuracion, 'catalogo_etiqueta')}</p>
+    <h1>{obtenerTextoPublico(configuracion, 'catalogo_titulo')}</h1>
+    <p>{obtenerTextoPublico(configuracion, 'catalogo_descripcion')}</p>
   </header>
 
   <section id="catalogo-resultados" class="contenedor seccion-catalogo">
     <div class="barra-catalogo" aria-label="Filtros del catálogo">
       <label>
         <span class="solo-lectores">Buscar productos</span>
-        <input id="buscador-catalogo" class="campo" type="search" placeholder="Buscar por nombre o número…" autocomplete="off" />
+        <input id="buscador-catalogo" class="campo" type="search" placeholder={obtenerTextoPublico(configuracion, 'catalogo_busqueda_placeholder')} autocomplete="off" />
       </label>
       <label>
         <span class="solo-lectores">Categoría de stickers</span>
         <select id="filtro-categoria" class="selector">
-          <option value="">Todas las categorías</option>
+          <option value="">{obtenerTextoPublico(configuracion, 'catalogo_todas_categorias')}</option>
           {categoriasStickers.map((categoria) => <option value={categoria.id}>{categoria.nombre}</option>)}
         </select>
       </label>
@@ -48,17 +49,17 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
 
     <div class="resultado-catalogo">
       <span id="informacion-resultados">{productos.length} productos</span>
-      <span>Consultá disponibilidad por WhatsApp</span>
+      <span>{obtenerTextoPublico(configuracion, 'catalogo_aviso_disponibilidad')}</span>
     </div>
 
     <div id="galeria-catalogo" class="cuadricula-productos">
-      {productosIniciales.map((producto) => <TarjetaProducto producto={producto} />)}
+      {productosIniciales.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
     </div>
 
     <nav class="paginacion" aria-label="Paginación del catálogo">
-      <button id="pagina-anterior" class="boton-paginacion" type="button" disabled>Anterior</button>
+      <button id="pagina-anterior" class="boton-paginacion" type="button" disabled>{obtenerTextoPublico(configuracion, 'catalogo_pagina_anterior')}</button>
       <span id="informacion-pagina-catalogo">Página 1</span>
-      <button id="pagina-siguiente" class="boton-paginacion" type="button">Siguiente</button>
+      <button id="pagina-siguiente" class="boton-paginacion" type="button">{obtenerTextoPublico(configuracion, 'catalogo_pagina_siguiente')}</button>
     </nav>
   </section>
 
