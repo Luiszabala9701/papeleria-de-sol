@@ -285,6 +285,11 @@ botonEnviar?.addEventListener('click', () => {
 
   const numero = panelCarrito.dataset.whatsapp;
   const enlace = `https://wa.me/${numero}?text=${encodeURIComponent(crearMensajeWhatsApp())}`;
+  if (typeof window.abrirAvisoWhatsApp === 'function') {
+    window.abrirAvisoWhatsApp(enlace, { tipo: 'seleccion', activador: botonEnviar });
+    return;
+  }
+
   window.open(enlace, '_blank', 'noopener,noreferrer');
 });
 

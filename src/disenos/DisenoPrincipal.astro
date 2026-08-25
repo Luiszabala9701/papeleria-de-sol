@@ -4,6 +4,7 @@ import Encabezado from '../componentes/Encabezado.astro';
 import PiePagina from '../componentes/PiePagina.astro';
 import Carrito from '../componentes/Carrito.astro';
 import BotonWhatsAppFlotante from '../componentes/BotonWhatsAppFlotante.astro';
+import AvisoWhatsApp from '../componentes/AvisoWhatsApp.astro';
 import { esColorHexadecimal, obtenerEstiloGlobal } from '../servicios/estilos-visuales';
 
 const {
@@ -60,12 +61,14 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     {!ocultarNavegacion && <PiePagina configuracion={configuracion} />}
     {!ocultarNavegacion && <Carrito configuracion={configuracion} />}
     {!ocultarNavegacion && <BotonWhatsAppFlotante configuracion={configuracion} />}
+    {!ocultarNavegacion && <AvisoWhatsApp />}
 
     <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
 
     {!ocultarNavegacion && (
       <script>
         import '../scripts/menu.js';
+        import '../scripts/aviso-whatsapp.js';
         import '../scripts/carrito.js';
         import '../scripts/proteccion-stickers.js';
       </script>
