@@ -29,6 +29,7 @@ El sitio local queda disponible en `http://127.0.0.1:4321`. La tienda funciona c
 - [Configuración de Supabase](documentacion/configuracion-supabase.md)
 - [Despliegue gratuito en Netlify](documentacion/despliegue-netlify.md)
 - [Seguridad](documentacion/seguridad.md)
+- [Revisión previa a producción](documentacion/revision-preproduccion.md)
 - [Dominio propio](documentacion/dominio.md)
 - [Palabras clave SEO](documentacion/palabras-clave-seo.txt)
 - [Manual para clientes](documentacion/manuales/manual-uso-clientes.docx)

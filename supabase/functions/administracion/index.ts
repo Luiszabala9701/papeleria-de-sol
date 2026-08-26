@@ -81,6 +81,7 @@ const PREFIJOS_SKU: Record<string, string> = {
   plantilla: 'PL',
   fisico: 'PF',
 };
+const EXPRESION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function cabecerasCors(solicitud: Request) {
   const origen = solicitud.headers.get('origin') || '';
@@ -127,6 +128,71 @@ function crearSlug(texto: unknown) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {
+  return Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor);
+}
+
+function validarIdentificador(valor: unknown, etiqueta = 'El identificador') {
+  if (typeof valor !== 'string' || !EXPRESION_UUID.test(valor)) {
+    throw new Error(`${etiqueta} no es válido.`);
+  }
+  return valor;
+}
+
+function esEnlaceInternoSeguro(valor: unknown) {
+  if (valor === null || valor === undefined || valor === '') return true;
+  return typeof valor === 'string' && /^\/(?!\/)/.test(valor.trim());
+}
+
+function esUrlHttpsSegura(valor: unknown, dominiosPermitidos: string[] = []) {
+  if (valor === null || valor === undefined || valor === '') return true;
+  if (typeof valor !== 'string') return false;
+
+  try {
+    const url = new URL(valor);
+    if (url.protocol !== 'https:') return false;
+    if (!dominiosPermitidos.length) return true;
+    return dominiosPermitidos.includes(url.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function esRutaDeImagenSegura(valor: unknown) {
+  if (valor === null || valor === undefined || valor === '') return true;
+  return typeof valor === 'string' && (
+    /^\/(?!\/)/.test(valor) || esUrlHttpsSegura(valor)
+  );
+}
+
+function esNumeroWhatsAppSeguro(valor: unknown) {
+  return typeof valor === 'string' && /^[1-9]\d{7,14}$/.test(valor);
+}
+
+function esCorreoSeguro(valor: unknown) {
+  return typeof valor === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+}
+
+function esRutaDeArchivoDeProductoSegura(ruta: string, productoId: string) {
+  const expresion = new RegExp(
+    `^${productoId}/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.(jpg|png|webp|avif)$`,
+    'i',
+  );
+  return expresion.test(ruta);
+}
+
+function mensajeSeguroError(error: unknown) {
+  if (typeof error === 'object' && error && 'code' in error && error.code === '23505') {
+    return 'Ya existe un registro con ese SKU, nombre o dirección interna.';
+  }
+
+  const mensaje = error instanceof Error ? error.message : '';
+  const esMensajeControlado = /^(El |La |Los |Una |Uno |Elegí |Faltan |Solo |No se pudo |Ya existe )/.test(mensaje);
+  return esMensajeControlado
+    ? mensaje
+    : 'No se pudo completar la operación. Revisá los datos e intentá nuevamente.';
 }
 
 function obtenerPrefijoSku(tipoProducto: unknown) {
@@ -214,11 +280,20 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
     if (!['sticker', 'plantilla', 'fisico'].includes(String(datos.tipo_producto))) {
       throw new Error('Elegí el tipo de producto de esta categoría.');
     }
+    if (Object.prototype.hasOwnProperty.call(datos, 'imagen_url') && !esRutaDeImagenSegura(datos.imagen_url)) {
+      throw new Error('La imagen de la categoría debe ser una dirección interna o HTTPS válida.');
+    }
   }
 
   if (recurso === 'secciones') {
     if (!String(datos.titulo || '').trim()) throw new Error('El título de la sección es obligatorio.');
     if (Object.prototype.hasOwnProperty.call(datos, 'estilos')) normalizarEstilosSeccion(datos.estilos);
+    if (Object.prototype.hasOwnProperty.call(datos, 'enlace_boton') && !esEnlaceInternoSeguro(datos.enlace_boton)) {
+      throw new Error('El enlace del botón debe comenzar con / y dirigir a una página de la tienda.');
+    }
+    if (Object.prototype.hasOwnProperty.call(datos, 'imagen_url') && !esRutaDeImagenSegura(datos.imagen_url)) {
+      throw new Error('La imagen de la sección debe ser una dirección interna o HTTPS válida.');
+    }
   }
 }
 
@@ -459,6 +534,8 @@ async function guardarRecurso(
   id: string | undefined,
   usuarioId: string,
 ) {
+  if (!esObjetoPlano(datosOriginales)) throw new Error('Los datos enviados no tienen un formato válido.');
+  if (id) validarIdentificador(id);
   validarDatos(recurso, datosOriginales);
   const definicion = RECURSOS[recurso];
   const datos = seleccionarCampos(datosOriginales, definicion.campos);
@@ -515,6 +592,7 @@ async function guardarRecurso(
 }
 
 async function eliminarRecurso(recurso: NombreRecurso, id: string, usuarioId: string) {
+  validarIdentificador(id);
   const definicion = RECURSOS[recurso];
   const consulta = recurso === 'productos'
     ? clienteServicio.from('productos').update({ estado: 'archivado' }).eq('id', id)
@@ -532,6 +610,7 @@ async function eliminarRecurso(recurso: NombreRecurso, id: string, usuarioId: st
 
 async function restaurarRecurso(recurso: NombreRecurso, id: string, usuarioId: string) {
   if (recurso !== 'productos') throw new Error('Solo se pueden restaurar productos archivados.');
+  validarIdentificador(id);
 
   const { error } = await clienteServicio
     .from('productos')
@@ -551,7 +630,8 @@ function validarRecurso(valor: unknown): NombreRecurso {
 }
 
 async function prepararSubida(datos: Record<string, unknown>) {
-  const productoId = String(datos.producto_id || '');
+  if (!esObjetoPlano(datos)) throw new Error('Los datos de la imagen no tienen un formato válido.');
+  const productoId = validarIdentificador(datos.producto_id, 'El producto');
   const tipo = String(datos.tipo || '');
   const extensiones: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -563,6 +643,13 @@ async function prepararSubida(datos: Record<string, unknown>) {
   if (!productoId || !extensiones[tipo]) {
     throw new Error('El producto o el formato de imagen no son válidos.');
   }
+
+  const { data: producto, error: errorProducto } = await clienteServicio
+    .from('productos')
+    .select('id')
+    .eq('id', productoId)
+    .maybeSingle();
+  if (errorProducto || !producto) throw new Error('El producto seleccionado no existe.');
 
   const { count, error: errorConteo } = await clienteServicio
     .from('imagenes')
@@ -584,9 +671,12 @@ async function registrarImagen(
   datos: Record<string, unknown>,
   usuarioId: string,
 ) {
+  if (!esObjetoPlano(datos)) throw new Error('Los datos de la imagen no tienen un formato válido.');
+  const productoId = validarIdentificador(datos.producto_id, 'El producto');
   const ruta = String(datos.ruta || '');
-  const productoId = String(datos.producto_id || '');
-  if (!ruta || !productoId) throw new Error('Faltan datos de la imagen.');
+  if (!ruta || !esRutaDeArchivoDeProductoSegura(ruta, productoId)) {
+    throw new Error('La ruta de la imagen no es válida.');
+  }
 
   const { count, error: errorConteo } = await clienteServicio
     .from('imagenes')
@@ -632,6 +722,16 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
     ...CLAVES_TEXTO_PUBLICO,
   ];
 
+  if (!esObjetoPlano(datos)) throw new Error('Los datos enviados no tienen un formato válido.');
+  for (const [clave, valor] of Object.entries(datos)) {
+    if (!clavesPermitidas.includes(clave)) continue;
+    if (clave === 'mostrar_aviso_superior') {
+      if (typeof valor !== 'boolean') throw new Error('El estado del aviso superior no es válido.');
+    } else if (typeof valor !== 'string') {
+      throw new Error('Uno de los textos ingresados no es válido.');
+    }
+  }
+
   COLORES_CONFIGURABLES.forEach((clave) => {
     if (Object.prototype.hasOwnProperty.call(datos, clave) && !esColorHexadecimal(datos[clave])) {
       throw new Error('Uno de los colores ingresados no es válido.');
@@ -639,6 +739,24 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
   });
   if (Object.prototype.hasOwnProperty.call(datos, 'fuente_principal') && !FUENTES_PERMITIDAS.includes(String(datos.fuente_principal))) {
     throw new Error('La tipografía seleccionada no es válida.');
+  }
+  if (Object.prototype.hasOwnProperty.call(datos, 'whatsapp') && !esNumeroWhatsAppSeguro(datos.whatsapp)) {
+    throw new Error('El número de WhatsApp debe estar en formato internacional, sin espacios ni símbolos.');
+  }
+  if (Object.prototype.hasOwnProperty.call(datos, 'correo') && !esCorreoSeguro(datos.correo)) {
+    throw new Error('El correo comercial no tiene un formato válido.');
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(datos, 'instagram') &&
+    !esUrlHttpsSegura(datos.instagram, ['instagram.com', 'www.instagram.com'])
+  ) {
+    throw new Error('El enlace de Instagram debe usar https://instagram.com o https://www.instagram.com.');
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(datos, 'tiktok') &&
+    !esUrlHttpsSegura(datos.tiktok, ['tiktok.com', 'www.tiktok.com'])
+  ) {
+    throw new Error('El enlace de TikTok debe usar https://tiktok.com o https://www.tiktok.com.');
   }
   CLAVES_TEXTO_PUBLICO.forEach((clave) => {
     if (Object.prototype.hasOwnProperty.call(datos, clave) && typeof datos[clave] !== 'string') {
@@ -761,7 +879,7 @@ Deno.serve(async (solicitud) => {
     return responder(solicitud, { error: 'La acción solicitada no existe.' }, 400);
   } catch (error) {
     console.error(error);
-    const mensaje = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+    const mensaje = mensajeSeguroError(error);
     const estado = mensaje.toLowerCase().includes('sesión') || mensaje.includes('permisos') ? 401 : 400;
     return responder(solicitud, { error: mensaje }, estado);
   }
