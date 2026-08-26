@@ -31,6 +31,8 @@ El sitio local queda disponible en `http://127.0.0.1:4321`. La tienda funciona c
 - [Seguridad](documentacion/seguridad.md)
 - [Dominio propio](documentacion/dominio.md)
 - [Palabras clave SEO](documentacion/palabras-clave-seo.txt)
+- [Manual para clientes](documentacion/manuales/manual-uso-clientes.docx)
+- [Manual para administración](documentacion/manuales/manual-uso-administracion.docx)
 - [Cambios del reporte 1](documentacion/cambios-reporte-1.md)
 
 ## Estado de los recursos anteriores

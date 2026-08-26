@@ -53,7 +53,7 @@ const ESQUEMAS = {
     { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
     {
       nombre: 'estado', etiqueta: 'Estado de publicación', tipo: 'select', obligatorio: true,
-      ayudaEmergente: 'No publicado guarda el producto sin mostrarlo en la tienda. Publicado lo muestra al público. Archivar se usa cuando querés retirarlo sin perderlo.',
+      ayudaEmergente: 'No publicado guarda el producto sin mostrarlo en la tienda. Publicado lo muestra al público. Podés cambiar entre ambos estados cuando lo necesites.',
       opciones: [
         { valor: 'borrador', texto: 'No publicado' },
         { valor: 'publicado', texto: 'Publicado' },

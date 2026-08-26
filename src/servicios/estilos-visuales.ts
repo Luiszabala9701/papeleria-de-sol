@@ -89,7 +89,7 @@ export function obtenerEstiloGlobal(configuracion?: Partial<ConfiguracionSitio>)
   return [...colores, `--fuente-principal:${fuente}`].join(';');
 }
 
-export function obtenerEstiloTexto(seccion: SeccionSitio | undefined, campo: keyof SeccionSitio['estilos']) {
+export function obtenerEstiloTexto(seccion: SeccionSitio | undefined, campo: keyof NonNullable<SeccionSitio['estilos']>) {
   const estilo = seccion?.estilos?.[campo] as EstilosTexto | undefined;
   if (!estilo) return undefined;
 
