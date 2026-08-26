@@ -22,8 +22,11 @@ const VARIABLES_CSS_COLORES = {
 
 const FUENTES = {
   moderna: 'Inter, ui-rounded, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
-  redondeada: 'ui-rounded, "Arial Rounded MT Bold", "Segoe UI", system-ui, sans-serif',
-  clasica: 'Georgia, "Times New Roman", serif',
+  redondeada: 'Nunito, ui-rounded, "Arial Rounded MT Bold", "Segoe UI", system-ui, sans-serif',
+  clasica: 'Lora, Georgia, "Times New Roman", serif',
+  creativa: 'Quicksand, ui-rounded, "Segoe UI", system-ui, sans-serif',
+  elegante: '"Playfair Display", Georgia, "Times New Roman", serif',
+  manuscrita: 'Caveat, "Comic Sans MS", cursive',
 } as const;
 
 const TAMANOS = {
@@ -38,6 +41,9 @@ export const OPCIONES_FUENTE = [
   { valor: 'moderna', texto: 'Moderna' },
   { valor: 'redondeada', texto: 'Redondeada' },
   { valor: 'clasica', texto: 'Clásica' },
+  { valor: 'creativa', texto: 'Creativa' },
+  { valor: 'elegante', texto: 'Elegante' },
+  { valor: 'manuscrita', texto: 'Manuscrita' },
 ] as const;
 
 export const OPCIONES_TAMANO = [

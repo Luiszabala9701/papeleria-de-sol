@@ -5,6 +5,7 @@ import PiePagina from '../componentes/PiePagina.astro';
 import Carrito from '../componentes/Carrito.astro';
 import BotonWhatsAppFlotante from '../componentes/BotonWhatsAppFlotante.astro';
 import AvisoWhatsApp from '../componentes/AvisoWhatsApp.astro';
+import ModalesLegales from '../componentes/ModalesLegales.astro';
 import { esColorHexadecimal, obtenerEstiloGlobal } from '../servicios/estilos-visuales';
 
 const {
@@ -34,7 +35,8 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     <meta name="description" content={descripcion} />
     {noIndexar && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={urlCanonica} />
-    <link rel="icon" href="/stickers/1.webp" type="image/webp" />
+    <link rel="icon" href="/marca/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/marca/logo-papeleria-de-sol.png" />
 
     <meta property="og:locale" content="es_AR" />
     <meta property="og:type" content="website" />
@@ -62,6 +64,7 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     {!ocultarNavegacion && <Carrito configuracion={configuracion} />}
     {!ocultarNavegacion && <BotonWhatsAppFlotante configuracion={configuracion} />}
     {!ocultarNavegacion && <AvisoWhatsApp />}
+    {!ocultarNavegacion && <ModalesLegales />}
 
     <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
 
@@ -69,6 +72,7 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
       <script>
         import '../scripts/menu.js';
         import '../scripts/aviso-whatsapp.js';
+        import '../scripts/modales-legales.js';
         import '../scripts/carrito.js';
         import '../scripts/proteccion-stickers.js';
       </script>

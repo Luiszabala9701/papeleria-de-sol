@@ -7,12 +7,10 @@ import { obtenerTextoPublico } from '../servicios/textos-publicos';
 
 <footer class="pie-sitio">
   <div class="contenedor pie-cuadricula">
-    <div>
+      <div>
       <div class="marca marca-pie">
-        <span class="marca-sol" aria-hidden="true"></span>
-        <span>
-          <strong>{configuracion?.nombre_marca || 'Papelería de Sol'}</strong>
-          <small>{configuracion?.lema_marca || 'Ideas que alegran tus días'}</small>
+        <span class="logo-papeleria">
+          <img src="/marca/logo-papeleria-de-sol.png" alt="Papelería de Sol" width="5000" height="5000" />
         </span>
       </div>
       <p class="pie-descripcion">
@@ -47,6 +45,10 @@ import { obtenerTextoPublico } from '../servicios/textos-publicos';
   </div>
   <div class="pie-inferior">
     <p>© {anio} Papelería de Sol. {obtenerTextoPublico(configuracion, 'pie_derechos_reservados')}</p>
+    <nav class="enlaces-legales" aria-label="Información legal">
+      <a href="/privacidad" data-documento-legal="privacidad">Política de privacidad</a>
+      <a href="/terminos" data-documento-legal="terminos">Términos y condiciones</a>
+    </nav>
     <p>{configuracion?.region || 'CABA y GBA'} · {configuracion?.pais || 'Argentina'}</p>
   </div>
 </footer>

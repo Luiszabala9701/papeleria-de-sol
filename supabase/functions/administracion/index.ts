@@ -41,7 +41,7 @@ const RECURSOS = {
 type NombreRecurso = keyof typeof RECURSOS;
 
 const CAMPOS_ESTILO_SECCION = ['titulo', 'subtitulo', 'contenido', 'texto_boton'];
-const FUENTES_PERMITIDAS = ['moderna', 'redondeada', 'clasica'];
+const FUENTES_PERMITIDAS = ['moderna', 'redondeada', 'clasica', 'creativa', 'elegante', 'manuscrita'];
 const TAMANOS_PERMITIDOS = ['pequeno', 'normal', 'mediano', 'grande', 'extra_grande'];
 const COLORES_CONFIGURABLES = [
   'color_principal', 'color_secundario', 'color_principal_intenso', 'color_secundario_intenso',

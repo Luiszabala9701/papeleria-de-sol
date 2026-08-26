@@ -74,3 +74,4 @@ modal?.addEventListener('close', () => {
 });
 
 window.abrirAvisoWhatsApp = abrirAvisoWhatsApp;
+window.cerrarAvisoWhatsApp = cerrarAvisoWhatsApp;

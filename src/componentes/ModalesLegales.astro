@@ -1,0 +1,30 @@
+---
+import ContenidoPoliticaPrivacidad from './ContenidoPoliticaPrivacidad.astro';
+import ContenidoTerminosCondiciones from './ContenidoTerminosCondiciones.astro';
+---
+
+<dialog id="modal-privacidad" class="modal-documento-legal" aria-labelledby="titulo-modal-privacidad">
+  <div class="cabecera-modal-documento">
+    <div>
+      <p class="etiqueta">Información legal</p>
+      <h2 id="titulo-modal-privacidad">Política de privacidad</h2>
+    </div>
+    <button class="boton-icono" type="button" data-cerrar-documento-legal aria-label="Cerrar política de privacidad">×</button>
+  </div>
+  <div class="contenido-modal-documento">
+    <ContenidoPoliticaPrivacidad />
+  </div>
+</dialog>
+
+<dialog id="modal-terminos" class="modal-documento-legal" aria-labelledby="titulo-modal-terminos">
+  <div class="cabecera-modal-documento">
+    <div>
+      <p class="etiqueta">Información legal</p>
+      <h2 id="titulo-modal-terminos">Términos y condiciones</h2>
+    </div>
+    <button class="boton-icono" type="button" data-cerrar-documento-legal aria-label="Cerrar términos y condiciones">×</button>
+  </div>
+  <div class="contenido-modal-documento">
+    <ContenidoTerminosCondiciones />
+  </div>
+</dialog>

@@ -16,10 +16,8 @@ const configuracionDisponible = Boolean(
   <div class="admin-aplicacion" data-configuracion-disponible={String(configuracionDisponible)}>
     <header class="admin-cabecera">
       <a class="marca" href="/" aria-label="Volver a Papelería de Sol">
-        <span class="marca-sol" aria-hidden="true"></span>
-        <span>
-          <strong>Papelería de Sol</strong>
-          <small>administración</small>
+        <span class="logo-papeleria">
+          <img src="/marca/logo-papeleria-de-sol.png" alt="Papelería de Sol" width="5000" height="5000" />
         </span>
       </a>
       <div id="datos-sesion" class="datos-sesion" hidden>
@@ -83,10 +81,10 @@ const configuracionDisponible = Boolean(
           <div class="tarjeta-ayuda">
             <h2>Primeros pasos</h2>
             <ol>
-              <li>Creá categorías según el tipo de producto, por ejemplo Fútbol para stickers.</li>
-              <li>Agregá productos físicos, plantillas o nuevos stickers.</li>
-              <li>Subí una imagen optimizada y completá la información para SEO.</li>
-              <li>Publicá el producto cuando esté listo para aparecer en la tienda.</li>
+              <li>Crea categorías según el tipo de producto, por ejemplo Fútbol para stickers.</li>
+              <li>Agrega productos físicos, plantillas o nuevos stickers.</li>
+              <li>Sube una imagen optimizada y completa la información para SEO.</li>
+              <li>Publica el producto cuando esté listo para aparecer en la tienda.</li>
             </ol>
           </div>
         </section>
@@ -167,7 +165,7 @@ const configuracionDisponible = Boolean(
                     <label class="grupo-campo selector-color"><span>Fondo del sitio</span><input name="color_fondo" type="color" value="#fbfaff" /></label>
                     <label class="grupo-campo selector-color"><span>Texto principal</span><input name="color_texto" type="color" value="#252434" /></label>
                     <label class="grupo-campo selector-color"><span>Texto secundario</span><input name="color_texto_suave" type="color" value="#676579" /></label>
-                    <label class="grupo-campo"><span>Tipografía general</span><select class="selector" name="fuente_principal"><option value="moderna">Moderna</option><option value="redondeada">Redondeada</option><option value="clasica">Clásica</option></select></label>
+                    <label class="grupo-campo"><span>Tipografía general</span><select class="selector" name="fuente_principal"><option value="moderna">Moderna</option><option value="redondeada">Redondeada</option><option value="clasica">Clásica</option><option value="creativa">Creativa</option><option value="elegante">Elegante</option><option value="manuscrita">Manuscrita</option></select></label>
                     <div class="acciones-formulario campo-completo">
                       <button class="boton boton-principal" type="submit">Guardar paleta y tipografía</button>
                     </div>
@@ -292,28 +290,28 @@ const configuracionDisponible = Boolean(
             <section>
               <h2>Productos y categorías</h2>
               <ol>
-                <li>Primero creá una categoría del tipo correcto: sticker, plantilla o producto físico.</li>
-                <li>Al crear un producto, elegí el tipo y usá la sugerencia del SKU. El precio y la descripción son obligatorios.</li>
-                <li>Subí hasta cinco imágenes y dejá el producto como No publicado hasta que esté listo.</li>
-                <li>Marcá Destacado solo cuando quieras que aparezca entre los stickers del inicio.</li>
+                <li>Primero crea una categoría del tipo correcto: sticker, plantilla o producto físico.</li>
+                <li>Al crear un producto, elige el tipo y usa la sugerencia del SKU. El precio y la descripción son obligatorios.</li>
+                <li>Sube hasta cinco imágenes y deja el producto como No publicado hasta que esté listo.</li>
+                <li>Marca Destacado solo cuando quieras que aparezca entre los stickers del inicio.</li>
               </ol>
             </section>
             <section>
               <h2>Contenido y apariencia</h2>
               <ol>
                 <li>En Contenido del sitio se editan los bloques del inicio y la apariencia individual de sus textos.</li>
-                <li>Los desplegables agrupan los textos por página. Guardá cada bloque después de modificarlo.</li>
+                <li>Los desplegables agrupan los textos por página. Guarda cada bloque después de modificarlo.</li>
                 <li>Paleta y tipografía general cambia la identidad visual completa; los estilos de una sección afectan solo a esa sección.</li>
-                <li>Actualizá la tienda abierta en otra pestaña para ver los cambios ya publicados.</li>
+                <li>Actualiza la tienda abierta en otra pestaña para ver los cambios ya publicados.</li>
               </ol>
             </section>
             <section>
               <h2>Publicación segura</h2>
               <ol>
                 <li>Publicado muestra el producto al público. No publicado lo conserva en el dashboard sin mostrarlo.</li>
-                <li>Archivar retira un producto sin borrarlo; podés restaurarlo después como No publicado.</li>
-                <li>Las opciones de SEO son opcionales. Usalas solo si necesitás un título o descripción distintos para buscadores.</li>
-                <li>Cerrá sesión al terminar, especialmente si usás una computadora compartida.</li>
+                <li>Archivar retira un producto sin borrarlo; puedes restaurarlo después como No publicado.</li>
+                <li>Las opciones de SEO son opcionales. Úsalas solo si necesitas un título o descripción distintos para buscadores.</li>
+                <li>Cierra sesión al terminar, especialmente si usas una computadora compartida.</li>
               </ol>
             </section>
           </div>
@@ -339,6 +337,18 @@ const configuracionDisponible = Boolean(
         <button class="boton boton-principal" type="submit">Guardar</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="dialogo-cerrar-sesion" class="dialogo-confirmacion" aria-labelledby="titulo-cerrar-sesion">
+    <div class="contenido-confirmacion">
+      <p class="etiqueta">Sesión administrativa</p>
+      <h2 id="titulo-cerrar-sesion">¿Desea cerrar sesión?</h2>
+      <p>Para volver a administrar la tienda deberá ingresar nuevamente con su correo y contraseña.</p>
+      <div class="acciones-dialogo">
+        <button id="cancelar-cerrar-sesion" class="boton boton-secundario" type="button">Cancelar</button>
+        <button id="confirmar-cerrar-sesion" class="boton boton-principal" type="button">Cerrar sesión</button>
+      </div>
+    </div>
   </dialog>
 
   <script>

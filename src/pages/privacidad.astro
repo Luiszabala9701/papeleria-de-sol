@@ -1,0 +1,23 @@
+---
+import DisenoPrincipal from '../disenos/DisenoPrincipal.astro';
+import ContenidoPoliticaPrivacidad from '../componentes/ContenidoPoliticaPrivacidad.astro';
+import type { ConfiguracionSitio } from '../tipos/contenidos';
+import { obtenerConfiguracionSitio } from '../servicios/repositorio-contenidos.js';
+
+const configuracion = await obtenerConfiguracionSitio() as ConfiguracionSitio;
+---
+
+<DisenoPrincipal
+  titulo={`Política de privacidad | ${configuracion.nombre_marca || 'Papelería de Sol'}`}
+  descripcion="Política de privacidad de Papelería de Sol."
+  configuracion={configuracion}
+>
+  <section class="contenedor pagina-documento-legal">
+    <article class="documento-legal-publico">
+      <p class="etiqueta">Información legal</p>
+      <h1>Política de privacidad</h1>
+      <p class="introduccion-documento-legal">Cómo se utiliza la información cuando se navega la tienda o se realiza una consulta por WhatsApp.</p>
+      <ContenidoPoliticaPrivacidad />
+    </article>
+  </section>
+</DisenoPrincipal>

@@ -22,7 +22,7 @@ export interface ConfiguracionSitio {
   color_fondo?: string;
   color_texto?: string;
   color_texto_suave?: string;
-  fuente_principal?: 'moderna' | 'redondeada' | 'clasica';
+  fuente_principal?: 'moderna' | 'redondeada' | 'clasica' | 'creativa' | 'elegante' | 'manuscrita';
 }
 
 export interface Categoria {
@@ -92,7 +92,7 @@ export interface SeccionSitio {
 
 export interface EstilosTexto {
   color?: string;
-  fuente?: 'moderna' | 'redondeada' | 'clasica';
+  fuente?: 'moderna' | 'redondeada' | 'clasica' | 'creativa' | 'elegante' | 'manuscrita';
   tamano?: 'pequeno' | 'normal' | 'mediano' | 'grande' | 'extra_grande';
   negrita?: boolean;
   cursiva?: boolean;

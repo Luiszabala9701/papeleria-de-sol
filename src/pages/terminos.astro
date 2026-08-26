@@ -1,0 +1,23 @@
+---
+import DisenoPrincipal from '../disenos/DisenoPrincipal.astro';
+import ContenidoTerminosCondiciones from '../componentes/ContenidoTerminosCondiciones.astro';
+import type { ConfiguracionSitio } from '../tipos/contenidos';
+import { obtenerConfiguracionSitio } from '../servicios/repositorio-contenidos.js';
+
+const configuracion = await obtenerConfiguracionSitio() as ConfiguracionSitio;
+---
+
+<DisenoPrincipal
+  titulo={`Términos y condiciones | ${configuracion.nombre_marca || 'Papelería de Sol'}`}
+  descripcion="Términos y condiciones de venta por WhatsApp de Papelería de Sol."
+  configuracion={configuracion}
+>
+  <section class="contenedor pagina-documento-legal">
+    <article class="documento-legal-publico">
+      <p class="etiqueta">Información legal</p>
+      <h1>Términos y condiciones</h1>
+      <p class="introduccion-documento-legal">Condiciones para consultas y compras coordinadas por WhatsApp.</p>
+      <ContenidoTerminosCondiciones />
+    </article>
+  </section>
+</DisenoPrincipal>

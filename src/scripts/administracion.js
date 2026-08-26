@@ -25,6 +25,9 @@ const errorFormulario = document.querySelector('#error-formulario-recurso');
 const formulariosConfiguraciones = document.querySelectorAll('[data-formulario-configuraciones]');
 const formularioEstilosGlobales = document.querySelector('#formulario-estilos-globales');
 const botonAlternarContrasena = document.querySelector('#alternar-contrasena-admin');
+const dialogoCerrarSesion = document.querySelector('#dialogo-cerrar-sesion');
+const botonCancelarCerrarSesion = document.querySelector('#cancelar-cerrar-sesion');
+const botonConfirmarCerrarSesion = document.querySelector('#confirmar-cerrar-sesion');
 
 const DESCRIPCIONES = {
   productos: 'Creá stickers, plantillas y productos físicos con precio, imágenes y publicación.',
@@ -352,8 +355,8 @@ function crearOpcion(valor, texto, seleccionada = false) {
   return opcion;
 }
 
-function crearEtiqueta(definicion) {
-  const etiqueta = document.createElement('span');
+function crearEtiqueta(definicion, asociadaAlCampo = false) {
+  const etiqueta = document.createElement(asociadaAlCampo ? 'label' : 'span');
   etiqueta.textContent = definicion.etiqueta;
   if (definicion.obligatorio) {
     const obligatorio = document.createElement('b');
@@ -363,6 +366,19 @@ function crearEtiqueta(definicion) {
     etiqueta.append(obligatorio);
   }
   return etiqueta;
+}
+
+function crearAyudaEmergente(definicion) {
+  const ayuda = document.createElement('details');
+  ayuda.className = 'ayuda-emergente';
+  const resumen = document.createElement('summary');
+  resumen.textContent = '!';
+  resumen.setAttribute('aria-label', 'Explicación sobre este campo');
+  const texto = document.createElement('p');
+  texto.textContent = definicion.ayudaEmergente;
+  if (definicion.nombre === 'sku') ayuda.dataset.ayudaSku = '';
+  ayuda.append(resumen, texto);
+  return ayuda;
 }
 
 function actualizarCategoriasDisponibles() {
@@ -501,9 +517,10 @@ function crearEditorEstilosSeccion(registro = {}) {
 function crearCampo(definicion, registro = {}) {
   if (definicion.tipo === 'estilos-seccion') return crearEditorEstilosSeccion(registro);
 
-  const contenedor = document.createElement('label');
+  const tieneAyudaEmergente = Boolean(definicion.ayudaEmergente);
+  const contenedor = document.createElement(tieneAyudaEmergente ? 'div' : 'label');
   contenedor.className = `grupo-campo${definicion.completo ? ' campo-completo' : ''}`;
-  const etiqueta = crearEtiqueta(definicion);
+  const etiqueta = crearEtiqueta(definicion, tieneAyudaEmergente);
 
   let campo;
   if (definicion.tipo === 'textarea') {
@@ -549,30 +566,28 @@ function crearCampo(definicion, registro = {}) {
   }
 
   campo.name = definicion.nombre;
+  if (tieneAyudaEmergente) {
+    campo.id = `campo-${definicion.nombre}`;
+    etiqueta.htmlFor = campo.id;
+  }
   campo.required = Boolean(definicion.obligatorio);
   if (definicion.dependeDe && !registro[definicion.dependeDe]) {
     campo.disabled = true;
     campo.setAttribute('aria-disabled', 'true');
   }
-  contenedor.append(etiqueta, campo);
+  if (tieneAyudaEmergente) {
+    const filaEtiqueta = document.createElement('div');
+    filaEtiqueta.className = 'etiqueta-campo-con-ayuda';
+    filaEtiqueta.append(etiqueta, crearAyudaEmergente(definicion));
+    contenedor.append(filaEtiqueta, campo);
+  } else {
+    contenedor.append(etiqueta, campo);
+  }
 
   if (definicion.ayuda) {
     const ayuda = document.createElement('small');
     ayuda.textContent = definicion.ayuda;
     ayuda.style.color = 'var(--tinta-suave)';
-    contenedor.append(ayuda);
-  }
-
-  if (definicion.ayudaEmergente) {
-    const ayuda = document.createElement('details');
-    ayuda.className = 'ayuda-emergente';
-    const resumen = document.createElement('summary');
-    resumen.textContent = '!';
-    resumen.setAttribute('aria-label', 'Explicación sobre este campo');
-    const texto = document.createElement('p');
-    texto.textContent = definicion.ayudaEmergente;
-    if (definicion.nombre === 'sku') ayuda.dataset.ayudaSku = '';
-    ayuda.append(resumen, texto);
     contenedor.append(ayuda);
   }
 
@@ -864,7 +879,12 @@ function cerrarDialogo() {
 document.querySelector('#cerrar-dialogo')?.addEventListener('click', cerrarDialogo);
 document.querySelector('#cancelar-dialogo')?.addEventListener('click', cerrarDialogo);
 dialogo?.addEventListener('close', () => document.body.classList.remove('dialogo-abierto'));
-botonCerrarSesion?.addEventListener('click', cerrarSesionCompleta);
+botonCerrarSesion?.addEventListener('click', () => dialogoCerrarSesion?.showModal());
+botonCancelarCerrarSesion?.addEventListener('click', () => dialogoCerrarSesion?.close());
+botonConfirmarCerrarSesion?.addEventListener('click', async () => {
+  dialogoCerrarSesion?.close();
+  await cerrarSesionCompleta();
+});
 
 setInterval(() => {
   if (panelAdministracion?.hidden) return;
