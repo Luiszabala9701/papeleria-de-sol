@@ -275,11 +275,6 @@ h3 {
   gap: clamp(2rem, 5vw, 5rem);
 }
 
-.hero-sin-muestras {
-  grid-template-columns: minmax(0, 780px);
-  min-height: 0;
-}
-
 .hero::before {
   position: absolute;
   z-index: -1;
@@ -1347,10 +1342,6 @@ h3 {
     min-height: 560px;
   }
 
-  .hero-sin-muestras {
-    min-height: 0;
-  }
-
   .cuadricula-productos {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1419,6 +1410,10 @@ h3 {
     min-height: auto;
     padding-block: 3.5rem;
     text-align: center;
+  }
+
+  .hero-collage {
+    display: none;
   }
 
   .hero::before {

@@ -47,7 +47,7 @@ const datosEstructurados = {
     <script is:inline type="application/ld+json" set:html={escaparJson(datosEstructurados)}></script>
   </Fragment>
 
-  <section class="contenedor hero hero-sin-muestras">
+  <section class="contenedor hero">
     <div>
       <p class="etiqueta" style={obtenerEstiloTexto(principal, 'subtitulo')}>
         {principal?.subtitulo || 'Papelería creativa en CABA y GBA'}
@@ -64,6 +64,14 @@ const datosEstructurados = {
           {principal?.texto_boton || 'Explorar el catálogo'}
         </a>
       </div>
+    </div>
+
+    <div class="hero-collage" aria-label="Selección de stickers de Papelería de Sol">
+      {[1, 2, 3].map((numero) => (
+        <div class="hero-imagen" data-proteccion-imagen="sticker" data-sin-marca-agua>
+          <img src={`/stickers/${numero}.webp`} alt={`Sticker creativo ${numero}`} width="709" height="709" draggable="false" />
+        </div>
+      ))}
     </div>
 
   </section>
@@ -91,5 +99,6 @@ const datosEstructurados = {
         {destacados.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} compacta />)}
       </div>
     </div>
+
   </section>
 </DisenoPrincipal>
