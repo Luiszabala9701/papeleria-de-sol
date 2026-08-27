@@ -275,6 +275,11 @@ h3 {
   gap: clamp(2rem, 5vw, 5rem);
 }
 
+.hero-sin-muestras {
+  grid-template-columns: minmax(0, 780px);
+  min-height: 0;
+}
+
 .hero::before {
   position: absolute;
   z-index: -1;
@@ -645,6 +650,42 @@ h3 {
   box-shadow: var(--sombra-suave);
   backdrop-filter: blur(15px);
   gap: 0.75rem;
+}
+
+.busqueda-catalogo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  gap: 0.5rem;
+}
+
+.boton-busqueda-catalogo {
+  display: grid;
+  width: 46px;
+  min-height: 46px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--borde);
+  border-radius: 0.8rem;
+  color: var(--azul-profundo);
+  background: var(--blanco);
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.boton-busqueda-catalogo:hover {
+  border-color: var(--azul-sol);
+  background: color-mix(in srgb, var(--azul-sol) 14%, var(--blanco));
+}
+
+.boton-busqueda-catalogo:focus-visible {
+  outline: none;
+  border-color: var(--azul-sol);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--azul-sol) 20%, transparent);
+}
+
+.boton-busqueda-catalogo svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .campo,
@@ -1284,11 +1325,12 @@ h3 {
     right: 0;
     left: 0;
     display: none;
-    padding: 0.7rem;
+    padding: 0.45rem;
     border: 1px solid var(--borde);
     border-radius: var(--radio);
     background: var(--blanco);
     box-shadow: var(--sombra);
+    justify-content: stretch;
   }
 
   .menu-principal.abierto {
@@ -1296,12 +1338,17 @@ h3 {
   }
 
   .menu-principal a {
-    padding: 0.8rem 1rem;
+    padding: 0.75rem 0.9rem;
+    text-align: center;
   }
 
   .hero {
     grid-template-columns: 1fr 0.8fr;
     min-height: 560px;
+  }
+
+  .hero-sin-muestras {
+    min-height: 0;
   }
 
   .cuadricula-productos {
@@ -1386,15 +1433,6 @@ h3 {
 
   .grupo-botones {
     justify-content: center;
-  }
-
-  .hero-collage {
-    min-height: 330px;
-    margin-top: 2.5rem;
-  }
-
-  .hero-imagen {
-    width: 52%;
   }
 
   .beneficios {

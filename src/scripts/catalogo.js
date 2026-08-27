@@ -1,5 +1,6 @@
 const datosCatalogo = document.querySelector('#datos-catalogo');
 const galeria = document.querySelector('#galeria-catalogo');
+const formularioBusqueda = document.querySelector('#formulario-busqueda-catalogo');
 const buscador = document.querySelector('#buscador-catalogo');
 const filtroCategoria = document.querySelector('#filtro-categoria');
 const informacionResultados = document.querySelector('#informacion-resultados');
@@ -174,7 +175,10 @@ const parametros = new URLSearchParams(location.search);
 if (buscador) buscador.value = parametros.get('buscar') || '';
 if (filtroCategoria) filtroCategoria.value = parametros.get('categoria') || '';
 
-buscador?.addEventListener('input', reiniciarYRenderizar);
+formularioBusqueda?.addEventListener('submit', (evento) => {
+  evento.preventDefault();
+  reiniciarYRenderizar();
+});
 filtroCategoria?.addEventListener('change', reiniciarYRenderizar);
 
 botonAnterior?.addEventListener('click', () => {

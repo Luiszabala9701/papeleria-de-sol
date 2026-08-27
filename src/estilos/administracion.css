@@ -706,6 +706,7 @@ body.dialogo-abierto {
     position: sticky;
     z-index: 80;
     top: 72px;
+    align-self: start;
     display: block;
     width: 100%;
     height: auto;

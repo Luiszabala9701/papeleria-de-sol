@@ -34,10 +34,17 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
 
   <section id="catalogo-resultados" class="contenedor seccion-catalogo">
     <div class="barra-catalogo" aria-label="Filtros del catálogo">
-      <label>
-        <span class="solo-lectores">Buscar productos</span>
+      <form id="formulario-busqueda-catalogo" class="busqueda-catalogo" role="search">
+        <label class="solo-lectores" for="buscador-catalogo">Buscar productos</label>
         <input id="buscador-catalogo" class="campo" type="search" placeholder={obtenerTextoPublico(configuracion, 'catalogo_busqueda_placeholder')} autocomplete="off" />
-      </label>
+        <button class="boton-busqueda-catalogo" type="submit" aria-label="Buscar stickers">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="m16 16 4 4"></path>
+          </svg>
+          <span class="solo-lectores">Buscar</span>
+        </button>
+      </form>
       <label>
         <span class="solo-lectores">Categoría de stickers</span>
         <select id="filtro-categoria" class="selector">
