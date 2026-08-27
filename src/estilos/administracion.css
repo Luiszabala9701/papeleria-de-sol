@@ -449,11 +449,6 @@ body.dialogo-abierto {
   font-weight: 700;
 }
 
-.ayuda-emergente {
-  position: relative;
-  display: inline-block;
-}
-
 .ayuda-emergente summary::-webkit-details-marker {
   display: none;
 }

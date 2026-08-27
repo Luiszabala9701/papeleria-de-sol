@@ -36,8 +36,8 @@ El sitio local queda disponible en `http://127.0.0.1:4321`. La tienda funciona c
 - [Manual para administración](documentacion/manuales/manual-uso-administracion.docx)
 - [Cambios del reporte 1](documentacion/cambios-reporte-1.md)
 
-## Estado de los recursos anteriores
+## Recursos locales
 
-Los archivos originales `index.html`, `estilos.css` y `script.js` se conservan como referencia y no forman parte del build de Astro. El material de San Valentín no se muestra en la nueva tienda. Los 1.000 PNG originales se conservan localmente en `recursos-originales/stickers`; la web publica copias WebP optimizadas en `public/stickers`.
+Los 1.000 stickers WebP de `public/stickers` son necesarios para el modo demostración local. Las copias originales de trabajo, si se conservan, deben quedar en `recursos-originales/`, una carpeta ignorada por Git.
 
 Todo el contenido editorial, los nombres de variables propios del proyecto y la documentación están en español. Solo permanecen en inglés nombres obligatorios del ecosistema, por ejemplo `package.json`, `src`, `public` o variables reservadas de las plataformas.
