@@ -20,14 +20,21 @@ const principal = secciones.find((seccion) => seccion.clave === 'inicio_principa
 const seccionDestacados = secciones.find((seccion) => seccion.clave === 'inicio_destacados');
 const destacados = productos.filter((producto) => producto.destacado).slice(0, 8);
 const escaparJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
+const urlInicio = new URL('/', Astro.site || Astro.url.origin).href;
+const logo = new URL('/marca/logo-papeleria-de-sol-transparente.png', Astro.site || Astro.url.origin).href;
+const descripcionSeo = 'Papelería creativa en CABA y GBA: stickers para cuadernos, agendas y notebook, plantillas y productos personalizados. Consultá por WhatsApp.';
 
 const datosEstructurados = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
+  '@id': `${urlInicio}#papeleria-de-sol`,
   name: configuracion.nombre_marca,
-  description: configuracion.descripcion_corta,
+  description: descripcionSeo,
+  url: urlInicio,
+  logo,
   email: configuracion.correo,
   telephone: `+${configuracion.whatsapp}`,
+  currenciesAccepted: 'ARS',
   areaServed: ['Ciudad Autónoma de Buenos Aires', 'Gran Buenos Aires'],
   address: {
     '@type': 'PostalAddress',
@@ -39,9 +46,10 @@ const datosEstructurados = {
 ---
 
 <DisenoPrincipal
-  titulo="Papelería de Sol | Stickers y papelería creativa en CABA y GBA"
-  descripcion={configuracion.descripcion_corta}
+  titulo="Papelería creativa y stickers en CABA y GBA | Papelería de Sol"
+  descripcion={descripcionSeo}
   configuracion={configuracion}
+  imagenSocialAlt="Stickers y papelería creativa de Papelería de Sol"
 >
   <Fragment slot="cabecera">
     <script is:inline type="application/ld+json" set:html={escaparJson(datosEstructurados)}></script>

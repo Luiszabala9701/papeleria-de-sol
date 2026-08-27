@@ -13,6 +13,7 @@ const {
   descripcion = 'Papelería creativa, stickers y productos personalizados en CABA y GBA.',
   configuracion,
   imagenSocial = '/stickers/1.webp',
+  imagenSocialAlt = titulo,
   ocultarNavegacion = false,
   noIndexar = false,
 } = Astro.props;
@@ -33,7 +34,11 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content={colorTema} />
     <meta name="description" content={descripcion} />
-    {noIndexar && <meta name="robots" content="noindex, nofollow" />}
+    {noIndexar ? (
+      <meta name="robots" content="noindex, nofollow" />
+    ) : (
+      <meta name="robots" content="index, follow, max-image-preview:large" />
+    )}
     <link rel="canonical" href={urlCanonica} />
     <link rel="icon" href="/marca/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/marca/logo-papeleria-de-sol.png" />
@@ -45,9 +50,12 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     <meta property="og:description" content={descripcion} />
     <meta property="og:url" content={urlCanonica} />
     <meta property="og:image" content={imagenAbsoluta} />
+    <meta property="og:image:alt" content={imagenSocialAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={titulo} />
     <meta name="twitter:description" content={descripcion} />
+    <meta name="twitter:image" content={imagenAbsoluta} />
+    <meta name="twitter:image:alt" content={imagenSocialAlt} />
 
     <title>{titulo}</title>
     <slot name="cabecera" />

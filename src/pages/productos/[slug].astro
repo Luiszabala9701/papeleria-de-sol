@@ -27,6 +27,8 @@ const precio = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 }).format(producto.precio);
 const tituloSeo = producto.meta_titulo?.trim() || `${producto.nombre} | Papelería de Sol`;
+const descripcionSeo = producto.meta_descripcion?.trim() || `${producto.descripcion} Consultá disponibilidad por WhatsApp en CABA y GBA.`;
+const urlProducto = new URL(Astro.url.pathname, Astro.site || Astro.url.origin).href;
 
 const datosCarrito = JSON.stringify({
   id: producto.id,
@@ -45,15 +47,18 @@ const datosEstructurados = JSON.stringify({
   description: producto.descripcion,
   image: imagen?.url_publica,
   sku: producto.sku,
+  category: producto.categoria?.nombre || producto.tipo_producto,
+  url: urlProducto,
   brand: { '@type': 'Brand', name: 'Papelería de Sol' },
 }).replace(/</g, '\\u003c');
 ---
 
 <DisenoPrincipal
   titulo={tituloSeo}
-  descripcion={producto.meta_descripcion || producto.descripcion}
+  descripcion={descripcionSeo}
   configuracion={configuracion}
   imagenSocial={imagen?.url_publica}
+  imagenSocialAlt={imagen?.texto_alternativo || producto.nombre}
 >
   <Fragment slot="cabecera">
     <script is:inline type="application/ld+json" set:html={datosEstructurados}></script>

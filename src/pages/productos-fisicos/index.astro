@@ -15,9 +15,10 @@ const [configuracion, productos] = await Promise.all([
 ---
 
 <DisenoPrincipal
-  titulo="Productos físicos personalizados | Papelería de Sol"
-  descripcion="Productos físicos de papelería creativa y regalos personalizados de Papelería de Sol en CABA y GBA."
+  titulo="Papelería y regalos personalizados en CABA y GBA | Papelería de Sol"
+  descripcion="Conocé productos de papelería creativa y regalos personalizados. Consultá disponibilidad, retiro o envío por WhatsApp en CABA y GBA."
   configuracion={configuracion}
+  imagenSocialAlt="Productos físicos personalizados de Papelería de Sol"
 >
   <header class="contenedor cabecera-pagina">
     <p class="etiqueta">{obtenerTextoPublico(configuracion, 'fisicos_etiqueta')}</p>
