@@ -8,6 +8,7 @@ import {
   obtenerProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../../servicios/textos-publicos';
+import rutaScriptCatalogo from '../../scripts/catalogo.js?url&no-inline';
 
 const [configuracion, productos, categorias] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -71,9 +72,7 @@ const datosSeguros = JSON.stringify(productos).replace(/</g, '\\u003c');
   </section>
 
   <script is:inline id="datos-catalogo" type="application/json" set:html={datosSeguros}></script>
-  <script>
-    import '../../scripts/catalogo.js';
-  </script>
+  <script is:inline src={rutaScriptCatalogo}></script>
 </DisenoPrincipal>
 
 <style>
