@@ -1289,7 +1289,7 @@ h3 {
   font-size: 0.85rem;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
   .navegacion-principal {
     grid-template-columns: 1fr auto auto;
   }
@@ -1369,7 +1369,7 @@ h3 {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   .anuncio-superior p {
     font-size: 0.72rem;
   }
