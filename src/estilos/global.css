@@ -1510,6 +1510,188 @@ h3 {
   }
 }
 
+/* Respaldo para teléfonos que fuerzan un viewport de escritorio desde el navegador. */
+:root.vista-movil-forzada .navegacion-principal {
+  grid-template-columns: 1fr auto auto;
+  min-height: 66px;
+  gap: 0.55rem;
+}
+
+:root.vista-movil-forzada .boton-menu {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  place-content: center;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: var(--blanco);
+  gap: 4px;
+}
+
+:root.vista-movil-forzada .boton-menu span:not(.solo-lectores) {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tinta);
+}
+
+:root.vista-movil-forzada .menu-principal {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  left: 0;
+  display: none;
+  padding: 0.45rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  box-shadow: var(--sombra);
+}
+
+:root.vista-movil-forzada .menu-principal.abierto {
+  display: grid;
+}
+
+:root.vista-movil-forzada .menu-principal a {
+  padding: 0.75rem 0.9rem;
+  text-align: center;
+}
+
+:root.vista-movil-forzada .anuncio-superior p {
+  font-size: 0.72rem;
+}
+
+:root.vista-movil-forzada .marca small,
+:root.vista-movil-forzada .texto-carrito {
+  display: none;
+}
+
+:root.vista-movil-forzada .logo-papeleria {
+  width: 105px;
+  height: 50px;
+}
+
+:root.vista-movil-forzada .boton-carrito {
+  min-width: 46px;
+  padding: 0.4rem 0.55rem;
+}
+
+:root.vista-movil-forzada .hero {
+  display: block;
+  min-height: auto;
+  padding-block: 3.5rem;
+  text-align: center;
+}
+
+:root.vista-movil-forzada .hero-collage {
+  display: none;
+}
+
+:root.vista-movil-forzada .hero::before {
+  top: 18%;
+  right: -30%;
+  width: 85vw;
+}
+
+:root.vista-movil-forzada .hero-descripcion {
+  margin-inline: auto;
+}
+
+:root.vista-movil-forzada .grupo-botones {
+  justify-content: center;
+}
+
+:root.vista-movil-forzada .beneficios,
+:root.vista-movil-forzada .barra-catalogo,
+:root.vista-movil-forzada .detalle-producto {
+  grid-template-columns: 1fr;
+}
+
+:root.vista-movil-forzada .beneficio + .beneficio {
+  border-top: 1px solid var(--borde);
+}
+
+:root.vista-movil-forzada .cabecera-seccion {
+  display: block;
+}
+
+:root.vista-movil-forzada .cabecera-seccion .enlace-texto {
+  display: inline-block;
+  margin-top: 0.8rem;
+}
+
+:root.vista-movil-forzada .cuadricula-productos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+:root.vista-movil-forzada .contenido-producto {
+  padding: 0.8rem;
+}
+
+:root.vista-movil-forzada .descripcion-producto {
+  display: none;
+}
+
+:root.vista-movil-forzada .pie-producto {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+:root.vista-movil-forzada .boton-agregar-producto {
+  width: 100%;
+}
+
+:root.vista-movil-forzada .pie-cuadricula {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.25rem;
+  row-gap: 2rem;
+}
+
+:root.vista-movil-forzada .pie-marca {
+  grid-column: 1 / -1;
+}
+
+:root.vista-movil-forzada .pie-explora,
+:root.vista-movil-forzada .pie-contacto {
+  min-width: 0;
+}
+
+:root.vista-movil-forzada .pie-contacto .lista-enlaces-pie a {
+  overflow-wrap: anywhere;
+}
+
+:root.vista-movil-forzada .lista-contacto-pie {
+  grid-template-columns: 1fr;
+}
+
+:root.vista-movil-forzada .pie-inferior {
+  display: grid;
+  justify-content: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+
+:root.vista-movil-forzada .enlaces-legales {
+  flex-wrap: wrap;
+}
+
+:root.vista-movil-forzada .boton-whatsapp-flotante {
+  right: 0.85rem;
+  bottom: 0.85rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  min-height: 0;
+  padding: 0;
+  justify-content: center;
+}
+
+:root.vista-movil-forzada .boton-whatsapp-flotante span {
+  display: none;
+}
+
 @media (max-width: 420px) {
   .contenedor {
     width: min(calc(100% - 1rem), var(--contenedor));

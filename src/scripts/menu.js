@@ -25,5 +25,8 @@ document.addEventListener('keydown', (evento) => {
 });
 
 window.addEventListener('resize', () => {
-  if (window.innerWidth > 980) cerrarMenu();
+  const usaDisenoMovil = document.documentElement.classList.contains('vista-movil-forzada')
+    || window.innerWidth <= 1100;
+
+  if (!usaDisenoMovil) cerrarMenu();
 });

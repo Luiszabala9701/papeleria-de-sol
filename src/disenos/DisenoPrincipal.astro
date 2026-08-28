@@ -32,6 +32,23 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      (() => {
+        const raiz = document.documentElement;
+
+        const actualizarVistaMovil = () => {
+          const esTelefono = window.matchMedia('(pointer: coarse)').matches
+            && Math.min(window.screen.width, window.screen.height) <= 800;
+          const usaViewportDeEscritorio = window.innerWidth > 1024;
+
+          raiz.classList.toggle('vista-movil-forzada', esTelefono && usaViewportDeEscritorio);
+        };
+
+        actualizarVistaMovil();
+        window.addEventListener('resize', actualizarVistaMovil);
+        window.addEventListener('orientationchange', actualizarVistaMovil);
+      })();
+    </script>
     <meta name="theme-color" content={colorTema} />
     <meta name="description" content={descripcion} />
     {noIndexar ? (
