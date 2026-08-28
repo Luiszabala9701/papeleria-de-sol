@@ -1190,6 +1190,10 @@ h3 {
   text-transform: uppercase;
 }
 
+.pie-contacto h2 {
+  text-align: center;
+}
+
 .lista-enlaces-pie {
   display: grid;
   padding: 0;
