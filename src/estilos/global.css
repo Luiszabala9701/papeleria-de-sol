@@ -1480,8 +1480,22 @@ h3 {
   }
 
   .pie-cuadricula {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.25rem;
+    row-gap: 2rem;
+  }
+
+  .pie-marca {
+    grid-column: 1 / -1;
+  }
+
+  .pie-explora,
+  .pie-contacto {
+    min-width: 0;
+  }
+
+  .pie-contacto .lista-enlaces-pie a {
+    overflow-wrap: anywhere;
   }
 
   .pie-inferior {

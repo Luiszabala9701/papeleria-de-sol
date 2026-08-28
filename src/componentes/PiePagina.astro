@@ -7,7 +7,7 @@ import { obtenerTextoPublico } from '../servicios/textos-publicos';
 
 <footer class="pie-sitio">
   <div class="contenedor pie-cuadricula">
-      <div>
+      <div class="pie-marca">
       <div class="marca marca-pie">
         <span class="logo-papeleria">
           <img src="/marca/logo-papeleria-de-sol-transparente.png" alt="Papelería de Sol" width="1774" height="887" />
@@ -18,7 +18,7 @@ import { obtenerTextoPublico } from '../servicios/textos-publicos';
       </p>
     </div>
 
-    <div>
+    <div class="pie-explora">
       <h2>{configuracion?.titulo_footer_explorar || 'Explorá'}</h2>
       <ul class="lista-enlaces-pie">
         <li><a href="/catalogo">{obtenerTextoPublico(configuracion, 'footer_catalogo')}</a></li>
@@ -28,7 +28,7 @@ import { obtenerTextoPublico } from '../servicios/textos-publicos';
       </ul>
     </div>
 
-    <div>
+    <div class="pie-contacto">
       <h2>{configuracion?.titulo_footer_contacto || 'Contacto'}</h2>
       <ul class="lista-enlaces-pie lista-contacto-pie">
         <li>
