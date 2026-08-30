@@ -424,7 +424,11 @@ h3 {
 
   .hero h1 {
     margin-bottom: 0.85rem;
-    font-size: clamp(2.5rem, 3.7vw, 3.9rem);
+    font-size: clamp(2.6rem, 3.9vw, 4.1rem);
+  }
+
+  .hero > div:first-child {
+    transform: translateY(-1rem);
   }
 
   .hero-descripcion {

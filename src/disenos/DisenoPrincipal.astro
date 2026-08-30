@@ -91,7 +91,7 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     {!ocultarNavegacion && <AvisoWhatsApp />}
     {!ocultarNavegacion && <ModalesLegales />}
 
-    <a id="volver-arriba" class="boton-volver-arriba" href="#inicio-pagina" aria-label="Volver al inicio" hidden>
+    <a id="volver-arriba" class="boton-volver-arriba" href="#inicio-pagina" aria-label="Volver al inicio">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6" /></svg>
     </a>
 
@@ -102,11 +102,21 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
         const boton = document.querySelector('#volver-arriba');
         if (!boton) return;
 
+        const posicionScroll = () => Math.max(
+          window.scrollY,
+          document.documentElement.scrollTop,
+          document.body.scrollTop,
+        );
+
         const actualizarVisibilidad = () => {
-          boton.hidden = window.scrollY < 500;
+          boton.hidden = posicionScroll() < 160;
         };
 
         window.addEventListener('scroll', actualizarVisibilidad, { passive: true });
+        document.addEventListener('scroll', actualizarVisibilidad, { passive: true });
+        boton.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
         actualizarVisibilidad();
       })();
     </script>
