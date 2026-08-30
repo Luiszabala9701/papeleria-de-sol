@@ -106,7 +106,7 @@ function crearEstadoVacio() {
   const enlace = document.createElement('a');
   enlace.className = 'enlace-texto';
   enlace.href = '/catalogo';
-  enlace.textContent = texto('explorarCatalogo', 'Explorar catálogo');
+  enlace.textContent = texto('explorarCatalogo', 'Explorar stickers');
 
   estado.append(icono, mensaje, enlace);
   return estado;
@@ -233,15 +233,21 @@ function crearMensajeWhatsApp() {
 
   carrito.forEach((producto) => {
     const subtotal = Number(producto.precio) * producto.cantidad;
-    lineas.push(`• ${producto.nombre} — Cantidad: ${producto.cantidad} — ${formatearDinero(subtotal)}`);
+    lineas.push(
+      `• SKU: ${producto.sku || 'Sin SKU'}`,
+      `  Producto: ${producto.nombre}`,
+      `  Cantidad: ${producto.cantidad}`,
+      `  Precio unitario: ${formatearDinero(producto.precio)}`,
+      `  Subtotal: ${formatearDinero(subtotal)}`,
+      '',
+    );
   });
 
   lineas.push(
-    '',
     `${texto('mensajeTotalProductos', 'Total de productos')}: ${cantidadTotal()}`,
-    `${texto('mensajeTotal', 'Total')}: ${formatearDinero(totalDinero())}`,
+    `${texto('mensajeTotal', 'Total del pedido')}: ${formatearDinero(totalDinero())}`,
     '',
-    texto('mensajeCierre', '¿Podrían confirmarme disponibilidad y precio final?'),
+    texto('mensajeCierre', 'Quedo atento/a. Gracias.'),
   );
   return lineas.join('\n');
 }

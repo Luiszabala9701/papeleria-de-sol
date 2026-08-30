@@ -1,0 +1,63 @@
+---
+import type { ImagenProducto } from '../tipos/contenidos';
+
+interface Props {
+  imagenes: ImagenProducto[];
+  nombreProducto: string;
+  proteger?: boolean;
+}
+
+const { imagenes, nombreProducto, proteger = false } = Astro.props;
+const imagenesOrdenadas = [...(imagenes || [])].sort((primera, segunda) => {
+  if (primera.es_principal !== segunda.es_principal) return primera.es_principal ? -1 : 1;
+  return Number(primera.orden || 0) - Number(segunda.orden || 0);
+});
+const imagenesVisibles = imagenesOrdenadas.length
+  ? imagenesOrdenadas
+  : [{ id: 'sin-imagen', url_publica: '/stickers/1.webp', texto_alternativo: nombreProducto, es_principal: true, orden: 1 }];
+const imagenPrincipal = imagenesVisibles[0];
+---
+
+<div class="galeria-detalle" data-galeria-producto data-proteccion-imagen={proteger ? 'sticker' : undefined}>
+  <button
+    class="imagen-principal-galeria"
+    type="button"
+    data-galeria-principal
+    aria-label={`Ampliar imagen de ${nombreProducto}`}
+  >
+    <img
+      data-imagen-principal-galeria
+      src={imagenPrincipal.url_publica}
+      alt={imagenPrincipal.texto_alternativo || nombreProducto}
+      width="709"
+      height="709"
+      draggable={proteger ? 'false' : undefined}
+    />
+    <span class="indicador-ampliar-galeria" aria-hidden="true">Ampliar</span>
+  </button>
+
+  {imagenesVisibles.length > 1 && (
+    <div class="miniaturas-galeria" aria-label={`Imágenes de ${nombreProducto}`}>
+      {imagenesVisibles.map((imagen, indice) => (
+        <button
+          class:list={['miniatura-galeria', { activa: indice === 0 }]}
+          type="button"
+          data-miniatura-galeria
+          data-imagen-src={imagen.url_publica}
+          data-imagen-alt={imagen.texto_alternativo || nombreProducto}
+          aria-pressed={indice === 0 ? 'true' : 'false'}
+          aria-label={`Ver imagen ${indice + 1} de ${imagenesVisibles.length}`}
+        >
+          <img src={imagen.url_publica} alt="" width="96" height="96" loading="lazy" draggable={proteger ? 'false' : undefined} />
+        </button>
+      ))}
+    </div>
+  )}
+
+  <dialog class="visor-galeria" data-visor-galeria aria-label={`Imagen ampliada de ${nombreProducto}`}>
+    <div class="contenido-visor-galeria">
+      <button class="boton-icono cerrar-visor-galeria" type="button" data-cerrar-visor-galeria aria-label="Cerrar imagen ampliada">×</button>
+      <img data-imagen-visor-galeria src={imagenPrincipal.url_publica} alt={imagenPrincipal.texto_alternativo || nombreProducto} width="1200" height="1200" draggable={proteger ? 'false' : undefined} />
+    </div>
+  </dialog>
+</div>

@@ -1,6 +1,5 @@
 {
   "configuracion": {
-    "nombre_marca": "Papelería de Sol",
     "descripcion_corta": "Papelería creativa, stickers, plantillas y productos personalizados en CABA y GBA.",
     "whatsapp": "541164879422",
     "correo": "Solnat.v@gmail.com",
@@ -10,7 +9,6 @@
     "region": "CABA y GBA",
     "moneda": "ARS",
     "simbolo_moneda": "$",
-    "lema_marca": "Papelería creativa",
     "aviso_superior": "Pedidos personalizados en CABA y GBA · Consultanos por WhatsApp",
     "mostrar_aviso_superior": true,
     "titulo_footer_explorar": "Explorá",
@@ -30,7 +28,7 @@
       "titulo": "Ideas que alegran tus días",
       "subtitulo": "Papelería creativa hecha con dedicación",
       "contenido": "Descubrí stickers, plantillas y productos físicos para regalar, organizar y personalizar. Elegí tus favoritos y consultanos directamente por WhatsApp.",
-      "texto_boton": "Explorar el catálogo",
+      "texto_boton": "Explorar stickers",
       "enlace_boton": "/catalogo",
       "publicada": true,
       "orden": 1
@@ -39,7 +37,7 @@
       "clave": "inicio_destacados",
       "titulo": "Stickers destacados",
       "subtitulo": "Nuestros favoritos",
-      "contenido": "Una pequeña muestra de la colección. En el catálogo podés buscar y combinar los diseños que quieras.",
+      "contenido": "Una pequeña muestra de la colección. En stickers podés buscar y combinar los diseños que quieras.",
       "texto_boton": "Ver los 1.000 stickers",
       "enlace_boton": "/catalogo?tipo=sticker",
       "publicada": true,

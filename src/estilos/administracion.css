@@ -367,6 +367,119 @@ body.dialogo-abierto {
   object-fit: contain;
 }
 
+.gestor-imagenes-producto {
+  padding: 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--azul-sol) 5%, var(--blanco));
+}
+
+.cabecera-gestor-imagenes {
+  margin-bottom: 0.9rem;
+}
+
+.cabecera-gestor-imagenes h3 {
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+
+.cabecera-gestor-imagenes p,
+.estado-imagenes-vacio {
+  margin: 0;
+  color: var(--tinta-suave);
+  font-size: 0.8rem;
+}
+
+.cuadricula-imagenes-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 0.75rem;
+}
+
+.tarjeta-imagen-admin {
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: 0.7rem;
+  background: var(--blanco);
+}
+
+.boton-miniatura-admin {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--azul-sol) 10%, transparent);
+  cursor: zoom-in;
+}
+
+.boton-miniatura-admin img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.acciones-imagen-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem;
+  gap: 0.5rem;
+}
+
+.acciones-imagen-admin span {
+  color: var(--tinta-suave);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.boton-eliminar-imagen-admin {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--peligro) 28%, var(--borde));
+  border-radius: 0.45rem;
+  color: var(--peligro);
+  background: var(--blanco);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.visor-imagen-admin {
+  width: min(calc(100% - 2rem), 820px);
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-grande);
+  background: var(--blanco);
+  box-shadow: var(--sombra);
+}
+
+.visor-imagen-admin::backdrop {
+  background: rgba(28, 25, 42, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.contenido-visor-imagen-admin {
+  position: relative;
+  display: grid;
+  max-height: calc(100dvh - 2rem);
+  place-items: center;
+  padding: 1rem;
+}
+
+.contenido-visor-imagen-admin .boton-icono {
+  position: absolute;
+  z-index: 1;
+  top: 1.3rem;
+  right: 1.3rem;
+}
+
+.contenido-visor-imagen-admin img {
+  max-width: 100%;
+  max-height: calc(100dvh - 4rem);
+  object-fit: contain;
+}
+
 .estado-tabla {
   display: inline-block;
   padding: 0.25rem 0.55rem;
@@ -514,6 +627,12 @@ body.dialogo-abierto {
 .tarjeta-contenido-global h2 {
   margin-bottom: 0;
   font-size: 1.25rem;
+}
+
+.separador-formulario-seccion {
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--borde);
 }
 
 .campo-completo {

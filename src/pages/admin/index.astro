@@ -99,6 +99,7 @@ const configuracionDisponible = Boolean(
               </div>
               {recurso !== 'secciones' && <button class="boton boton-principal" type="button" data-nuevo-recurso={recurso}>Crear nuevo</button>}
             </header>
+            {recurso !== 'secciones' && <>
             <div class="barra-listado">
               <input class="campo" type="search" placeholder="Buscar…" data-buscar-recurso={recurso} />
               {recurso === 'categorias' && (
@@ -130,15 +131,40 @@ const configuracionDisponible = Boolean(
                 <tbody data-lista-recurso={recurso}></tbody>
               </table>
             </div>
+            </>}
             {recurso === 'secciones' && (
               <div class="contenidos-globales">
+                <details class="tarjeta-contenido-global opciones-contenido-global" open>
+                  <summary>Textos de inicio</summary>
+                  <p>Editá los dos bloques del inicio sin crear ni administrar secciones. Cada texto mantiene su formato independiente.</p>
+                  <form class="formulario-dos-columnas" data-formulario-seccion-inicio="inicio_principal">
+                    <h2 class="campo-completo">Presentación principal</h2>
+                    <label class="grupo-campo campo-completo"><span>Título</span><textarea class="area-texto" name="titulo" rows="2" required></textarea></label>
+                    <label class="grupo-campo campo-completo"><span>Subtítulo</span><input class="campo" name="subtitulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Descripción</span><textarea class="area-texto" name="contenido" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Texto del botón</span><input class="campo" name="texto_boton" /></label>
+                    <label class="grupo-campo"><span>Enlace del botón</span><input class="campo" name="enlace_boton" /></label>
+                    <label class="grupo-checkbox campo-completo"><input name="publicada" type="checkbox" /><span>Mostrar este bloque en el inicio</span></label>
+                    <div class="campo-completo" data-estilos-seccion-inicio></div>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar presentación principal</button></div>
+                  </form>
+                  <form class="formulario-dos-columnas separador-formulario-seccion" data-formulario-seccion-inicio="inicio_destacados">
+                    <h2 class="campo-completo">Bloque de destacados</h2>
+                    <label class="grupo-campo campo-completo"><span>Título</span><textarea class="area-texto" name="titulo" rows="2" required></textarea></label>
+                    <label class="grupo-campo campo-completo"><span>Subtítulo</span><input class="campo" name="subtitulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Descripción</span><textarea class="area-texto" name="contenido" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Texto del botón</span><input class="campo" name="texto_boton" /></label>
+                    <label class="grupo-campo"><span>Enlace del botón</span><input class="campo" name="enlace_boton" /></label>
+                    <label class="grupo-checkbox campo-completo"><input name="publicada" type="checkbox" /><span>Mostrar este bloque en el inicio</span></label>
+                    <div class="campo-completo" data-estilos-seccion-inicio></div>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar bloque de destacados</button></div>
+                  </form>
+                </details>
                 <section class="tarjeta-contenido-global">
                   <p class="etiqueta">Marca, cabecera y pie</p>
                   <h2>Contacto y textos generales</h2>
                   <p>Estos datos se muestran en la cabecera, el footer y los enlaces de contacto de la tienda.</p>
                   <form class="formulario-dos-columnas" data-formulario-configuraciones>
-                    <label class="grupo-campo"><span>Nombre de la marca</span><input class="campo" name="nombre_marca" required /></label>
-                    <label class="grupo-campo"><span>Lema debajo del logo</span><input class="campo" name="lema_marca" /></label>
                     <label class="grupo-campo campo-completo"><span>Mensaje superior</span><input class="campo" name="aviso_superior" /></label>
                     <label class="grupo-checkbox campo-completo"><input name="mostrar_aviso_superior" type="checkbox" checked /><span>Mostrar el mensaje superior en la tienda</span></label>
                     <label class="grupo-campo"><span>WhatsApp internacional</span><input class="campo" name="whatsapp" inputmode="numeric" required /></label>
@@ -177,12 +203,12 @@ const configuracionDisponible = Boolean(
                   <p>Estos nombres se muestran en el menú superior y en los enlaces del pie de la tienda. Las direcciones de las páginas no cambian.</p>
                   <form class="formulario-dos-columnas" data-formulario-configuraciones>
                     <label class="grupo-campo"><span>Menú: inicio</span><input class="campo" name="navegacion_inicio" /></label>
-                    <label class="grupo-campo"><span>Menú: catálogo</span><input class="campo" name="navegacion_catalogo" /></label>
+                    <label class="grupo-campo"><span>Menú: stickers</span><input class="campo" name="navegacion_catalogo" /></label>
                     <label class="grupo-campo"><span>Menú: plantillas</span><input class="campo" name="navegacion_plantillas" /></label>
                     <label class="grupo-campo"><span>Menú: productos físicos</span><input class="campo" name="navegacion_productos_fisicos" /></label>
                     <label class="grupo-campo"><span>Menú: ayuda</span><input class="campo" name="navegacion_ayuda" /></label>
                     <label class="grupo-campo"><span>Botón del carrito</span><input class="campo" name="carrito_boton" /></label>
-                    <label class="grupo-campo"><span>Footer: catálogo</span><input class="campo" name="footer_catalogo" /></label>
+                    <label class="grupo-campo"><span>Footer: stickers</span><input class="campo" name="footer_catalogo" /></label>
                     <label class="grupo-campo"><span>Footer: plantillas</span><input class="campo" name="footer_plantillas" /></label>
                     <label class="grupo-campo"><span>Footer: productos físicos</span><input class="campo" name="footer_productos_fisicos" /></label>
                     <label class="grupo-campo"><span>Footer: ayuda</span><input class="campo" name="footer_ayuda" /></label>
@@ -192,17 +218,17 @@ const configuracionDisponible = Boolean(
                 </details>
 
                 <details class="tarjeta-contenido-global opciones-contenido-global">
-                  <summary>Páginas de catálogo y colecciones</summary>
+                  <summary>Páginas de stickers y colecciones</summary>
                   <p>Cada campo corresponde a un texto público. Podés cambiar solo el que necesites y guardar este bloque.</p>
                   <form class="formulario-dos-columnas" data-formulario-configuraciones>
-                    <label class="grupo-campo"><span>Catálogo: etiqueta</span><input class="campo" name="catalogo_etiqueta" /></label>
-                    <label class="grupo-campo"><span>Catálogo: título</span><input class="campo" name="catalogo_titulo" /></label>
-                    <label class="grupo-campo campo-completo"><span>Catálogo: descripción</span><textarea class="area-texto" name="catalogo_descripcion" rows="3"></textarea></label>
-                    <label class="grupo-campo"><span>Catálogo: texto de búsqueda</span><input class="campo" name="catalogo_busqueda_placeholder" /></label>
-                    <label class="grupo-campo"><span>Catálogo: todas las categorías</span><input class="campo" name="catalogo_todas_categorias" /></label>
-                    <label class="grupo-campo"><span>Catálogo: aviso de disponibilidad</span><input class="campo" name="catalogo_aviso_disponibilidad" /></label>
-                    <label class="grupo-campo"><span>Catálogo: página anterior</span><input class="campo" name="catalogo_pagina_anterior" /></label>
-                    <label class="grupo-campo"><span>Catálogo: página siguiente</span><input class="campo" name="catalogo_pagina_siguiente" /></label>
+                    <label class="grupo-campo"><span>Stickers: etiqueta</span><input class="campo" name="catalogo_etiqueta" /></label>
+                    <label class="grupo-campo"><span>Stickers: título</span><input class="campo" name="catalogo_titulo" /></label>
+                    <label class="grupo-campo campo-completo"><span>Stickers: descripción</span><textarea class="area-texto" name="catalogo_descripcion" rows="3"></textarea></label>
+                    <label class="grupo-campo"><span>Stickers: texto de búsqueda</span><input class="campo" name="catalogo_busqueda_placeholder" /></label>
+                    <label class="grupo-campo"><span>Stickers: todas las categorías</span><input class="campo" name="catalogo_todas_categorias" /></label>
+                    <label class="grupo-campo"><span>Stickers: aviso de disponibilidad</span><input class="campo" name="catalogo_aviso_disponibilidad" /></label>
+                    <label class="grupo-campo"><span>Stickers: página anterior</span><input class="campo" name="catalogo_pagina_anterior" /></label>
+                    <label class="grupo-campo"><span>Stickers: página siguiente</span><input class="campo" name="catalogo_pagina_siguiente" /></label>
                     <label class="grupo-campo"><span>Plantillas: etiqueta</span><input class="campo" name="plantillas_etiqueta" /></label>
                     <label class="grupo-campo"><span>Plantillas: título</span><input class="campo" name="plantillas_titulo" /></label>
                     <label class="grupo-campo campo-completo"><span>Plantillas: descripción</span><textarea class="area-texto" name="plantillas_descripcion" rows="3"></textarea></label>
@@ -217,7 +243,7 @@ const configuracionDisponible = Boolean(
                     <label class="grupo-campo"><span>Productos físicos sin productos: título</span><input class="campo" name="fisicos_vacio_titulo" /></label>
                     <label class="grupo-campo campo-completo"><span>Productos físicos sin productos: descripción</span><textarea class="area-texto" name="fisicos_vacio_descripcion" rows="3"></textarea></label>
                     <label class="grupo-campo"><span>Productos físicos sin productos: botón</span><input class="campo" name="fisicos_vacio_boton" /></label>
-                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar páginas de catálogo y colecciones</button></div>
+                    <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar páginas de stickers y colecciones</button></div>
                   </form>
                 </details>
 

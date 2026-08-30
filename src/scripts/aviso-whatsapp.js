@@ -29,12 +29,12 @@ function configurarContenido(tipo) {
   if (!descripcion || !detalle) return;
 
   if (tipo === 'seleccion') {
-    descripcion.textContent = 'Se abrirá WhatsApp con tu selección como mensaje prellenado. La disponibilidad, el precio final, el pago y la entrega se coordinan por ese medio.';
+    descripcion.textContent = 'Se abrirá WhatsApp con el detalle y el total estimado de tu selección. El retiro o envío, el pago y otros detalles se coordinan por ese medio.';
     detalle.textContent = 'Tu selección queda guardada solamente en este navegador. Podés revisar el mensaje antes de enviarlo por WhatsApp.';
     return;
   }
 
-  descripcion.textContent = 'Se abrirá WhatsApp para que puedas escribirle a Papelería de Sol. La disponibilidad, el precio final, el pago y la entrega se coordinan por ese medio.';
+  descripcion.textContent = 'Se abrirá WhatsApp para que puedas escribirle a Papelería de Sol. El retiro o envío, el pago y otros detalles se coordinan por ese medio.';
   detalle.textContent = 'Esta página no procesa pagos ni guarda tus datos de contacto.';
 }
 

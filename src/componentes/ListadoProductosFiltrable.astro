@@ -1,0 +1,85 @@
+---
+import TarjetaProducto from './TarjetaProducto.astro';
+import type { ConfiguracionSitio, Producto, TipoProducto } from '../tipos/contenidos';
+import { obtenerTextoPublico } from '../servicios/textos-publicos';
+import rutaScriptListado from '../scripts/catalogo.js?url&no-inline';
+
+interface Props {
+  productos: Producto[];
+  categorias: { id: string; nombre: string; tipo_producto?: TipoProducto }[];
+  configuracion: ConfiguracionSitio;
+  tipo: TipoProducto;
+  etiquetaAria: string;
+}
+
+const { productos, categorias, configuracion, tipo, etiquetaAria } = Astro.props;
+const productosIniciales = productos.slice(0, 48);
+const categoriasDelTipo = categorias.filter((categoria) => categoria.tipo_producto === tipo);
+const nombreTipo = tipo === 'fisico'
+  ? 'productos físicos'
+  : tipo === 'plantilla'
+    ? 'plantillas'
+    : 'stickers';
+const datosSeguros = JSON.stringify({
+  productos,
+  textos: {
+    tipoFisico: obtenerTextoPublico(configuracion, 'producto_tipo_fisico'),
+    agregar: obtenerTextoPublico(configuracion, 'producto_agregar'),
+    resultadosVacios: 'No encontramos productos con esos filtros.',
+    pagina: 'Página',
+  },
+}).replace(/</g, '\\u003c');
+---
+
+<section id="catalogo-resultados" class="contenedor seccion-catalogo" data-tipo-listado={tipo}>
+  <div class="barra-catalogo" aria-label={etiquetaAria}>
+    <form id="formulario-busqueda-catalogo" class="busqueda-catalogo" role="search">
+      <label class="solo-lectores" for="buscador-catalogo">Buscar {nombreTipo}</label>
+      <input
+        id="buscador-catalogo"
+        class="campo"
+        type="search"
+        placeholder={obtenerTextoPublico(configuracion, 'catalogo_busqueda_placeholder')}
+        autocomplete="off"
+      />
+      <button class="boton-busqueda-catalogo" type="submit" aria-label={`Buscar ${nombreTipo}`}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="6"></circle>
+          <path d="m16 16 4 4"></path>
+        </svg>
+        <span class="solo-lectores">Buscar</span>
+      </button>
+    </form>
+    <label>
+      <span class="solo-lectores">Categoría de {nombreTipo}</span>
+      <select id="filtro-categoria" class="selector">
+        <option value="">{obtenerTextoPublico(configuracion, 'catalogo_todas_categorias')}</option>
+        {categoriasDelTipo.map((categoria) => <option value={categoria.id}>{categoria.nombre}</option>)}
+      </select>
+    </label>
+  </div>
+
+  <div class="resultado-catalogo">
+    <span id="informacion-resultados">{productos.length} productos</span>
+    <span>{obtenerTextoPublico(configuracion, 'catalogo_aviso_disponibilidad')}</span>
+  </div>
+
+  <div id="galeria-catalogo" class="cuadricula-productos">
+    {productosIniciales.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
+  </div>
+
+  <nav class="paginacion" aria-label={`Paginación de ${nombreTipo}`}>
+    <button id="pagina-anterior" class="boton-paginacion" type="button" disabled>{obtenerTextoPublico(configuracion, 'catalogo_pagina_anterior')}</button>
+    <span id="informacion-pagina-catalogo">Página 1</span>
+    <button id="pagina-siguiente" class="boton-paginacion" type="button">{obtenerTextoPublico(configuracion, 'catalogo_pagina_siguiente')}</button>
+  </nav>
+</section>
+
+<script is:inline id="datos-catalogo" type="application/json" set:html={datosSeguros}></script>
+<script is:inline src={rutaScriptListado}></script>
+
+<style>
+  .seccion-catalogo {
+    padding-bottom: 5rem;
+  }
+</style>

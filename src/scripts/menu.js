@@ -26,7 +26,7 @@ document.addEventListener('keydown', (evento) => {
 
 window.addEventListener('resize', () => {
   const usaDisenoMovil = document.documentElement.classList.contains('vista-movil-forzada')
-    || window.innerWidth <= 1100;
+    || window.innerWidth <= 860;
 
   if (!usaDisenoMovil) cerrarMenu();
 });

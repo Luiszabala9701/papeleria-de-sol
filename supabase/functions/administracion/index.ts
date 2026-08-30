@@ -493,18 +493,16 @@ async function validarActividad(usuarioId: string, sesionId: string) {
 }
 
 async function obtenerResumen() {
-  const [productos, publicados, categorias, secciones] = await Promise.all([
+  const [productos, publicados, categorias] = await Promise.all([
     clienteServicio.from('productos').select('*', { count: 'exact', head: true }).neq('estado', 'archivado'),
     clienteServicio.from('productos').select('*', { count: 'exact', head: true }).eq('estado', 'publicado'),
     clienteServicio.from('categorias').select('*', { count: 'exact', head: true }),
-    clienteServicio.from('secciones').select('*', { count: 'exact', head: true }),
   ]);
 
   return {
     productos: productos.count || 0,
     publicados: publicados.count || 0,
     categorias: categorias.count || 0,
-    secciones: secciones.count || 0,
   };
 }
 
@@ -536,9 +534,28 @@ async function guardarRecurso(
 ) {
   if (!esObjetoPlano(datosOriginales)) throw new Error('Los datos enviados no tienen un formato válido.');
   if (id) validarIdentificador(id);
-  validarDatos(recurso, datosOriginales);
+
+  let datosValidados = datosOriginales;
+  if (recurso === 'productos' && id) {
+    const { data: productoActual, error: errorProductoActual } = await clienteServicio
+      .from('productos')
+      .select('tipo_producto, sku')
+      .eq('id', id)
+      .maybeSingle();
+    if (errorProductoActual || !productoActual) throw new Error('El producto que querés editar no existe.');
+
+    // El tipo y el SKU determinan la identidad del producto. Siempre se conservan
+    // desde la base de datos aunque alguien intente enviarlos por fuera del formulario.
+    datosValidados = {
+      ...datosOriginales,
+      tipo_producto: productoActual.tipo_producto,
+      sku: productoActual.sku,
+    };
+  }
+
+  validarDatos(recurso, datosValidados);
   const definicion = RECURSOS[recurso];
-  const datos = seleccionarCampos(datosOriginales, definicion.campos);
+  const datos = seleccionarCampos(datosValidados, definicion.campos);
 
   if (recurso === 'secciones' && Object.prototype.hasOwnProperty.call(datos, 'estilos')) {
     datos.estilos = normalizarEstilosSeccion(datos.estilos);
@@ -714,9 +731,86 @@ async function registrarImagen(
   return data;
 }
 
+async function limpiarArchivosPendientes() {
+  const { data: pendientes, error } = await clienteServicio
+    .from('archivos_pendientes_eliminar')
+    .select('ruta, deposito')
+    .order('creado_en')
+    .limit(20);
+
+  // La tabla puede no existir hasta que se aplique la migración. Eso no debe impedir
+  // las acciones habituales del panel durante una actualización escalonada.
+  if (error || !pendientes?.length) return;
+
+  for (const pendiente of pendientes) {
+    const { error: errorStorage } = await clienteServicio.storage
+      .from(pendiente.deposito)
+      .remove([pendiente.ruta]);
+    if (errorStorage) continue;
+
+    await clienteServicio
+      .from('archivos_pendientes_eliminar')
+      .delete()
+      .eq('ruta', pendiente.ruta)
+      .eq('deposito', pendiente.deposito);
+  }
+}
+
+async function eliminarImagen(
+  datos: Record<string, unknown>,
+  usuarioId: string,
+) {
+  if (!esObjetoPlano(datos)) throw new Error('Los datos de la imagen no tienen un formato válido.');
+  const productoId = validarIdentificador(datos.producto_id, 'El producto');
+  const imagenId = validarIdentificador(datos.imagen_id, 'La imagen');
+
+  const { data: imagen, error: errorImagen } = await clienteServicio
+    .from('imagenes')
+    .select('id, producto_id, deposito, ruta, es_principal')
+    .eq('id', imagenId)
+    .eq('producto_id', productoId)
+    .maybeSingle();
+  if (errorImagen || !imagen) throw new Error('La imagen no pertenece al producto seleccionado.');
+  if (imagen.deposito !== 'productos' || !esRutaDeArchivoDeProductoSegura(imagen.ruta, productoId)) {
+    throw new Error('La ruta de la imagen no es válida.');
+  }
+
+  // Primero se elimina la referencia pública. Si Storage tiene una interrupción, la
+  // imagen no se seguirá mostrando y su ruta queda en una cola para reintentarla.
+  const { error: errorBase } = await clienteServicio
+    .from('imagenes')
+    .delete()
+    .eq('id', imagenId)
+    .eq('producto_id', productoId);
+  if (errorBase) throw errorBase;
+
+  const { error: errorStorage } = await clienteServicio.storage
+    .from(imagen.deposito)
+    .remove([imagen.ruta]);
+
+  if (errorStorage) {
+    const { error: errorPendiente } = await clienteServicio
+      .from('archivos_pendientes_eliminar')
+      .upsert({ ruta: imagen.ruta, deposito: imagen.deposito, producto_id: productoId }, { onConflict: 'ruta,deposito' });
+    if (errorPendiente) console.error('No se pudo registrar la limpieza pendiente:', errorPendiente);
+
+    await registrarAuditoria(usuarioId, 'eliminar_imagen_pendiente', 'imagenes', imagenId, {
+      producto_id: productoId,
+      ruta: imagen.ruta,
+    });
+    return { archivo_pendiente: true };
+  }
+
+  await registrarAuditoria(usuarioId, 'eliminar_imagen', 'imagenes', imagenId, {
+    producto_id: productoId,
+    ruta: imagen.ruta,
+  });
+  return { archivo_pendiente: false };
+}
+
 async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId: string) {
   const clavesPermitidas = [
-    'nombre_marca', 'lema_marca', 'aviso_superior', 'mostrar_aviso_superior', 'descripcion_corta',
+    'aviso_superior', 'mostrar_aviso_superior', 'descripcion_corta',
     'titulo_footer_explorar', 'titulo_footer_contacto', 'whatsapp', 'correo', 'instagram', 'tiktok',
     'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES, 'fuente_principal',
     ...CLAVES_TEXTO_PUBLICO,
@@ -809,6 +903,7 @@ Deno.serve(async (solicitud) => {
     }
 
     await validarActividad(autenticacion.user.id, sesionId);
+    await limpiarArchivosPendientes();
 
     if (accion === 'cerrar_sesion') {
       await clienteServicio
@@ -862,6 +957,12 @@ Deno.serve(async (solicitud) => {
     if (accion === 'registrar_imagen') {
       return responder(solicitud, {
         datos: await registrarImagen(cuerpo.datos || {}, autenticacion.user.id),
+      });
+    }
+
+    if (accion === 'eliminar_imagen') {
+      return responder(solicitud, {
+        datos: await eliminarImagen(cuerpo.datos || {}, autenticacion.user.id),
       });
     }
 

@@ -11,11 +11,15 @@ const botonSiguiente = document.querySelector('#pagina-siguiente');
 const PRODUCTOS_POR_PAGINA = 48;
 let paginaActual = 1;
 let productos = [];
+let textos = {};
 
 try {
-  productos = JSON.parse(datosCatalogo?.textContent || '[]');
+  const datos = JSON.parse(datosCatalogo?.textContent || '{}');
+  productos = Array.isArray(datos) ? datos : Array.isArray(datos.productos) ? datos.productos : [];
+  textos = datos.textos || {};
 } catch {
   productos = [];
+  textos = {};
 }
 
 function textoNormalizado(texto) {
@@ -37,6 +41,7 @@ function datosProductoCarrito(producto) {
   return {
     id: producto.id,
     nombre: producto.nombre,
+    sku: producto.sku || '',
     slug: producto.slug,
     tipo_producto: producto.tipo_producto,
     precio: producto.precio,
@@ -75,7 +80,9 @@ function crearTarjeta(producto) {
 
   const tipo = document.createElement('p');
   tipo.className = 'tipo-producto';
-  tipo.textContent = producto.tipo_producto === 'fisico' ? 'Producto físico' : producto.tipo_producto;
+  tipo.textContent = producto.tipo_producto === 'fisico'
+    ? (textos.tipoFisico || 'Producto físico')
+    : producto.tipo_producto;
 
   const titulo = document.createElement('h3');
   const enlaceTitulo = document.createElement('a');
@@ -103,7 +110,7 @@ function crearTarjeta(producto) {
   agregar.dataset.agregarProducto = '';
   agregar.dataset.producto = JSON.stringify(datosProductoCarrito(producto));
   agregar.setAttribute('aria-label', `Agregar ${producto.nombre} a mi selección`);
-  agregar.textContent = 'Agregar';
+  agregar.textContent = textos.agregar || 'Agregar';
 
   pie.append(precio, agregar);
   contenido.append(tipo, titulo, descripcion, pie);
@@ -148,7 +155,7 @@ function renderizar() {
     vacio.className = 'estado-vacio';
     vacio.style.gridColumn = '1 / -1';
     const texto = document.createElement('p');
-    texto.textContent = 'No encontramos productos con esos filtros.';
+    texto.textContent = textos.resultadosVacios || 'No encontramos productos con esos filtros.';
     vacio.append(texto);
     galeria.append(vacio);
   } else {
@@ -160,7 +167,7 @@ function renderizar() {
   if (informacionResultados) {
     informacionResultados.textContent = `${filtrados.length} producto${filtrados.length === 1 ? '' : 's'}`;
   }
-  if (informacionPagina) informacionPagina.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+  if (informacionPagina) informacionPagina.textContent = `${textos.pagina || 'Página'} ${paginaActual} de ${totalPaginas}`;
   if (botonAnterior) botonAnterior.disabled = paginaActual <= 1;
   if (botonSiguiente) botonSiguiente.disabled = paginaActual >= totalPaginas;
   actualizarDireccion();

@@ -1,11 +1,13 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
+import GaleriaProducto from '../../componentes/GaleriaProducto.astro';
 import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
   obtenerProductoPorSlug,
 } from '../../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../../servicios/textos-publicos';
+import rutaScriptGaleria from '../../scripts/galeria-producto.js?url&no-inline';
 
 export const prerender = false;
 
@@ -33,6 +35,7 @@ const urlProducto = new URL(Astro.url.pathname, Astro.site || Astro.url.origin).
 const datosCarrito = JSON.stringify({
   id: producto.id,
   nombre: producto.nombre,
+  sku: producto.sku || '',
   slug: producto.slug,
   tipo_producto: producto.tipo_producto,
   precio: producto.precio,
@@ -65,15 +68,7 @@ const datosEstructurados = JSON.stringify({
   </Fragment>
 
   <article class="contenedor detalle-producto">
-    <div class="galeria-detalle" data-proteccion-imagen={esSticker ? 'sticker' : undefined}>
-      <img
-        src={imagen?.url_publica || '/stickers/1.webp'}
-        alt={imagen?.texto_alternativo || producto.nombre}
-        width="709"
-        height="709"
-        draggable={esSticker ? 'false' : undefined}
-      />
-    </div>
+    <GaleriaProducto imagenes={producto.imagenes} nombreProducto={producto.nombre} proteger={esSticker} />
 
     <div class="informacion-detalle">
       <p class="etiqueta">{producto.tipo_producto === 'fisico' ? obtenerTextoPublico(configuracion, 'producto_tipo_fisico') : producto.tipo_producto}</p>
@@ -98,4 +93,5 @@ const datosEstructurados = JSON.stringify({
       </button>
     </div>
   </article>
+  <script is:inline src={rutaScriptGaleria}></script>
 </DisenoPrincipal>

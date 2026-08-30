@@ -1,17 +1,19 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
-import TarjetaProducto from '../../componentes/TarjetaProducto.astro';
+import ListadoProductosFiltrable from '../../componentes/ListadoProductosFiltrable.astro';
 import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
+  obtenerCategoriasPublicadas,
   obtenerProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
-const [configuracion, plantillas] = await Promise.all([
+const [configuracion, plantillas, categorias] = await Promise.all([
   obtenerConfiguracionSitio(),
   obtenerProductosPublicados({ tipo: 'plantilla' }),
-]) as [ConfiguracionSitio, Producto[]];
+  obtenerCategoriasPublicadas(),
+]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: 'plantilla' }[]];
 ---
 
 <DisenoPrincipal
@@ -26,12 +28,16 @@ const [configuracion, plantillas] = await Promise.all([
     <p>{obtenerTextoPublico(configuracion, 'plantillas_descripcion')}</p>
   </header>
 
+  {plantillas.length > 0 ? (
+    <ListadoProductosFiltrable
+      productos={plantillas}
+      categorias={categorias}
+      configuracion={configuracion}
+      tipo="plantilla"
+      etiquetaAria="Filtros de plantillas"
+    />
+  ) : (
   <section class="contenedor seccion-listado">
-    {plantillas.length > 0 ? (
-      <div class="cuadricula-productos">
-        {plantillas.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
-      </div>
-    ) : (
       <div class="estado-informativo">
         <div>
           <p class="etiqueta">{obtenerTextoPublico(configuracion, 'plantillas_vacio_etiqueta')}</p>
@@ -40,8 +46,8 @@ const [configuracion, plantillas] = await Promise.all([
           <a class="boton boton-principal" href={`https://wa.me/${configuracion.whatsapp}`} target="_blank" rel="noreferrer">{obtenerTextoPublico(configuracion, 'plantillas_vacio_boton')}</a>
         </div>
       </div>
-    )}
   </section>
+  )}
 </DisenoPrincipal>
 
 <style>

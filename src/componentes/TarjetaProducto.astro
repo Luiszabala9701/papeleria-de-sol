@@ -53,6 +53,7 @@ const precio = new Intl.NumberFormat('es-AR', {
         data-producto={JSON.stringify({
           id: producto.id,
           nombre: producto.nombre,
+          sku: producto.sku || '',
           slug: producto.slug,
           tipo_producto: producto.tipo_producto,
           precio: producto.precio,

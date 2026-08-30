@@ -25,7 +25,7 @@ const pasos = [
 ---
 
 <DisenoPrincipal
-  titulo={`Cómo comprar stickers por WhatsApp | ${configuracion.nombre_marca || 'Papelería de Sol'}`}
+  titulo="Cómo comprar stickers por WhatsApp | Papelería de Sol"
   descripcion="Cómo elegir stickers, armar tu selección y consultar disponibilidad, pago y entrega por WhatsApp en CABA y GBA."
   configuracion={configuracion}
 >
@@ -125,14 +125,25 @@ const pasos = [
     max-width: 720px;
   }
 
+  .bloque-consultas .boton {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 1000px) {
+    .bloque-consultas {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+
   @media (max-width: 720px) {
     .cuadricula-ayuda {
       grid-template-columns: 1fr;
     }
 
-    .bloque-consultas {
-      align-items: flex-start;
-      flex-direction: column;
+    .bloque-consultas .boton {
+      width: 100%;
     }
   }
 </style>

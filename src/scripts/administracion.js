@@ -39,7 +39,7 @@ const ESQUEMAS = {
   productos: [
     { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', obligatorio: true },
     {
-      nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true,
+      nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true, soloCreacion: true,
       opciones: [
         { valor: '', texto: 'Elegí un tipo de producto' },
         { valor: 'sticker', texto: 'Sticker' },
@@ -48,7 +48,7 @@ const ESQUEMAS = {
       ],
     },
     { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias', dependeDe: 'tipo_producto' },
-    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, ayudaEmergente: 'Para ver el último SKU y recibir una sugerencia, primero elegí el tipo de producto.' },
+    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, soloCreacion: true, ayudaEmergente: 'Para ver el último SKU y recibir una sugerencia, primero elegí el tipo de producto.' },
     { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', obligatorio: true, completo: true },
     { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
     {
@@ -62,7 +62,7 @@ const ESQUEMAS = {
     { nombre: 'controla_stock', etiqueta: 'Controlar stock', tipo: 'checkbox' },
     { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0, dependeDe: 'controla_stock' },
     { nombre: 'destacado', etiqueta: 'Mostrar como destacado', tipo: 'checkbox' },
-    { nombre: 'imagenes_nuevas', etiqueta: 'Imágenes del producto (máximo 5)', tipo: 'file', multiple: true, completo: true, ayuda: 'Podés seleccionar varias imágenes a la vez. Cada archivo puede pesar hasta 5 MB.' },
+    { nombre: 'imagenes_nuevas', etiqueta: 'Agregar nuevas imágenes (máximo 5 en total)', tipo: 'file', multiple: true, completo: true, ayuda: 'Podés seleccionar varias imágenes a la vez. Cada archivo puede pesar hasta 5 MB.' },
     { nombre: 'meta_titulo', etiqueta: 'Título para buscadores', tipo: 'text', completo: true, avanzado: true, ayuda: 'Es el título que podría mostrarse en Google. Si se deja vacío, se usa el nombre del producto.' },
     { nombre: 'meta_descripcion', etiqueta: 'Descripción para buscadores', tipo: 'textarea', completo: true, avanzado: true, ayuda: 'Es el texto breve que podría mostrarse debajo del título en Google. Si se deja vacío, se usa la descripción del producto.' },
   ],
@@ -210,7 +210,6 @@ async function cargarResumen() {
     productos: 'Productos',
     publicados: 'Publicados',
     categorias: 'Categorías',
-    secciones: 'Secciones',
   };
 
   Object.entries(etiquetas).forEach(([clave, etiqueta]) => {
@@ -575,6 +574,10 @@ function crearCampo(definicion, registro = {}) {
     campo.disabled = true;
     campo.setAttribute('aria-disabled', 'true');
   }
+  if (idEdicion && definicion.soloCreacion) {
+    campo.disabled = true;
+    campo.setAttribute('aria-disabled', 'true');
+  }
   if (tieneAyudaEmergente) {
     const filaEtiqueta = document.createElement('div');
     filaEtiqueta.className = 'etiqueta-campo-con-ayuda';
@@ -591,6 +594,13 @@ function crearCampo(definicion, registro = {}) {
     contenedor.append(ayuda);
   }
 
+  if (idEdicion && definicion.soloCreacion) {
+    const ayudaInmutable = document.createElement('small');
+    ayudaInmutable.textContent = 'Este dato se define al crear el producto y no se puede modificar después.';
+    ayudaInmutable.style.color = 'var(--tinta-suave)';
+    contenedor.append(ayudaInmutable);
+  }
+
   return contenedor;
 }
 
@@ -602,6 +612,9 @@ function abrirDialogo(recurso, registro = null) {
   camposFormulario.replaceChildren();
   const definiciones = ESQUEMAS[recurso];
   definiciones.filter((definicion) => !definicion.avanzado).forEach((definicion) => {
+    if (recurso === 'productos' && registro && definicion.nombre === 'imagenes_nuevas') {
+      camposFormulario.append(crearGestorImagenesProducto(registro));
+    }
     camposFormulario.append(crearCampo(definicion, registro || {}));
   });
   const avanzadas = definiciones.filter((definicion) => definicion.avanzado);
@@ -630,7 +643,7 @@ function obtenerDatosFormulario() {
   const datos = {};
   ESQUEMAS[recursoDialogo].forEach((definicion) => {
     const campo = formularioRecurso.elements[definicion.nombre];
-    if (!campo || ['file', 'estilos-seccion'].includes(definicion.tipo)) return;
+    if (!campo || definicion.soloCreacion && idEdicion || ['file', 'estilos-seccion'].includes(definicion.tipo)) return;
 
     if (definicion.tipo === 'checkbox') datos[definicion.nombre] = campo.checked;
     else if (definicion.multiple) datos[definicion.nombre] = Array.from(campo.selectedOptions).map((opcion) => opcion.value);
@@ -685,6 +698,111 @@ async function subirImagenesSiCorresponde(producto) {
   }
 }
 
+function imagenesOrdenadas(registro) {
+  return [...(registro?.imagenes || [])].sort((primera, segunda) => {
+    if (primera.es_principal !== segunda.es_principal) return primera.es_principal ? -1 : 1;
+    return Number(primera.orden || 0) - Number(segunda.orden || 0);
+  });
+}
+
+function crearGestorImagenesProducto(registro) {
+  const seccion = document.createElement('section');
+  seccion.id = 'gestor-imagenes-producto';
+  seccion.className = 'gestor-imagenes-producto campo-completo';
+
+  const cabecera = document.createElement('div');
+  cabecera.className = 'cabecera-gestor-imagenes';
+  const titulo = document.createElement('h3');
+  titulo.textContent = 'Imágenes actuales';
+  const descripcion = document.createElement('p');
+  descripcion.textContent = 'Podés ampliar una imagen o eliminarla. Las nuevas se agregan desde el campo de carga de abajo.';
+  cabecera.append(titulo, descripcion);
+  seccion.append(cabecera);
+
+  const imagenes = imagenesOrdenadas(registro);
+  if (!imagenes.length) {
+    const vacio = document.createElement('p');
+    vacio.className = 'estado-imagenes-vacio';
+    vacio.textContent = 'Este producto todavía no tiene imágenes cargadas.';
+    seccion.append(vacio);
+    return seccion;
+  }
+
+  const cuadricula = document.createElement('div');
+  cuadricula.className = 'cuadricula-imagenes-admin';
+  imagenes.forEach((imagen, indice) => {
+    const tarjeta = document.createElement('article');
+    tarjeta.className = 'tarjeta-imagen-admin';
+
+    const ampliar = document.createElement('button');
+    ampliar.type = 'button';
+    ampliar.className = 'boton-miniatura-admin';
+    ampliar.dataset.ampliarImagenAdmin = '';
+    ampliar.dataset.imagenUrl = imagen.url_publica;
+    ampliar.dataset.imagenAlt = imagen.texto_alternativo || registro.nombre;
+    ampliar.setAttribute('aria-label', `Ampliar imagen ${indice + 1} de ${registro.nombre}`);
+    const vista = document.createElement('img');
+    vista.src = imagen.url_publica;
+    vista.alt = imagen.texto_alternativo || `Imagen ${indice + 1} de ${registro.nombre}`;
+    vista.width = 160;
+    vista.height = 160;
+    vista.loading = 'lazy';
+    ampliar.append(vista);
+
+    const pie = document.createElement('div');
+    pie.className = 'acciones-imagen-admin';
+    const estado = document.createElement('span');
+    estado.textContent = imagen.es_principal ? 'Principal' : `Imagen ${indice + 1}`;
+    const eliminar = document.createElement('button');
+    eliminar.type = 'button';
+    eliminar.className = 'boton-eliminar-imagen-admin';
+    eliminar.textContent = 'Eliminar';
+    eliminar.dataset.eliminarImagen = imagen.id;
+    eliminar.dataset.productoImagen = registro.id;
+    pie.append(estado, eliminar);
+    tarjeta.append(ampliar, pie);
+    cuadricula.append(tarjeta);
+  });
+  seccion.append(cuadricula);
+  return seccion;
+}
+
+function actualizarGestorImagenesProducto() {
+  const actual = formularioRecurso?.querySelector('#gestor-imagenes-producto');
+  if (!actual || !registroEdicion) return;
+  actual.replaceWith(crearGestorImagenesProducto(registroEdicion));
+}
+
+function abrirVisorImagenAdmin(url, alt) {
+  let visor = document.querySelector('#visor-imagen-admin');
+  if (!visor) {
+    visor = document.createElement('dialog');
+    visor.id = 'visor-imagen-admin';
+    visor.className = 'visor-imagen-admin';
+    const contenido = document.createElement('div');
+    contenido.className = 'contenido-visor-imagen-admin';
+    const cerrar = document.createElement('button');
+    cerrar.type = 'button';
+    cerrar.className = 'boton-icono';
+    cerrar.textContent = '×';
+    cerrar.setAttribute('aria-label', 'Cerrar imagen ampliada');
+    cerrar.addEventListener('click', () => visor.close());
+    const imagen = document.createElement('img');
+    imagen.dataset.visorImagenAdmin = '';
+    contenido.append(cerrar, imagen);
+    visor.append(contenido);
+    visor.addEventListener('click', (evento) => {
+      if (evento.target === visor) visor.close();
+    });
+    document.body.append(visor);
+  }
+
+  const imagen = visor.querySelector('[data-visor-imagen-admin]');
+  imagen.src = url;
+  imagen.alt = alt;
+  if (!visor.open) visor.showModal();
+}
+
 async function cambiarSeccion(recurso) {
   recursoActual = recurso;
   document.querySelectorAll('[data-seccion-admin]').forEach((boton) =>
@@ -696,10 +814,45 @@ async function cambiarSeccion(recurso) {
 
   if (recurso === 'resumen') await cargarResumen();
   else if (recurso === 'secciones') {
-    await Promise.all([cargarRecurso(recurso), cargarConfiguraciones()]);
+    await Promise.all([cargarSeccionesInicio(), cargarConfiguraciones()]);
   } else if (['productos', 'categorias'].includes(recurso)) {
     await cargarRecurso(recurso);
   }
+}
+
+async function cargarSeccionesInicio() {
+  const registros = await invocar('listar', { recurso: 'secciones' });
+  document.querySelectorAll('[data-formulario-seccion-inicio]').forEach((formulario) => {
+    const clave = formulario.dataset.formularioSeccionInicio;
+    const seccion = registros.find((registro) => registro.clave === clave);
+    if (!seccion) return;
+
+    formulario.dataset.idSeccion = seccion.id;
+    ['titulo', 'subtitulo', 'contenido', 'texto_boton', 'enlace_boton'].forEach((nombre) => {
+      const campo = formulario.elements[nombre];
+      if (campo) campo.value = seccion[nombre] || '';
+    });
+    formulario.elements.publicada.checked = Boolean(seccion.publicada);
+    formulario.querySelector('[data-estilos-seccion-inicio]')?.replaceChildren(
+      crearEditorEstilosSeccion(seccion),
+    );
+  });
+}
+
+function obtenerDatosSeccionInicio(formulario) {
+  const datos = {};
+  ['titulo', 'subtitulo', 'contenido', 'texto_boton', 'enlace_boton'].forEach((nombre) => {
+    datos[nombre] = formulario.elements[nombre]?.value || null;
+  });
+  datos.publicada = Boolean(formulario.elements.publicada?.checked);
+  datos.estilos = Object.fromEntries(CAMPOS_ESTILO_SECCION.map(({ clave }) => [clave, {
+    color: formulario.elements[`estilo_${clave}_color`]?.value,
+    fuente: formulario.elements[`estilo_${clave}_fuente`]?.value,
+    tamano: formulario.elements[`estilo_${clave}_tamano`]?.value,
+    negrita: Boolean(formulario.elements[`estilo_${clave}_negrita`]?.checked),
+    cursiva: Boolean(formulario.elements[`estilo_${clave}_cursiva`]?.checked),
+  }]));
+  return datos;
 }
 
 async function cargarConfiguraciones() {
@@ -764,6 +917,35 @@ document.addEventListener('click', async (evento) => {
   const editar = evento.target.closest('[data-editar]');
   if (editar) {
     abrirDialogo(recursoActual, registrosActuales.get(editar.dataset.editar));
+    return;
+  }
+
+  const ampliarImagen = evento.target.closest('[data-ampliar-imagen-admin]');
+  if (ampliarImagen) {
+    abrirVisorImagenAdmin(ampliarImagen.dataset.imagenUrl, ampliarImagen.dataset.imagenAlt);
+    return;
+  }
+
+  const eliminarImagen = evento.target.closest('[data-eliminar-imagen]');
+  if (eliminarImagen) {
+    if (!registroEdicion || !confirm('¿Querés eliminar esta imagen del producto?')) return;
+    try {
+      const resultado = await invocar('eliminar_imagen', {
+        datos: {
+          producto_id: eliminarImagen.dataset.productoImagen,
+          imagen_id: eliminarImagen.dataset.eliminarImagen,
+        },
+      });
+      registroEdicion.imagenes = (registroEdicion.imagenes || []).filter(
+        (imagen) => imagen.id !== eliminarImagen.dataset.eliminarImagen,
+      );
+      actualizarGestorImagenesProducto();
+      notificar(resultado?.archivo_pendiente
+        ? 'La imagen dejó de estar publicada. Su archivo se eliminará automáticamente al reintentarlo.'
+        : 'La imagen se eliminó correctamente.');
+    } catch (error) {
+      notificar(error.message);
+    }
     return;
   }
 
@@ -857,6 +1039,29 @@ formulariosConfiguraciones.forEach((formulario) => formulario.addEventListener('
     notificar('Contenido guardado. Actualizá la tienda para ver los cambios.');
   } catch (error) {
     notificar(error.message);
+  }
+}));
+
+document.querySelectorAll('[data-formulario-seccion-inicio]').forEach((formulario) => formulario.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  if (!formulario.dataset.idSeccion) {
+    notificar('No se pudo cargar este bloque del inicio. Actualizá la página e intentá nuevamente.');
+    return;
+  }
+  const boton = formulario.querySelector('button[type="submit"]');
+  boton.disabled = true;
+  try {
+    await invocar('guardar', {
+      recurso: 'secciones',
+      id: formulario.dataset.idSeccion,
+      datos: obtenerDatosSeccionInicio(formulario),
+    });
+    notificar('El bloque del inicio se guardó correctamente.');
+    await cargarSeccionesInicio();
+  } catch (error) {
+    notificar(error.message);
+  } finally {
+    boton.disabled = false;
   }
 }));
 

@@ -1,6 +1,5 @@
 export interface ConfiguracionSitio {
   [clave: string]: string | boolean | undefined;
-  nombre_marca: string;
   descripcion_corta: string;
   whatsapp: string;
   correo: string;
@@ -10,7 +9,6 @@ export interface ConfiguracionSitio {
   region: string;
   moneda: string;
   simbolo_moneda: string;
-  lema_marca?: string;
   aviso_superior?: string;
   mostrar_aviso_superior?: boolean;
   titulo_footer_explorar?: string;
