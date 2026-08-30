@@ -77,7 +77,7 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     <title>{titulo}</title>
     <slot name="cabecera" />
   </head>
-  <body style={estiloGlobal}>
+  <body id="inicio-pagina" style={estiloGlobal}>
     <a class="salto-contenido" href="#contenido-principal">Saltar al contenido</a>
     {!ocultarNavegacion && (
       <Encabezado configuracion={configuracion} rutaActual={rutaActual} />
@@ -91,14 +91,24 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     {!ocultarNavegacion && <AvisoWhatsApp />}
     {!ocultarNavegacion && <ModalesLegales />}
 
-    <button id="volver-arriba" class="boton-volver-arriba" type="button" aria-label="Volver al inicio" hidden>
+    <a id="volver-arriba" class="boton-volver-arriba" href="#inicio-pagina" aria-label="Volver al inicio" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6" /></svg>
-    </button>
+    </a>
 
     <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
 
-    <script>
-      import '../scripts/volver-arriba.js';
+    <script is:inline>
+      (() => {
+        const boton = document.querySelector('#volver-arriba');
+        if (!boton) return;
+
+        const actualizarVisibilidad = () => {
+          boton.hidden = window.scrollY < 500;
+        };
+
+        window.addEventListener('scroll', actualizarVisibilidad, { passive: true });
+        actualizarVisibilidad();
+      })();
     </script>
 
     {!ocultarNavegacion && (

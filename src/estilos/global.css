@@ -862,6 +862,10 @@ h3 {
   transition: transform 160ms ease;
 }
 
+.boton-volver-arriba[hidden] {
+  display: none;
+}
+
 .boton-volver-arriba:hover {
   transform: translateY(-3px);
 }
