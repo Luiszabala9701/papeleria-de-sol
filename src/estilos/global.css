@@ -270,8 +270,8 @@ h3 {
   overflow: clip;
   grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
   align-items: center;
-  min-height: 560px;
-  padding: 2.75rem 0 4.25rem;
+  min-height: 500px;
+  padding: clamp(1.75rem, 3vw, 2.5rem) 0 clamp(2.25rem, 3vw, 3rem);
   gap: clamp(2rem, 5vw, 5rem);
 }
 
@@ -298,8 +298,8 @@ h3 {
 
 .hero h1 {
   max-width: 780px;
-  margin-bottom: 1.25rem;
-  font-size: clamp(2.7rem, 6vw, 5.5rem);
+  margin-bottom: 1rem;
+  font-size: clamp(2.6rem, 4.2vw, 4.35rem);
   letter-spacing: -0.055em;
 }
 
@@ -313,7 +313,7 @@ h3 {
 
 .hero-descripcion {
   max-width: 640px;
-  margin-bottom: 1.8rem;
+  margin-bottom: 1.3rem;
   color: var(--tinta-suave);
   font-size: clamp(1rem, 1.5vw, 1.18rem);
 }
@@ -376,12 +376,12 @@ h3 {
 
 .hero-collage {
   position: relative;
-  min-height: 430px;
+  min-height: 370px;
 }
 
 .hero-imagen {
   position: absolute;
-  width: min(58%, 280px);
+  width: min(56%, 250px);
   aspect-ratio: 1;
   overflow: hidden;
   border: 10px solid rgba(255, 255, 255, 0.88);
@@ -411,8 +411,37 @@ h3 {
 .hero-imagen:nth-child(3) {
   bottom: 1%;
   left: 0;
-  width: min(42%, 190px);
+  width: min(40%, 170px);
   transform: rotate(3deg);
+}
+
+/* En pantallas de poca altura se prioriza que el CTA de portada entre sin scroll. */
+@media (min-width: 1025px) and (max-height: 850px) {
+  .hero {
+    min-height: 460px;
+    padding-block: 1.5rem 2rem;
+  }
+
+  .hero h1 {
+    margin-bottom: 0.85rem;
+    font-size: clamp(2.5rem, 3.7vw, 3.9rem);
+  }
+
+  .hero-descripcion {
+    margin-bottom: 1.1rem;
+  }
+
+  .hero-collage {
+    min-height: 340px;
+  }
+
+  .hero-imagen {
+    width: min(54%, 225px);
+  }
+
+  .hero-imagen:nth-child(3) {
+    width: min(38%, 150px);
+  }
 }
 
 .franja-beneficios {
