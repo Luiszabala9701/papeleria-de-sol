@@ -91,7 +91,15 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     {!ocultarNavegacion && <AvisoWhatsApp />}
     {!ocultarNavegacion && <ModalesLegales />}
 
+    <button id="volver-arriba" class="boton-volver-arriba" type="button" aria-label="Volver al inicio" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6" /></svg>
+    </button>
+
     <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
+
+    <script>
+      import '../scripts/volver-arriba.js';
+    </script>
 
     {!ocultarNavegacion && (
       <script>

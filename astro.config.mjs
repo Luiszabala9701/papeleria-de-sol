@@ -8,7 +8,9 @@ export default defineConfig({
   site: urlSitio,
   output: 'server',
   adapter: netlify(),
-  integrations: [sitemap()],
+  integrations: [sitemap({
+    filter: (pagina) => !pagina.endsWith('/admin/') && !pagina.endsWith('/catalogo/'),
+  })],
   server: {
     host: '127.0.0.1',
     port: 4321,

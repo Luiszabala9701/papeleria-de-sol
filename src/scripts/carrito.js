@@ -105,7 +105,7 @@ function crearEstadoVacio() {
 
   const enlace = document.createElement('a');
   enlace.className = 'enlace-texto';
-  enlace.href = '/catalogo';
+  enlace.href = '/stickers';
   enlace.textContent = texto('explorarCatalogo', 'Explorar stickers');
 
   estado.append(icono, mensaje, enlace);

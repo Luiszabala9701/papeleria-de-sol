@@ -7,7 +7,6 @@ import {
   obtenerProductosPublicados,
   obtenerSeccionesPublicadas,
 } from '../servicios/repositorio-contenidos.js';
-import { obtenerEstiloTexto } from '../servicios/estilos-visuales';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
 
 const [configuracion, secciones, productos] = await Promise.all([
@@ -16,8 +15,24 @@ const [configuracion, secciones, productos] = await Promise.all([
   obtenerProductosPublicados({ tipo: 'sticker' }),
 ]) as [ConfiguracionSitio, SeccionSitio[], Producto[]];
 
-const principal = secciones.find((seccion) => seccion.clave === 'inicio_principal');
-const seccionDestacados = secciones.find((seccion) => seccion.clave === 'inicio_destacados');
+const principal: SeccionSitio = secciones.find((seccion) => seccion.clave === 'inicio_principal') || {
+  clave: 'inicio_principal',
+  titulo: 'Ideas que alegran tus días',
+  subtitulo: 'Papelería creativa hecha con dedicación',
+  contenido: 'Descubrí stickers, plantillas y productos físicos para regalar, organizar y personalizar. Elegí tus favoritos y consultanos directamente por WhatsApp.',
+  texto_boton: 'Explorar stickers',
+  enlace_boton: '/stickers',
+  publicada: true,
+  orden: 1,
+};
+const seccionDestacados: SeccionSitio = secciones.find((seccion) => seccion.clave === 'inicio_destacados') || {
+  clave: 'inicio_destacados',
+  titulo: 'Productos destacados',
+  subtitulo: 'Nuestros favoritos',
+  contenido: 'Una selección de productos de Papelería de Sol.',
+  publicada: true,
+  orden: 2,
+};
 const destacados = productos.filter((producto) => producto.destacado).slice(0, 8);
 const escaparJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
 const urlInicio = new URL('/', Astro.site || Astro.url.origin).href;
@@ -57,19 +72,19 @@ const datosEstructurados = {
 
   <section class="contenedor hero">
     <div>
-      <p class="etiqueta" style={obtenerEstiloTexto(principal, 'subtitulo')}>
-        {principal?.subtitulo || 'Papelería creativa en CABA y GBA'}
+      <p class="etiqueta">
+        {principal.subtitulo || 'Papelería creativa en CABA y GBA'}
       </p>
-      <h1 style={obtenerEstiloTexto(principal, 'titulo')}>
-        {principal?.titulo || 'Ideas que alegran tus días'}
+      <h1>
+        {principal.titulo || 'Ideas que alegran tus días'}
         <span class="texto-degradado"> {obtenerTextoPublico(configuracion, 'inicio_texto_destacado')}</span>
       </h1>
-      <p class="hero-descripcion" style={obtenerEstiloTexto(principal, 'contenido')}>
-        {principal?.contenido || configuracion.descripcion_corta}
+      <p class="hero-descripcion">
+        {principal.contenido || configuracion.descripcion_corta}
       </p>
       <div class="grupo-botones">
-        <a class="boton boton-principal" href={principal?.enlace_boton || '/catalogo'} style={obtenerEstiloTexto(principal, 'texto_boton')}>
-          {principal?.texto_boton || 'Explorar stickers'}
+        <a class="boton boton-principal" href={principal.enlace_boton || '/stickers'}>
+          {principal.texto_boton || 'Explorar stickers'}
         </a>
       </div>
     </div>
@@ -88,19 +103,16 @@ const datosEstructurados = {
     <div class="contenedor">
       <header class="cabecera-seccion">
         <div>
-          <p class="etiqueta" style={obtenerEstiloTexto(seccionDestacados, 'subtitulo')}>
-            {seccionDestacados?.subtitulo || 'Nuestros favoritos'}
+          <p class="etiqueta">
+            {seccionDestacados.subtitulo || 'Nuestros favoritos'}
           </p>
-          <h2 style={obtenerEstiloTexto(seccionDestacados, 'titulo')}>
-            {seccionDestacados?.titulo || 'Stickers destacados'}
+          <h2>
+            {seccionDestacados.titulo || 'Productos destacados'}
           </h2>
-          <p style={obtenerEstiloTexto(seccionDestacados, 'contenido')}>
-            {seccionDestacados?.contenido || 'Una pequeña muestra de la colección. En stickers podés buscar y combinar los diseños que quieras.'}
+          <p>
+            {seccionDestacados.contenido || 'Una selección de productos de Papelería de Sol.'}
           </p>
         </div>
-        <a class="enlace-texto" href={seccionDestacados?.enlace_boton || '/catalogo?tipo=sticker'} style={obtenerEstiloTexto(seccionDestacados, 'texto_boton')}>
-          {seccionDestacados?.texto_boton || 'Ver los 1.000 stickers'}
-        </a>
       </header>
 
       <div class="cuadricula-productos">

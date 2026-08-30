@@ -19,8 +19,7 @@
     "color_secundario_intenso": "#9358ad",
     "color_fondo": "#fbfaff",
     "color_texto": "#252434",
-    "color_texto_suave": "#676579",
-    "fuente_principal": "moderna"
+    "color_texto_suave": "#676579"
   },
   "secciones": [
     {
@@ -29,17 +28,15 @@
       "subtitulo": "Papelería creativa hecha con dedicación",
       "contenido": "Descubrí stickers, plantillas y productos físicos para regalar, organizar y personalizar. Elegí tus favoritos y consultanos directamente por WhatsApp.",
       "texto_boton": "Explorar stickers",
-      "enlace_boton": "/catalogo",
+      "enlace_boton": "/stickers",
       "publicada": true,
       "orden": 1
     },
     {
       "clave": "inicio_destacados",
-      "titulo": "Stickers destacados",
+      "titulo": "Productos destacados",
       "subtitulo": "Nuestros favoritos",
       "contenido": "Una pequeña muestra de la colección. En stickers podés buscar y combinar los diseños que quieras.",
-      "texto_boton": "Ver los 1.000 stickers",
-      "enlace_boton": "/catalogo?tipo=sticker",
       "publicada": true,
       "orden": 2
     }

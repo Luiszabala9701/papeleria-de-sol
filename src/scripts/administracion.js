@@ -1,10 +1,4 @@
 import { obtenerClienteSupabase } from '../servicios/cliente-supabase.js';
-import {
-  CAMPOS_ESTILO_SECCION,
-  OPCIONES_FUENTE,
-  OPCIONES_TAMANO,
-  esColorHexadecimal,
-} from '../servicios/estilos-visuales.ts';
 
 const aplicacion = document.querySelector('.admin-aplicacion');
 const configuracionDisponible = aplicacion?.dataset.configuracionDisponible === 'true';
@@ -28,11 +22,12 @@ const botonAlternarContrasena = document.querySelector('#alternar-contrasena-adm
 const dialogoCerrarSesion = document.querySelector('#dialogo-cerrar-sesion');
 const botonCancelarCerrarSesion = document.querySelector('#cancelar-cerrar-sesion');
 const botonConfirmarCerrarSesion = document.querySelector('#confirmar-cerrar-sesion');
+const botonAlternarMenu = document.querySelector('#alternar-menu-admin');
 
 const DESCRIPCIONES = {
   productos: 'Creá stickers, plantillas y productos físicos con precio, imágenes y publicación.',
   categorias: 'Creá categorías específicas para cada tipo de producto, como Fútbol para stickers.',
-  secciones: 'Modificá los textos y los estilos de los bloques públicos del sitio.',
+  secciones: 'Editá los textos que se muestran en la portada y los datos generales de la tienda.',
 };
 
 const ESQUEMAS = {
@@ -48,12 +43,11 @@ const ESQUEMAS = {
       ],
     },
     { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias', dependeDe: 'tipo_producto' },
-    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, soloCreacion: true, ayudaEmergente: 'Para ver el último SKU y recibir una sugerencia, primero elegí el tipo de producto.' },
+    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, soloCreacion: true },
     { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', obligatorio: true, completo: true },
     { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
     {
       nombre: 'estado', etiqueta: 'Estado de publicación', tipo: 'select', obligatorio: true,
-      ayudaEmergente: 'No publicado guarda el producto sin mostrarlo en la tienda. Publicado lo muestra al público. Podés cambiar entre ambos estados cuando lo necesites.',
       opciones: [
         { valor: 'borrador', texto: 'No publicado' },
         { valor: 'publicado', texto: 'Publicado' },
@@ -79,17 +73,6 @@ const ESQUEMAS = {
     { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', completo: true },
     { nombre: 'publicada', etiqueta: 'Publicada', tipo: 'checkbox' },
     { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
-  ],
-  secciones: [
-    { nombre: 'titulo', etiqueta: 'Título', tipo: 'text', obligatorio: true },
-    { nombre: 'subtitulo', etiqueta: 'Subtítulo', tipo: 'text', completo: true },
-    { nombre: 'contenido', etiqueta: 'Contenido', tipo: 'textarea', completo: true },
-    { nombre: 'texto_boton', etiqueta: 'Texto del botón', tipo: 'text' },
-    { nombre: 'enlace_boton', etiqueta: 'Enlace del botón', tipo: 'text' },
-    { nombre: 'publicada', etiqueta: 'Publicada', tipo: 'checkbox' },
-    { nombre: 'meta_titulo', etiqueta: 'Título SEO', tipo: 'text', completo: true },
-    { nombre: 'meta_descripcion', etiqueta: 'Descripción SEO', tipo: 'textarea', completo: true },
-    { nombre: 'estilos', etiqueta: 'Apariencia de cada texto', tipo: 'estilos-seccion', completo: true },
   ],
 };
 
@@ -124,6 +107,8 @@ let categorias = [];
 let registroEdicion = null;
 let minutosInactividad = 30;
 let ultimaActividadConfirmada = Date.now();
+let paginaProductos = 1;
+const PRODUCTOS_POR_PAGINA = 50;
 
 function mostrarError(elemento, mensaje) {
   if (!elemento) return;
@@ -255,6 +240,21 @@ function crearBotonAccion(texto, atributo, id) {
   return boton;
 }
 
+function actualizarPaginacionProductos(cantidad) {
+  const paginacion = document.querySelector('[data-paginacion-admin="productos"]');
+  const informacion = document.querySelector('[data-informacion-pagina-admin]');
+  const anterior = document.querySelector('[data-pagina-admin-anterior]');
+  const siguiente = document.querySelector('[data-pagina-admin-siguiente]');
+  if (!paginacion || !informacion || !anterior || !siguiente) return;
+
+  const totalPaginas = Math.max(1, Math.ceil(cantidad / PRODUCTOS_POR_PAGINA));
+  paginaProductos = Math.min(Math.max(1, paginaProductos), totalPaginas);
+  paginacion.hidden = cantidad <= PRODUCTOS_POR_PAGINA;
+  informacion.textContent = `Página ${paginaProductos} de ${totalPaginas}`;
+  anterior.disabled = paginaProductos <= 1;
+  siguiente.disabled = paginaProductos >= totalPaginas;
+}
+
 function renderizarListado(recurso, registros) {
   registrosActuales = new Map(registros.map((registro) => [registro.id, registro]));
   const cuerpo = document.querySelector(`[data-lista-recurso="${recurso}"]`);
@@ -279,12 +279,21 @@ function renderizarListado(recurso, registros) {
   const tipoCategoria = recurso === 'categorias'
     ? document.querySelector('[data-filtro-tipo-categoria]')?.value || ''
     : '';
+  const tipoProducto = recurso === 'productos'
+    ? document.querySelector('[data-filtro-tipo-producto]')?.value || ''
+    : '';
   const filtrados = registros.filter((registro) => {
     const coincideBusqueda = JSON.stringify(registro).toLowerCase().includes(termino);
     const coincideTipoCategoria = !tipoCategoria || registro.tipo_producto === tipoCategoria;
-    return coincideBusqueda && coincideTipoCategoria;
+    const coincideTipoProducto = !tipoProducto || registro.tipo_producto === tipoProducto;
+    return coincideBusqueda && coincideTipoCategoria && coincideTipoProducto;
   });
-  const visibles = filtrados.slice(0, 200);
+  const totalPaginasProductos = Math.max(1, Math.ceil(filtrados.length / PRODUCTOS_POR_PAGINA));
+  if (recurso === 'productos') paginaProductos = Math.min(paginaProductos, totalPaginasProductos);
+  const inicio = recurso === 'productos' ? (paginaProductos - 1) * PRODUCTOS_POR_PAGINA : 0;
+  const visibles = recurso === 'productos'
+    ? filtrados.slice(inicio, inicio + PRODUCTOS_POR_PAGINA)
+    : filtrados.slice(0, 200);
   cuerpo.replaceChildren();
 
   visibles.forEach((registro) => {
@@ -332,7 +341,14 @@ function renderizarListado(recurso, registros) {
 
   const total = document.querySelector(`[data-total-recurso="${recurso}"]`);
   if (total) {
-    total.textContent = `${filtrados.length} registro${filtrados.length === 1 ? '' : 's'}${filtrados.length > 200 ? ' · mostrando los primeros 200' : ''}`;
+    if (recurso === 'productos') {
+      const desde = filtrados.length ? inicio + 1 : 0;
+      const hasta = Math.min(inicio + PRODUCTOS_POR_PAGINA, filtrados.length);
+      total.textContent = `${filtrados.length} producto${filtrados.length === 1 ? '' : 's'} · mostrando ${desde} a ${hasta}`;
+      actualizarPaginacionProductos(filtrados.length);
+    } else {
+      total.textContent = `${filtrados.length} registro${filtrados.length === 1 ? '' : 's'}${filtrados.length > 200 ? ' · mostrando los primeros 200' : ''}`;
+    }
   }
 }
 
@@ -365,19 +381,6 @@ function crearEtiqueta(definicion, asociadaAlCampo = false) {
     etiqueta.append(obligatorio);
   }
   return etiqueta;
-}
-
-function crearAyudaEmergente(definicion) {
-  const ayuda = document.createElement('details');
-  ayuda.className = 'ayuda-emergente';
-  const resumen = document.createElement('summary');
-  resumen.textContent = '!';
-  resumen.setAttribute('aria-label', 'Explicación sobre este campo');
-  const texto = document.createElement('p');
-  texto.textContent = definicion.ayudaEmergente;
-  if (definicion.nombre === 'sku') ayuda.dataset.ayudaSku = '';
-  ayuda.append(resumen, texto);
-  return ayuda;
 }
 
 function actualizarCategoriasDisponibles() {
@@ -414,12 +417,10 @@ function actualizarCampoStock() {
 async function actualizarSugerenciaSku({ cambioTipo = false } = {}) {
   const selectorTipo = formularioRecurso?.elements.tipo_producto;
   const campoSku = formularioRecurso?.elements.sku;
-  const ayuda = formularioRecurso?.querySelector('[data-ayuda-sku] p');
-  if (!selectorTipo || !campoSku || !ayuda) return;
+  if (!selectorTipo || !campoSku) return;
 
   if (!selectorTipo.value) {
     campoSku.placeholder = 'Primero elegí el tipo de producto';
-    ayuda.textContent = 'Para ver el último SKU y recibir una sugerencia, primero elegí el tipo de producto.';
     return;
   }
 
@@ -428,7 +429,6 @@ async function actualizarSugerenciaSku({ cambioTipo = false } = {}) {
     delete campoSku.dataset.editado;
   }
 
-  ayuda.textContent = 'Buscando el último SKU usado…';
   try {
     const sugerencia = await invocar('obtener_sugerencia_sku', {
       tipo_producto: selectorTipo.value,
@@ -436,90 +436,16 @@ async function actualizarSugerenciaSku({ cambioTipo = false } = {}) {
     if (selectorTipo.value !== sugerencia.tipo_producto) return;
 
     campoSku.placeholder = sugerencia.siguiente_sku;
-    ayuda.textContent = sugerencia.ultimo_sku
-      ? `Último SKU usado: ${sugerencia.ultimo_sku}. Sugerencia para el nuevo producto: ${sugerencia.siguiente_sku}.`
-      : `Todavía no hay SKUs para este tipo. Sugerencia inicial: ${sugerencia.siguiente_sku}.`;
-
     if (!idEdicion && !campoSku.dataset.editado) campoSku.value = sugerencia.siguiente_sku;
   } catch {
-    ayuda.textContent = 'No se pudo obtener la sugerencia. Escribí un SKU con el prefijo del tipo elegido.';
+    campoSku.placeholder = 'Escribí un SKU con el prefijo del tipo elegido';
   }
 }
 
-function crearControlEstilo(etiqueta, control) {
-  const contenedor = document.createElement('label');
-  contenedor.className = 'control-estilo-texto';
-  const texto = document.createElement('span');
-  texto.textContent = etiqueta;
-  contenedor.append(texto, control);
-  return contenedor;
-}
-
-function crearEditorEstilosSeccion(registro = {}) {
-  const contenedor = document.createElement('fieldset');
-  contenedor.className = 'editor-estilos-seccion campo-completo';
-  const titulo = document.createElement('legend');
-  titulo.textContent = 'Apariencia de cada texto';
-  contenedor.append(titulo);
-
-  const ayuda = document.createElement('p');
-  ayuda.textContent = 'Estas opciones aplican formato sin permitir código ni estilos externos.';
-  contenedor.append(ayuda);
-
-  CAMPOS_ESTILO_SECCION.forEach(({ clave, etiqueta }) => {
-    const estiloActual = registro.estilos?.[clave] || {};
-    const grupo = document.createElement('fieldset');
-    grupo.className = 'grupo-estilo-texto';
-    const leyenda = document.createElement('legend');
-    leyenda.textContent = etiqueta;
-    grupo.append(leyenda);
-
-    const color = document.createElement('input');
-    color.type = 'color';
-    color.name = `estilo_${clave}_color`;
-    color.value = esColorHexadecimal(estiloActual.color) ? estiloActual.color : '#252434';
-    grupo.append(crearControlEstilo('Color', color));
-
-    const fuente = document.createElement('select');
-    fuente.className = 'selector';
-    fuente.name = `estilo_${clave}_fuente`;
-    OPCIONES_FUENTE.forEach((opcion) => fuente.append(
-      crearOpcion(opcion.valor, opcion.texto, (estiloActual.fuente || 'moderna') === opcion.valor),
-    ));
-    grupo.append(crearControlEstilo('Fuente', fuente));
-
-    const tamano = document.createElement('select');
-    tamano.className = 'selector';
-    tamano.name = `estilo_${clave}_tamano`;
-    OPCIONES_TAMANO.forEach((opcion) => tamano.append(
-      crearOpcion(opcion.valor, opcion.texto, (estiloActual.tamano || 'normal') === opcion.valor),
-    ));
-    grupo.append(crearControlEstilo('Tamaño', tamano));
-
-    const negrita = document.createElement('input');
-    negrita.type = 'checkbox';
-    negrita.name = `estilo_${clave}_negrita`;
-    negrita.checked = Boolean(estiloActual.negrita);
-    grupo.append(crearControlEstilo('Negrita', negrita));
-
-    const cursiva = document.createElement('input');
-    cursiva.type = 'checkbox';
-    cursiva.name = `estilo_${clave}_cursiva`;
-    cursiva.checked = Boolean(estiloActual.cursiva);
-    grupo.append(crearControlEstilo('Cursiva', cursiva));
-    contenedor.append(grupo);
-  });
-
-  return contenedor;
-}
-
 function crearCampo(definicion, registro = {}) {
-  if (definicion.tipo === 'estilos-seccion') return crearEditorEstilosSeccion(registro);
-
-  const tieneAyudaEmergente = Boolean(definicion.ayudaEmergente);
-  const contenedor = document.createElement(tieneAyudaEmergente ? 'div' : 'label');
+  const contenedor = document.createElement('label');
   contenedor.className = `grupo-campo${definicion.completo ? ' campo-completo' : ''}`;
-  const etiqueta = crearEtiqueta(definicion, tieneAyudaEmergente);
+  const etiqueta = crearEtiqueta(definicion);
 
   let campo;
   if (definicion.tipo === 'textarea') {
@@ -565,10 +491,6 @@ function crearCampo(definicion, registro = {}) {
   }
 
   campo.name = definicion.nombre;
-  if (tieneAyudaEmergente) {
-    campo.id = `campo-${definicion.nombre}`;
-    etiqueta.htmlFor = campo.id;
-  }
   campo.required = Boolean(definicion.obligatorio);
   if (definicion.dependeDe && !registro[definicion.dependeDe]) {
     campo.disabled = true;
@@ -578,14 +500,7 @@ function crearCampo(definicion, registro = {}) {
     campo.disabled = true;
     campo.setAttribute('aria-disabled', 'true');
   }
-  if (tieneAyudaEmergente) {
-    const filaEtiqueta = document.createElement('div');
-    filaEtiqueta.className = 'etiqueta-campo-con-ayuda';
-    filaEtiqueta.append(etiqueta, crearAyudaEmergente(definicion));
-    contenedor.append(filaEtiqueta, campo);
-  } else {
-    contenedor.append(etiqueta, campo);
-  }
+  contenedor.append(etiqueta, campo);
 
   if (definicion.ayuda) {
     const ayuda = document.createElement('small');
@@ -643,7 +558,7 @@ function obtenerDatosFormulario() {
   const datos = {};
   ESQUEMAS[recursoDialogo].forEach((definicion) => {
     const campo = formularioRecurso.elements[definicion.nombre];
-    if (!campo || definicion.soloCreacion && idEdicion || ['file', 'estilos-seccion'].includes(definicion.tipo)) return;
+    if (!campo || definicion.soloCreacion && idEdicion || definicion.tipo === 'file') return;
 
     if (definicion.tipo === 'checkbox') datos[definicion.nombre] = campo.checked;
     else if (definicion.multiple) datos[definicion.nombre] = Array.from(campo.selectedOptions).map((opcion) => opcion.value);
@@ -654,16 +569,6 @@ function obtenerDatosFormulario() {
   if (recursoDialogo === 'productos') {
     datos.moneda = 'ARS';
     if (!datos.controla_stock) datos.stock = null;
-  }
-
-  if (recursoDialogo === 'secciones') {
-    datos.estilos = Object.fromEntries(CAMPOS_ESTILO_SECCION.map(({ clave }) => [clave, {
-      color: formularioRecurso.elements[`estilo_${clave}_color`]?.value,
-      fuente: formularioRecurso.elements[`estilo_${clave}_fuente`]?.value,
-      tamano: formularioRecurso.elements[`estilo_${clave}_tamano`]?.value,
-      negrita: Boolean(formularioRecurso.elements[`estilo_${clave}_negrita`]?.checked),
-      cursiva: Boolean(formularioRecurso.elements[`estilo_${clave}_cursiva`]?.checked),
-    }]));
   }
 
   return datos;
@@ -821,37 +726,28 @@ async function cambiarSeccion(recurso) {
 }
 
 async function cargarSeccionesInicio() {
-  const registros = await invocar('listar', { recurso: 'secciones' });
+  const registros = await invocar('obtener_textos_inicio');
   document.querySelectorAll('[data-formulario-seccion-inicio]').forEach((formulario) => {
     const clave = formulario.dataset.formularioSeccionInicio;
     const seccion = registros.find((registro) => registro.clave === clave);
-    if (!seccion) return;
+    if (!seccion) {
+      notificar('No se pudieron cargar los textos de inicio. Actualizá la página e intentá nuevamente.');
+      return;
+    }
 
-    formulario.dataset.idSeccion = seccion.id;
-    ['titulo', 'subtitulo', 'contenido', 'texto_boton', 'enlace_boton'].forEach((nombre) => {
+    ['titulo', 'subtitulo', 'contenido', 'texto_boton'].forEach((nombre) => {
       const campo = formulario.elements[nombre];
       if (campo) campo.value = seccion[nombre] || '';
     });
-    formulario.elements.publicada.checked = Boolean(seccion.publicada);
-    formulario.querySelector('[data-estilos-seccion-inicio]')?.replaceChildren(
-      crearEditorEstilosSeccion(seccion),
-    );
   });
 }
 
 function obtenerDatosSeccionInicio(formulario) {
   const datos = {};
-  ['titulo', 'subtitulo', 'contenido', 'texto_boton', 'enlace_boton'].forEach((nombre) => {
-    datos[nombre] = formulario.elements[nombre]?.value || null;
+  ['titulo', 'subtitulo', 'contenido', 'texto_boton'].forEach((nombre) => {
+    const campo = formulario.elements[nombre];
+    if (campo) datos[nombre] = campo.value.trim();
   });
-  datos.publicada = Boolean(formulario.elements.publicada?.checked);
-  datos.estilos = Object.fromEntries(CAMPOS_ESTILO_SECCION.map(({ clave }) => [clave, {
-    color: formulario.elements[`estilo_${clave}_color`]?.value,
-    fuente: formulario.elements[`estilo_${clave}_fuente`]?.value,
-    tamano: formulario.elements[`estilo_${clave}_tamano`]?.value,
-    negrita: Boolean(formulario.elements[`estilo_${clave}_negrita`]?.checked),
-    cursiva: Boolean(formulario.elements[`estilo_${clave}_cursiva`]?.checked),
-  }]));
   return datos;
 }
 
@@ -981,12 +877,33 @@ document.querySelectorAll('[data-descripcion-recurso]').forEach((elemento) => {
 });
 
 document.querySelectorAll('[data-buscar-recurso]').forEach((campo) => {
-  campo.addEventListener('input', () => renderizarListado(campo.dataset.buscarRecurso, Array.from(registrosActuales.values())));
+  campo.addEventListener('input', () => {
+    if (campo.dataset.buscarRecurso === 'productos') paginaProductos = 1;
+    renderizarListado(campo.dataset.buscarRecurso, Array.from(registrosActuales.values()));
+  });
 });
 
-document.querySelector('[data-filtro-archivados]')?.addEventListener('change', () => cargarRecurso('productos'));
+document.querySelector('[data-filtro-archivados]')?.addEventListener('change', () => {
+  paginaProductos = 1;
+  cargarRecurso('productos');
+});
+document.querySelector('[data-filtro-tipo-producto]')?.addEventListener('change', () => {
+  paginaProductos = 1;
+  renderizarListado('productos', Array.from(registrosActuales.values()));
+});
 document.querySelector('[data-filtro-tipo-categoria]')?.addEventListener('change', () => {
   renderizarListado('categorias', Array.from(registrosActuales.values()));
+});
+document.querySelector('[data-pagina-admin-anterior]')?.addEventListener('click', () => {
+  if (paginaProductos <= 1) return;
+  paginaProductos -= 1;
+  renderizarListado('productos', Array.from(registrosActuales.values()));
+  document.querySelector('[data-lista-recurso="productos"]')?.closest('.tabla-contenedor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.querySelector('[data-pagina-admin-siguiente]')?.addEventListener('click', () => {
+  paginaProductos += 1;
+  renderizarListado('productos', Array.from(registrosActuales.values()));
+  document.querySelector('[data-lista-recurso="productos"]')?.closest('.tabla-contenedor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 formularioRecurso?.addEventListener('change', async (evento) => {
@@ -1044,19 +961,14 @@ formulariosConfiguraciones.forEach((formulario) => formulario.addEventListener('
 
 document.querySelectorAll('[data-formulario-seccion-inicio]').forEach((formulario) => formulario.addEventListener('submit', async (evento) => {
   evento.preventDefault();
-  if (!formulario.dataset.idSeccion) {
-    notificar('No se pudo cargar este bloque del inicio. Actualizá la página e intentá nuevamente.');
-    return;
-  }
   const boton = formulario.querySelector('button[type="submit"]');
   boton.disabled = true;
   try {
-    await invocar('guardar', {
-      recurso: 'secciones',
-      id: formulario.dataset.idSeccion,
+    await invocar('guardar_textos_inicio', {
+      clave: formulario.dataset.formularioSeccionInicio,
       datos: obtenerDatosSeccionInicio(formulario),
     });
-    notificar('El bloque del inicio se guardó correctamente.');
+    notificar('El bloque del inicio se guardó. Actualizá la portada para ver el cambio.');
     await cargarSeccionesInicio();
   } catch (error) {
     notificar(error.message);
@@ -1081,6 +993,25 @@ function cerrarDialogo() {
   document.body.classList.remove('dialogo-abierto');
 }
 
+function establecerMenuAdminContraido(contraido) {
+  const lateral = document.querySelector('.admin-lateral');
+  if (!panelAdministracion || !lateral || !botonAlternarMenu) return;
+
+  panelAdministracion.classList.toggle('menu-admin-contraido', contraido);
+  lateral.classList.toggle('contraido', contraido);
+  botonAlternarMenu.setAttribute('aria-expanded', String(!contraido));
+  botonAlternarMenu.querySelector('[aria-hidden="true"]').textContent = contraido ? '›' : '‹';
+  botonAlternarMenu.querySelector('.solo-lectores').textContent = contraido
+    ? 'Expandir menú de administración'
+    : 'Contraer menú de administración';
+
+  try {
+    localStorage.setItem('menu-admin-contraido', String(contraido));
+  } catch {
+    // El menú funciona igualmente si el navegador bloquea el almacenamiento local.
+  }
+}
+
 document.querySelector('#cerrar-dialogo')?.addEventListener('click', cerrarDialogo);
 document.querySelector('#cancelar-dialogo')?.addEventListener('click', cerrarDialogo);
 dialogo?.addEventListener('close', () => document.body.classList.remove('dialogo-abierto'));
@@ -1090,6 +1021,15 @@ botonConfirmarCerrarSesion?.addEventListener('click', async () => {
   dialogoCerrarSesion?.close();
   await cerrarSesionCompleta();
 });
+botonAlternarMenu?.addEventListener('click', () => {
+  establecerMenuAdminContraido(!panelAdministracion?.classList.contains('menu-admin-contraido'));
+});
+
+try {
+  establecerMenuAdminContraido(localStorage.getItem('menu-admin-contraido') === 'true');
+} catch {
+  // La preferencia es opcional.
+}
 
 setInterval(() => {
   if (panelAdministracion?.hidden) return;

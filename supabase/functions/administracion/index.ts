@@ -28,7 +28,7 @@ const RECURSOS = {
     seleccion: '*',
     campos: [
       'clave', 'titulo', 'subtitulo', 'contenido', 'imagen_url', 'texto_boton',
-      'enlace_boton', 'publicada', 'orden', 'meta_titulo', 'meta_descripcion', 'estilos',
+      'enlace_boton', 'publicada', 'orden', 'meta_titulo', 'meta_descripcion',
     ],
   },
   variantes: {
@@ -40,13 +40,32 @@ const RECURSOS = {
 
 type NombreRecurso = keyof typeof RECURSOS;
 
-const CAMPOS_ESTILO_SECCION = ['titulo', 'subtitulo', 'contenido', 'texto_boton'];
-const FUENTES_PERMITIDAS = ['moderna', 'redondeada', 'clasica', 'creativa', 'elegante', 'manuscrita'];
-const TAMANOS_PERMITIDOS = ['pequeno', 'normal', 'mediano', 'grande', 'extra_grande'];
 const COLORES_CONFIGURABLES = [
   'color_principal', 'color_secundario', 'color_principal_intenso', 'color_secundario_intenso',
   'color_fondo', 'color_texto', 'color_texto_suave',
 ];
+const SECCIONES_INICIO_PREDETERMINADAS = {
+  inicio_principal: {
+    clave: 'inicio_principal',
+    titulo: 'Ideas que alegran tus días',
+    subtitulo: 'Papelería creativa hecha con dedicación',
+    contenido: 'Descubrí stickers, plantillas y productos físicos para regalar, organizar y personalizar. Elegí tus favoritos y consultanos directamente por WhatsApp.',
+    texto_boton: 'Explorar stickers',
+    enlace_boton: '/stickers',
+    publicada: true,
+    orden: 1,
+  },
+  inicio_destacados: {
+    clave: 'inicio_destacados',
+    titulo: 'Productos destacados',
+    subtitulo: 'Nuestros favoritos',
+    contenido: 'Una selección de productos de Papelería de Sol.',
+    texto_boton: null,
+    enlace_boton: null,
+    publicada: true,
+    orden: 2,
+  },
+} as const;
 const CLAVES_TEXTO_PUBLICO = [
   'navegacion_inicio', 'navegacion_catalogo', 'navegacion_plantillas',
   'navegacion_productos_fisicos', 'navegacion_ayuda', 'carrito_boton',
@@ -213,28 +232,6 @@ function esColorHexadecimal(valor: unknown) {
   return typeof valor === 'string' && /^#[0-9a-f]{6}$/i.test(valor);
 }
 
-function normalizarEstilosSeccion(valor: unknown) {
-  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
-    throw new Error('Los estilos de la sección no tienen un formato válido.');
-  }
-
-  const estilos = valor as Record<string, Record<string, unknown>>;
-  return Object.fromEntries(CAMPOS_ESTILO_SECCION.map((campo) => {
-    const estilo = estilos[campo] || {};
-    const color = esColorHexadecimal(estilo.color) ? estilo.color : '#252434';
-    const fuente = FUENTES_PERMITIDAS.includes(String(estilo.fuente)) ? estilo.fuente : 'moderna';
-    const tamano = TAMANOS_PERMITIDOS.includes(String(estilo.tamano)) ? estilo.tamano : 'normal';
-
-    return [campo, {
-      color,
-      fuente,
-      tamano,
-      negrita: Boolean(estilo.negrita),
-      cursiva: Boolean(estilo.cursiva),
-    }];
-  }));
-}
-
 function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
   if ('nombre' in datos && !String(datos.nombre || '').trim()) {
     throw new Error('El nombre es obligatorio.');
@@ -287,7 +284,6 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
 
   if (recurso === 'secciones') {
     if (!String(datos.titulo || '').trim()) throw new Error('El título de la sección es obligatorio.');
-    if (Object.prototype.hasOwnProperty.call(datos, 'estilos')) normalizarEstilosSeccion(datos.estilos);
     if (Object.prototype.hasOwnProperty.call(datos, 'enlace_boton') && !esEnlaceInternoSeguro(datos.enlace_boton)) {
       throw new Error('El enlace del botón debe comenzar con / y dirigir a una página de la tienda.');
     }
@@ -526,6 +522,62 @@ async function listarRecurso(recurso: NombreRecurso, filtroArchivados = 'activos
   return data;
 }
 
+function esClaveDeInicio(clave: unknown): clave is keyof typeof SECCIONES_INICIO_PREDETERMINADAS {
+  return typeof clave === 'string' && clave in SECCIONES_INICIO_PREDETERMINADAS;
+}
+
+function textoLimpio(valor: unknown, predeterminado: string | null) {
+  if (typeof valor !== 'string') return predeterminado;
+  const texto = valor.trim();
+  return texto || predeterminado;
+}
+
+async function obtenerTextosInicio() {
+  const claves = Object.keys(SECCIONES_INICIO_PREDETERMINADAS);
+  const { data, error } = await clienteServicio
+    .from('secciones')
+    .select('*')
+    .in('clave', claves);
+  if (error) throw error;
+
+  return claves.map((clave) => (
+    data?.find((seccion) => seccion.clave === clave)
+      || SECCIONES_INICIO_PREDETERMINADAS[clave as keyof typeof SECCIONES_INICIO_PREDETERMINADAS]
+  ));
+}
+
+async function guardarTextoInicio(
+  clave: unknown,
+  datos: Record<string, unknown>,
+  usuarioId: string,
+) {
+  if (!esClaveDeInicio(clave)) throw new Error('El bloque de inicio solicitado no es válido.');
+  if (!esObjetoPlano(datos)) throw new Error('Los textos enviados no tienen un formato válido.');
+
+  const predeterminado = SECCIONES_INICIO_PREDETERMINADAS[clave];
+  const titulo = textoLimpio(datos.titulo, predeterminado.titulo);
+  if (!titulo) throw new Error('El título del bloque es obligatorio.');
+
+  const registro = {
+    ...predeterminado,
+    titulo,
+    subtitulo: textoLimpio(datos.subtitulo, predeterminado.subtitulo),
+    contenido: textoLimpio(datos.contenido, predeterminado.contenido),
+    texto_boton: clave === 'inicio_principal'
+      ? textoLimpio(datos.texto_boton, predeterminado.texto_boton)
+      : null,
+  };
+  const { data, error } = await clienteServicio
+    .from('secciones')
+    .upsert(registro, { onConflict: 'clave' })
+    .select()
+    .single();
+  if (error) throw error;
+
+  await registrarAuditoria(usuarioId, 'actualizar_textos_inicio', 'secciones', data.id, { clave });
+  return data;
+}
+
 async function guardarRecurso(
   recurso: NombreRecurso,
   datosOriginales: Record<string, unknown>,
@@ -556,10 +608,6 @@ async function guardarRecurso(
   validarDatos(recurso, datosValidados);
   const definicion = RECURSOS[recurso];
   const datos = seleccionarCampos(datosValidados, definicion.campos);
-
-  if (recurso === 'secciones' && Object.prototype.hasOwnProperty.call(datos, 'estilos')) {
-    datos.estilos = normalizarEstilosSeccion(datos.estilos);
-  }
 
   if (recurso === 'productos') {
     datos.slug = await crearSlugDisponible('productos', datos.nombre, id);
@@ -812,7 +860,7 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
   const clavesPermitidas = [
     'aviso_superior', 'mostrar_aviso_superior', 'descripcion_corta',
     'titulo_footer_explorar', 'titulo_footer_contacto', 'whatsapp', 'correo', 'instagram', 'tiktok',
-    'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES, 'fuente_principal',
+    'pais', 'region', 'moneda', 'simbolo_moneda', ...COLORES_CONFIGURABLES,
     ...CLAVES_TEXTO_PUBLICO,
   ];
 
@@ -831,9 +879,6 @@ async function guardarConfiguraciones(datos: Record<string, unknown>, usuarioId:
       throw new Error('Uno de los colores ingresados no es válido.');
     }
   });
-  if (Object.prototype.hasOwnProperty.call(datos, 'fuente_principal') && !FUENTES_PERMITIDAS.includes(String(datos.fuente_principal))) {
-    throw new Error('La tipografía seleccionada no es válida.');
-  }
   if (Object.prototype.hasOwnProperty.call(datos, 'whatsapp') && !esNumeroWhatsAppSeguro(datos.whatsapp)) {
     throw new Error('El número de WhatsApp debe estar en formato internacional, sin espacios ni símbolos.');
   }
@@ -920,6 +965,16 @@ Deno.serve(async (solicitud) => {
 
     if (accion === 'obtener_sugerencia_sku') {
       return responder(solicitud, { datos: await obtenerSugerenciaSku(cuerpo.tipo_producto) });
+    }
+
+    if (accion === 'obtener_textos_inicio') {
+      return responder(solicitud, { datos: await obtenerTextosInicio() });
+    }
+
+    if (accion === 'guardar_textos_inicio') {
+      return responder(solicitud, {
+        datos: await guardarTextoInicio(cuerpo.clave, cuerpo.datos || {}, autenticacion.user.id),
+      });
     }
 
     if (accion === 'listar') {

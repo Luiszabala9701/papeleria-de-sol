@@ -21,7 +21,7 @@ const configuracionDisponible = Boolean(
         </span>
       </a>
       <div id="datos-sesion" class="datos-sesion" hidden>
-        <button id="cerrar-sesion-admin" class="boton boton-secundario" type="button">Cerrar sesión</button>
+        <button id="cerrar-sesion-admin" class="boton boton-peligro" type="button">Cerrar sesión</button>
       </div>
     </header>
 
@@ -57,8 +57,14 @@ const configuracionDisponible = Boolean(
 
     <div id="panel-administracion" class="panel-administracion" hidden>
       <aside class="admin-lateral">
-        <p class="admin-lateral-titulo">Contenido</p>
-        <nav aria-label="Secciones de administración">
+        <div class="admin-lateral-cabecera">
+          <p class="admin-lateral-titulo">Contenido</p>
+          <button id="alternar-menu-admin" class="boton-alternar-menu-admin" type="button" aria-expanded="true" aria-controls="navegacion-admin">
+            <span aria-hidden="true">‹</span>
+            <span class="solo-lectores">Contraer menú de administración</span>
+          </button>
+        </div>
+        <nav id="navegacion-admin" aria-label="Secciones de administración">
           <button class="enlace-admin activo" type="button" data-seccion-admin="resumen">Resumen</button>
           <button class="enlace-admin" type="button" data-seccion-admin="productos">Productos</button>
           <button class="enlace-admin" type="button" data-seccion-admin="categorias">Categorías</button>
@@ -123,6 +129,17 @@ const configuracionDisponible = Boolean(
                   </select>
                 </label>
               )}
+              {recurso === 'productos' && (
+                <label class="filtro-archivados">
+                  <span>Tipo de producto</span>
+                  <select class="selector" data-filtro-tipo-producto>
+                    <option value="">Todos los tipos</option>
+                    <option value="sticker">Stickers</option>
+                    <option value="plantilla">Plantillas</option>
+                    <option value="fisico">Productos físicos</option>
+                  </select>
+                </label>
+              )}
               <span data-total-recurso={recurso}>Cargando…</span>
             </div>
             <div class="tabla-contenedor">
@@ -131,21 +148,25 @@ const configuracionDisponible = Boolean(
                 <tbody data-lista-recurso={recurso}></tbody>
               </table>
             </div>
+            {recurso === 'productos' && (
+              <nav class="paginacion-admin" data-paginacion-admin="productos" aria-label="Paginación de productos" hidden>
+                <button class="boton-paginacion-admin" type="button" data-pagina-admin-anterior disabled>Anterior</button>
+                <span data-informacion-pagina-admin> Página 1 </span>
+                <button class="boton-paginacion-admin" type="button" data-pagina-admin-siguiente>Siguiente</button>
+              </nav>
+            )}
             </>}
             {recurso === 'secciones' && (
               <div class="contenidos-globales">
                 <details class="tarjeta-contenido-global opciones-contenido-global" open>
                   <summary>Textos de inicio</summary>
-                  <p>Editá los dos bloques del inicio sin crear ni administrar secciones. Cada texto mantiene su formato independiente.</p>
+                  <p>Estos campos se ven directamente en la portada. Después de guardar, actualizá la tienda para comprobar el cambio.</p>
                   <form class="formulario-dos-columnas" data-formulario-seccion-inicio="inicio_principal">
                     <h2 class="campo-completo">Presentación principal</h2>
                     <label class="grupo-campo campo-completo"><span>Título</span><textarea class="area-texto" name="titulo" rows="2" required></textarea></label>
                     <label class="grupo-campo campo-completo"><span>Subtítulo</span><input class="campo" name="subtitulo" /></label>
                     <label class="grupo-campo campo-completo"><span>Descripción</span><textarea class="area-texto" name="contenido" rows="3"></textarea></label>
                     <label class="grupo-campo"><span>Texto del botón</span><input class="campo" name="texto_boton" /></label>
-                    <label class="grupo-campo"><span>Enlace del botón</span><input class="campo" name="enlace_boton" /></label>
-                    <label class="grupo-checkbox campo-completo"><input name="publicada" type="checkbox" /><span>Mostrar este bloque en el inicio</span></label>
-                    <div class="campo-completo" data-estilos-seccion-inicio></div>
                     <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar presentación principal</button></div>
                   </form>
                   <form class="formulario-dos-columnas separador-formulario-seccion" data-formulario-seccion-inicio="inicio_destacados">
@@ -153,10 +174,6 @@ const configuracionDisponible = Boolean(
                     <label class="grupo-campo campo-completo"><span>Título</span><textarea class="area-texto" name="titulo" rows="2" required></textarea></label>
                     <label class="grupo-campo campo-completo"><span>Subtítulo</span><input class="campo" name="subtitulo" /></label>
                     <label class="grupo-campo campo-completo"><span>Descripción</span><textarea class="area-texto" name="contenido" rows="3"></textarea></label>
-                    <label class="grupo-campo"><span>Texto del botón</span><input class="campo" name="texto_boton" /></label>
-                    <label class="grupo-campo"><span>Enlace del botón</span><input class="campo" name="enlace_boton" /></label>
-                    <label class="grupo-checkbox campo-completo"><input name="publicada" type="checkbox" /><span>Mostrar este bloque en el inicio</span></label>
-                    <div class="campo-completo" data-estilos-seccion-inicio></div>
                     <div class="acciones-formulario campo-completo"><button class="boton boton-principal" type="submit">Guardar bloque de destacados</button></div>
                   </form>
                 </details>
@@ -181,7 +198,7 @@ const configuracionDisponible = Boolean(
                 </section>
 
                 <details class="tarjeta-contenido-global opciones-contenido-global">
-                  <summary>Paleta y tipografía general</summary>
+                  <summary>Paleta de colores</summary>
                   <p>Estos colores se usan en todo el sitio. Para invertir la paleta, intercambiá el color inicial y el final.</p>
                   <form id="formulario-estilos-globales" class="formulario-dos-columnas">
                     <label class="grupo-campo selector-color"><span>Color inicial de la marca</span><input name="color_principal" type="color" value="#98b7ff" /></label>
@@ -191,9 +208,8 @@ const configuracionDisponible = Boolean(
                     <label class="grupo-campo selector-color"><span>Fondo del sitio</span><input name="color_fondo" type="color" value="#fbfaff" /></label>
                     <label class="grupo-campo selector-color"><span>Texto principal</span><input name="color_texto" type="color" value="#252434" /></label>
                     <label class="grupo-campo selector-color"><span>Texto secundario</span><input name="color_texto_suave" type="color" value="#676579" /></label>
-                    <label class="grupo-campo"><span>Tipografía general</span><select class="selector" name="fuente_principal"><option value="moderna">Moderna</option><option value="redondeada">Redondeada</option><option value="clasica">Clásica</option><option value="creativa">Creativa</option><option value="elegante">Elegante</option><option value="manuscrita">Manuscrita</option></select></label>
                     <div class="acciones-formulario campo-completo">
-                      <button class="boton boton-principal" type="submit">Guardar paleta y tipografía</button>
+                      <button class="boton boton-principal" type="submit">Guardar paleta</button>
                     </div>
                   </form>
                 </details>
@@ -325,9 +341,9 @@ const configuracionDisponible = Boolean(
             <section>
               <h2>Contenido y apariencia</h2>
               <ol>
-                <li>En Contenido del sitio se editan los bloques del inicio y la apariencia individual de sus textos.</li>
+                <li>En Contenido del sitio se editan los textos de la portada y los datos generales de la tienda.</li>
                 <li>Los desplegables agrupan los textos por página. Guarda cada bloque después de modificarlo.</li>
-                <li>Paleta y tipografía general cambia la identidad visual completa; los estilos de una sección afectan solo a esa sección.</li>
+                <li>La paleta de colores cambia la identidad visual completa de la tienda.</li>
                 <li>Actualiza la tienda abierta en otra pestaña para ver los cambios ya publicados.</li>
               </ol>
             </section>
