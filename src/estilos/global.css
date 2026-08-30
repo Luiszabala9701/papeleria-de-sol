@@ -666,6 +666,11 @@ h3 {
   font-weight: 800;
 }
 
+.boton-agregar-producto:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .cabecera-pagina {
   padding-block: clamp(3.5rem, 7vw, 6rem) 2.5rem;
   text-align: center;
@@ -944,9 +949,50 @@ h3 {
   cursor: pointer;
 }
 
+.controles-cantidad button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .controles-cantidad span {
   min-width: 25px;
   text-align: center;
+  font-size: 0.8rem;
+}
+
+.selector-cantidad-producto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.65rem 0.85rem;
+}
+
+.etiqueta-cantidad-producto {
+  color: var(--tinta);
+  font-weight: 800;
+}
+
+.selector-cantidad-producto .controles-cantidad {
+  min-height: 42px;
+}
+
+.selector-cantidad-producto .controles-cantidad button {
+  width: 40px;
+  height: 40px;
+  font-size: 1.15rem;
+}
+
+.selector-cantidad-producto .controles-cantidad output {
+  display: grid;
+  min-width: 34px;
+  place-items: center;
+  font-weight: 800;
+}
+
+.disponibilidad-cantidad-producto {
+  flex-basis: 100%;
+  color: var(--tinta-suave);
   font-size: 0.8rem;
 }
 

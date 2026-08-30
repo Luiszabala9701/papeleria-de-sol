@@ -32,10 +32,37 @@ function texto(clave, respaldo) {
 function cargarCarrito() {
   try {
     const datos = JSON.parse(localStorage.getItem(CLAVE_CARRITO) || '[]');
-    return Array.isArray(datos) ? datos : [];
+    if (!Array.isArray(datos)) return [];
+
+    return datos
+      .map((producto) => normalizarProductoCarrito(producto))
+      .filter((producto) => producto && producto.cantidad > 0);
   } catch {
     return [];
   }
+}
+
+function limitarCantidad(valor, minimo = 1) {
+  const cantidad = Math.floor(Number(valor));
+  return Number.isFinite(cantidad) ? Math.max(minimo, cantidad) : minimo;
+}
+
+function limiteDeStock(producto) {
+  if (producto?.controla_stock !== true) return null;
+
+  const stock = Math.floor(Number(producto.stock));
+  return Number.isFinite(stock) ? Math.max(0, stock) : 0;
+}
+
+function normalizarProductoCarrito(producto) {
+  if (!producto?.id || !producto?.nombre) return null;
+
+  const limite = limiteDeStock(producto);
+  const cantidad = limitarCantidad(producto.cantidad);
+  return {
+    ...producto,
+    cantidad: limite === null ? cantidad : Math.min(cantidad, limite),
+  };
 }
 
 function guardarCarrito() {
@@ -125,12 +152,15 @@ function crearControlesCantidad(producto) {
 
   const cantidad = document.createElement('span');
   cantidad.textContent = String(producto.cantidad);
+  cantidad.setAttribute('aria-live', 'polite');
 
   const sumar = document.createElement('button');
   sumar.type = 'button';
   sumar.dataset.accionCarrito = 'sumar';
   sumar.dataset.idProducto = producto.id;
   sumar.setAttribute('aria-label', `Agregar otra unidad de ${producto.nombre}`);
+  const limite = limiteDeStock(producto);
+  sumar.disabled = limite !== null && producto.cantidad >= limite;
   sumar.textContent = '+';
 
   controles.append(restar, cantidad, sumar);
@@ -197,24 +227,47 @@ function renderizarCarrito() {
   if (botonEnviar) botonEnviar.disabled = total === 0;
 }
 
-function agregarProducto(producto) {
+function agregarProducto(producto, cantidadSolicitada = 1) {
   if (!producto?.id || !producto?.nombre) return;
 
   const existente = carrito.find((elemento) => elemento.id === producto.id);
+  const cantidad = limitarCantidad(cantidadSolicitada);
+  const limite = limiteDeStock(producto);
+  const cantidadActual = existente?.cantidad || 0;
+  const disponible = limite === null ? cantidad : Math.max(0, limite - cantidadActual);
+  const cantidadAAgregar = Math.min(cantidad, disponible);
+
+  if (cantidadAAgregar <= 0) {
+    mostrarNotificacion(`${producto.nombre} ya alcanzó el stock disponible.`);
+    return;
+  }
+
   if (existente) {
-    existente.cantidad += 1;
+    Object.assign(existente, producto, { cantidad: cantidadActual + cantidadAAgregar });
   } else {
-    carrito.push({ ...producto, cantidad: 1 });
+    carrito.push({ ...producto, cantidad: cantidadAAgregar });
   }
 
   guardarCarrito();
   renderizarCarrito();
-  mostrarNotificacion(`${producto.nombre} ${texto('agregado', 'se agregó a tu selección.')}`);
+  if (cantidadAAgregar < cantidad) {
+    mostrarNotificacion(`Agregamos ${cantidadAAgregar} de ${producto.nombre}: es el máximo disponible.`);
+    return;
+  }
+
+  const detalleCantidad = cantidadAAgregar > 1 ? `${cantidadAAgregar} unidades de ` : '';
+  mostrarNotificacion(`${detalleCantidad}${producto.nombre} ${texto('agregado', 'se agregó a tu selección.')}`);
 }
 
 function modificarCantidad(idProducto, cambio) {
   const producto = carrito.find((elemento) => elemento.id === idProducto);
   if (!producto) return;
+
+  const limite = limiteDeStock(producto);
+  if (cambio > 0 && limite !== null && producto.cantidad >= limite) {
+    mostrarNotificacion(`${producto.nombre} ya alcanzó el stock disponible.`);
+    return;
+  }
 
   producto.cantidad += cambio;
   if (producto.cantidad <= 0) {
@@ -256,7 +309,10 @@ document.addEventListener('click', (evento) => {
   const botonAgregar = evento.target.closest('[data-agregar-producto]');
   if (botonAgregar) {
     try {
-      agregarProducto(JSON.parse(botonAgregar.dataset.producto));
+      agregarProducto(
+        JSON.parse(botonAgregar.dataset.producto),
+        botonAgregar.dataset.cantidad,
+      );
     } catch {
       mostrarNotificacion('No pudimos agregar ese producto. Intentá nuevamente.');
     }

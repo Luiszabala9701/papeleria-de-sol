@@ -47,6 +47,8 @@ function datosProductoCarrito(producto) {
     precio: producto.precio,
     moneda: producto.moneda,
     imagen: imagenSegura(imagen?.url_publica),
+    controla_stock: producto.controla_stock === true,
+    stock: producto.controla_stock ? Math.max(0, Math.floor(Number(producto.stock) || 0)) : null,
   };
 }
 
@@ -110,7 +112,9 @@ function crearTarjeta(producto) {
   agregar.dataset.agregarProducto = '';
   agregar.dataset.producto = JSON.stringify(datosProductoCarrito(producto));
   agregar.setAttribute('aria-label', `Agregar ${producto.nombre} a mi selección`);
-  agregar.textContent = textos.agregar || 'Agregar';
+  const sinStock = producto.controla_stock && Math.max(0, Number(producto.stock) || 0) === 0;
+  agregar.disabled = sinStock;
+  agregar.textContent = sinStock ? 'Sin stock' : (textos.agregar || 'Agregar');
 
   pie.append(precio, agregar);
   contenido.append(tipo, titulo, descripcion, pie);
