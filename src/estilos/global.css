@@ -1374,6 +1374,10 @@ h3 {
   gap: 0.75rem;
 }
 
+.galeria-detalle-compacta {
+  width: min(100%, 520px);
+}
+
 .imagen-principal-galeria {
   position: relative;
   display: block;

@@ -75,7 +75,7 @@ const datosEstructurados = JSON.stringify({
   </Fragment>
 
   <article class="contenedor detalle-producto">
-    <GaleriaProducto imagenes={producto.imagenes} nombreProducto={producto.nombre} proteger={esSticker} />
+    <GaleriaProducto imagenes={producto.imagenes} nombreProducto={producto.nombre} proteger={esSticker} compacta={esSticker} />
 
     <div class="informacion-detalle">
       <p class="etiqueta">{producto.tipo_producto === 'fisico' ? obtenerTextoPublico(configuracion, 'producto_tipo_fisico') : producto.tipo_producto}</p>

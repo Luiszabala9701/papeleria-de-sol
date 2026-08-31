@@ -5,9 +5,10 @@ interface Props {
   imagenes: ImagenProducto[];
   nombreProducto: string;
   proteger?: boolean;
+  compacta?: boolean;
 }
 
-const { imagenes, nombreProducto, proteger = false } = Astro.props;
+const { imagenes, nombreProducto, proteger = false, compacta = false } = Astro.props;
 const imagenesOrdenadas = [...(imagenes || [])].sort((primera, segunda) => {
   if (primera.es_principal !== segunda.es_principal) return primera.es_principal ? -1 : 1;
   return Number(primera.orden || 0) - Number(segunda.orden || 0);
@@ -18,7 +19,7 @@ const imagenesVisibles = imagenesOrdenadas.length
 const imagenPrincipal = imagenesVisibles[0];
 ---
 
-<div class="galeria-detalle" data-galeria-producto data-proteccion-imagen={proteger ? 'sticker' : undefined}>
+<div class:list={['galeria-detalle', { 'galeria-detalle-compacta': compacta }]} data-galeria-producto data-proteccion-imagen={proteger ? 'sticker' : undefined}>
   <button
     class="imagen-principal-galeria"
     type="button"

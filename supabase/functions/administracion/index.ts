@@ -101,6 +101,7 @@ const PREFIJOS_SKU: Record<string, string> = {
   fisico: 'PF',
 };
 const EXPRESION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TAMANO_LOTE_LISTADO = 1000;
 
 function cabecerasCors(solicitud: Request) {
   const origen = solicitud.headers.get('origin') || '';
@@ -504,22 +505,32 @@ async function obtenerResumen() {
 
 async function listarRecurso(recurso: NombreRecurso, filtroArchivados = 'activos') {
   const definicion = RECURSOS[recurso];
-  let consulta = clienteServicio.from(definicion.tabla).select(definicion.seleccion);
+  const registros: Record<string, unknown>[] = [];
 
-  if (recurso === 'productos') {
-    if (filtroArchivados === 'archivados') {
-      consulta = consulta.eq('estado', 'archivado');
-    } else if (filtroArchivados !== 'todos') {
-      consulta = consulta.neq('estado', 'archivado');
+  for (let desde = 0; ; desde += TAMANO_LOTE_LISTADO) {
+    let consulta = clienteServicio
+      .from(definicion.tabla)
+      .select(definicion.seleccion)
+      .range(desde, desde + TAMANO_LOTE_LISTADO - 1);
+
+    if (recurso === 'productos') {
+      if (filtroArchivados === 'archivados') {
+        consulta = consulta.eq('estado', 'archivado');
+      } else if (filtroArchivados !== 'todos') {
+        consulta = consulta.neq('estado', 'archivado');
+      }
+      consulta = consulta.order('actualizado_en', { ascending: false }).order('id');
+    } else {
+      consulta = consulta.order('orden').order('actualizado_en', { ascending: false }).order('id');
     }
-    consulta = consulta.order('actualizado_en', { ascending: false });
-  } else {
-    consulta = consulta.order('orden').order('actualizado_en', { ascending: false });
-  }
 
-  const { data, error } = await consulta;
-  if (error) throw error;
-  return data;
+    const { data, error } = await consulta;
+    if (error) throw error;
+
+    const lote = data || [];
+    registros.push(...lote);
+    if (lote.length < TAMANO_LOTE_LISTADO) return registros;
+  }
 }
 
 function esClaveDeInicio(clave: unknown): clave is keyof typeof SECCIONES_INICIO_PREDETERMINADAS {
