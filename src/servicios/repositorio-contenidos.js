@@ -77,38 +77,6 @@ async function ejecutarConRespaldo(contexto, consulta, respaldo) {
   }
 }
 
-const TAMANO_LOTE_PRODUCTOS = 1000;
-
-async function obtenerTodosLosProductosPublicados(cliente, tipo) {
-  const productos = [];
-
-  for (let desde = 0; ; desde += TAMANO_LOTE_PRODUCTOS) {
-    let consulta = cliente
-      .from('productos')
-      .select(
-        `
-          *,
-          categoria:categorias(*),
-          imagenes(*)
-        `,
-      )
-      .eq('estado', 'publicado')
-      .order('orden')
-      .order('creado_en', { ascending: false })
-      .order('id')
-      .range(desde, desde + TAMANO_LOTE_PRODUCTOS - 1);
-
-    if (tipo) consulta = consulta.eq('tipo_producto', tipo);
-
-    const { data, error } = await consulta;
-    if (error) return { data: null, error };
-
-    const lote = data || [];
-    productos.push(...lote);
-    if (lote.length < TAMANO_LOTE_PRODUCTOS) return { data: productos, error: null };
-  }
-}
-
 export async function obtenerConfiguracionSitio() {
   const datos = await ejecutarConRespaldo(
     'No se pudo obtener la configuración pública',
@@ -156,7 +124,26 @@ export async function obtenerCategoriasPublicadas() {
 export async function obtenerProductosPublicados({ tipo } = {}) {
   const datos = await ejecutarConRespaldo(
     'No se pudieron obtener los productos',
-    (cliente) => obtenerTodosLosProductosPublicados(cliente, tipo),
+    (cliente) => {
+      let consulta = cliente
+        .from('productos')
+        .select(
+          `
+            *,
+            categoria:categorias(*),
+            imagenes(*)
+          `,
+        )
+        .eq('estado', 'publicado')
+        .order('orden')
+        .order('creado_en', { ascending: false });
+
+      if (tipo) {
+        consulta = consulta.eq('tipo_producto', tipo);
+      }
+
+      return consulta;
+    },
     () => {
       const productos = crearStickersDemostracion();
       return tipo ? productos.filter((producto) => producto.tipo_producto === tipo) : productos;

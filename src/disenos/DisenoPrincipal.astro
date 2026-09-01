@@ -97,30 +97,6 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
 
     <div id="contenedor-notificaciones" class="contenedor-notificaciones" aria-live="polite"></div>
 
-    <script is:inline>
-      (() => {
-        const boton = document.querySelector('#volver-arriba');
-        if (!boton) return;
-
-        const posicionScroll = () => Math.max(
-          window.scrollY,
-          document.documentElement.scrollTop,
-          document.body.scrollTop,
-        );
-
-        const actualizarVisibilidad = () => {
-          boton.hidden = posicionScroll() < 160;
-        };
-
-        window.addEventListener('scroll', actualizarVisibilidad, { passive: true });
-        document.addEventListener('scroll', actualizarVisibilidad, { passive: true });
-        boton.addEventListener('click', () => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        actualizarVisibilidad();
-      })();
-    </script>
-
     {!ocultarNavegacion && (
       <script>
         import '../scripts/menu.js';
