@@ -46,7 +46,6 @@ export const TEXTOS_PREDETERMINADOS = {
   producto_disponibilidad: 'Disponibilidad',
   producto_en_stock: 'En stock',
   producto_consultar: 'Consultar',
-  producto_aviso_whatsapp: 'Agregá este producto a tu selección. Por WhatsApp coordinamos la disponibilidad, el retiro o envío, el pago y otros detalles del pedido.',
   carrito_etiqueta: 'Tu pedido',
   carrito_titulo: 'Mi selección',
   carrito_vacio: 'Todavía no agregaste productos.',

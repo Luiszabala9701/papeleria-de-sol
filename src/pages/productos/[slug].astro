@@ -89,7 +89,6 @@ const datosEstructurados = JSON.stringify({
         {producto.controla_stock && <li><strong>{obtenerTextoPublico(configuracion, 'producto_disponibilidad')}:</strong> {stockDisponible > 0 ? obtenerTextoPublico(configuracion, 'producto_en_stock') : obtenerTextoPublico(configuracion, 'producto_consultar')}</li>}
       </ul>
 
-      <p class="aviso-whatsapp">{obtenerTextoPublico(configuracion, 'producto_aviso_whatsapp')}</p>
       <div
         class="selector-cantidad-producto"
         data-selector-cantidad

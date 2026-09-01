@@ -1528,15 +1528,6 @@ h3 {
   padding-block: 0.25rem;
 }
 
-.aviso-whatsapp {
-  padding: 0.85rem 1rem;
-  margin-block: 0.85rem;
-  border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--azul-sol) 13%, transparent);
-  color: var(--tinta-suave);
-  font-size: 0.85rem;
-}
-
 /* En notebooks y pantallas de escritorio bajas se prioriza mostrar el CTA. */
 @media (min-width: 1025px) and (max-height: 950px) {
   .detalle-producto {
