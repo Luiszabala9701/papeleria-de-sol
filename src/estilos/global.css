@@ -1398,6 +1398,7 @@ h3 {
   position: relative;
   display: block;
   width: 100%;
+  aspect-ratio: 1;
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--borde);
@@ -1410,7 +1411,7 @@ h3 {
 .imagen-principal-galeria img {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: contain;
 }
 
