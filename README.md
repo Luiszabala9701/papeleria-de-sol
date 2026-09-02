@@ -22,22 +22,7 @@ npm run build
 
 El sitio local queda disponible en `http://127.0.0.1:4321`. La tienda funciona con datos de demostración aunque Supabase todavía no esté configurado. El dashboard necesita un proyecto Supabase para iniciar sesión y guardar cambios.
 
-## Documentación
+## Manuales
 
-- [Arquitectura y alcance](documentacion/arquitectura.md)
-- [Instalación local](documentacion/instalacion-local.md)
-- [Configuración de Supabase](documentacion/configuracion-supabase.md)
-- [Despliegue gratuito en Netlify](documentacion/despliegue-netlify.md)
-- [Seguridad](documentacion/seguridad.md)
-- [Revisión previa a producción](documentacion/revision-preproduccion.md)
-- [Dominio propio](documentacion/dominio.md)
-- [Palabras clave SEO](documentacion/palabras-clave-seo.txt)
 - [Manual para clientes](documentacion/manuales/manual-uso-clientes.docx)
 - [Manual para administración](documentacion/manuales/manual-uso-administracion.docx)
-- [Cambios del reporte 1](documentacion/cambios-reporte-1.md)
-
-## Recursos locales
-
-Los 1.000 stickers WebP de `public/stickers` son necesarios para el modo demostración local. Las copias originales de trabajo, si se conservan, deben quedar en `recursos-originales/`, una carpeta ignorada por Git.
-
-Todo el contenido editorial, los nombres de variables propios del proyecto y la documentación están en español. Solo permanecen en inglés nombres obligatorios del ecosistema, por ejemplo `package.json`, `src`, `public` o variables reservadas de las plataformas.

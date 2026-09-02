@@ -24,3 +24,8 @@
   from = "/administracion"
   to = "/admin"
   status = 301
+
+[[redirects]]
+  from = "/catalogo"
+  to = "/stickers"
+  status = 301

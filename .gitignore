@@ -34,3 +34,8 @@ Thumbs.db
 
 # Copias fuente pesadas: se conservan localmente, pero no se publican ni versionan.
 recursos-originales/
+
+# Documentación interna: en Git sólo se conservan los manuales entregables.
+documentacion/*
+!documentacion/manuales/
+!documentacion/manuales/*.docx
