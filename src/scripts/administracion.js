@@ -1,4 +1,19 @@
 import { obtenerClienteSupabase } from '../servicios/cliente-supabase.js';
+import {
+  COLUMNAS_RECURSOS,
+  DESCRIPCIONES_RECURSOS,
+  ESQUEMAS_RECURSOS,
+} from './administracion/configuracion.js';
+import {
+  crearBotonAccion,
+  crearEtiqueta,
+  crearOpcion,
+  notificar,
+  ocultarError,
+  obtenerImagenPrincipal,
+  mostrarError,
+  valorVisible,
+} from './administracion/interfaz.js';
 
 const aplicacion = document.querySelector('.admin-aplicacion');
 const configuracionDisponible = aplicacion?.dataset.configuracionDisponible === 'true';
@@ -24,81 +39,6 @@ const botonCancelarCerrarSesion = document.querySelector('#cancelar-cerrar-sesio
 const botonConfirmarCerrarSesion = document.querySelector('#confirmar-cerrar-sesion');
 const botonAlternarMenu = document.querySelector('#alternar-menu-admin');
 
-const DESCRIPCIONES = {
-  productos: 'Creá stickers, plantillas y productos físicos con precio, imágenes y publicación.',
-  categorias: 'Creá categorías específicas para cada tipo de producto, como Fútbol para stickers.',
-  secciones: 'Editá los textos que se muestran en la portada y los datos generales de la tienda.',
-};
-
-const ESQUEMAS = {
-  productos: [
-    { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', obligatorio: true },
-    {
-      nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true, soloCreacion: true,
-      opciones: [
-        { valor: '', texto: 'Elegí un tipo de producto' },
-        { valor: 'sticker', texto: 'Sticker' },
-        { valor: 'plantilla', texto: 'Plantilla' },
-        { valor: 'fisico', texto: 'Producto físico' },
-      ],
-    },
-    { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias', dependeDe: 'tipo_producto' },
-    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, soloCreacion: true },
-    { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', obligatorio: true, completo: true },
-    { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
-    {
-      nombre: 'estado', etiqueta: 'Estado de publicación', tipo: 'select', obligatorio: true,
-      opciones: [
-        { valor: 'borrador', texto: 'No publicado' },
-        { valor: 'publicado', texto: 'Publicado' },
-      ],
-    },
-    { nombre: 'controla_stock', etiqueta: 'Controlar stock', tipo: 'checkbox' },
-    { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0, dependeDe: 'controla_stock' },
-    { nombre: 'destacado', etiqueta: 'Mostrar como destacado', tipo: 'checkbox' },
-    { nombre: 'imagenes_nuevas', etiqueta: 'Agregar nuevas imágenes (máximo 5 en total)', tipo: 'file', multiple: true, completo: true, ayuda: 'Podés seleccionar varias imágenes a la vez. Cada archivo puede pesar hasta 5 MB.' },
-    { nombre: 'meta_titulo', etiqueta: 'Título para buscadores', tipo: 'text', completo: true, avanzado: true, ayuda: 'Es el título que podría mostrarse en Google. Si se deja vacío, se usa el nombre del producto.' },
-    { nombre: 'meta_descripcion', etiqueta: 'Descripción para buscadores', tipo: 'textarea', completo: true, avanzado: true, ayuda: 'Es el texto breve que podría mostrarse debajo del título en Google. Si se deja vacío, se usa la descripción del producto.' },
-  ],
-  categorias: [
-    { nombre: 'nombre', etiqueta: 'Nombre', tipo: 'text', obligatorio: true },
-    {
-      nombre: 'tipo_producto', etiqueta: 'Tipo de producto', tipo: 'select', obligatorio: true,
-      opciones: [
-        { valor: 'sticker', texto: 'Sticker' },
-        { valor: 'plantilla', texto: 'Plantilla' },
-        { valor: 'fisico', texto: 'Producto físico' },
-      ],
-    },
-    { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', completo: true },
-    { nombre: 'publicada', etiqueta: 'Publicada', tipo: 'checkbox' },
-    { nombre: 'orden', etiqueta: 'Orden', tipo: 'number', minimo: 0 },
-  ],
-};
-
-const COLUMNAS = {
-  productos: [
-    { clave: 'nombre', texto: 'Producto' },
-    { clave: 'imagen_principal', texto: 'Imagen' },
-    { clave: 'tipo_producto', texto: 'Tipo' },
-    { clave: 'precio', texto: 'Precio' },
-    { clave: 'estado', texto: 'Estado' },
-    { clave: 'stock', texto: 'Stock' },
-  ],
-  categorias: [
-    { clave: 'nombre', texto: 'Categoría' },
-    { clave: 'tipo_producto', texto: 'Tipo' },
-    { clave: 'publicada', texto: 'Publicación' },
-    { clave: 'orden', texto: 'Orden' },
-  ],
-  secciones: [
-    { clave: 'titulo', texto: 'Sección' },
-    { clave: 'clave', texto: 'Clave' },
-    { clave: 'publicada', texto: 'Publicación' },
-    { clave: 'orden', texto: 'Orden' },
-  ],
-};
-
 let recursoActual = 'resumen';
 let recursoDialogo = null;
 let idEdicion = null;
@@ -109,26 +49,6 @@ let minutosInactividad = 30;
 let ultimaActividadConfirmada = Date.now();
 let paginaProductos = 1;
 const PRODUCTOS_POR_PAGINA = 50;
-
-function mostrarError(elemento, mensaje) {
-  if (!elemento) return;
-  elemento.textContent = mensaje;
-  elemento.hidden = false;
-}
-
-function ocultarError(elemento) {
-  if (elemento) elemento.hidden = true;
-}
-
-function notificar(mensaje) {
-  const contenedor = document.querySelector('#contenedor-notificaciones');
-  if (!contenedor) return;
-  const elemento = document.createElement('div');
-  elemento.className = 'notificacion';
-  elemento.textContent = mensaje;
-  contenedor.append(elemento);
-  setTimeout(() => elemento.remove(), 3500);
-}
 
 async function obtenerMensajeErrorFuncion(error) {
   const respuesta = error?.context;
@@ -213,33 +133,6 @@ async function cargarAuxiliares() {
   categorias = await invocar('listar', { recurso: 'categorias' });
 }
 
-function valorVisible(registro, clave) {
-  const valor = registro[clave];
-  if (clave === 'precio') {
-    return valor == null
-      ? 'Consultar'
-      : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(valor);
-  }
-  if (clave === 'stock') return registro.controla_stock ? String(valor ?? 0) : 'Sin control';
-  if (clave === 'estado' && valor === 'borrador') return 'No publicado';
-  if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
-  if (clave === 'tipo_producto' && valor === 'fisico') return 'Producto físico';
-  return valor ?? '—';
-}
-
-function obtenerImagenPrincipal(registro) {
-  const imagenes = [...(registro.imagenes || [])].sort((primera, segunda) => primera.orden - segunda.orden);
-  return imagenes.find((imagen) => imagen.es_principal) || imagenes[0] || null;
-}
-
-function crearBotonAccion(texto, atributo, id) {
-  const boton = document.createElement('button');
-  boton.type = 'button';
-  boton.textContent = texto;
-  boton.dataset[atributo] = id;
-  return boton;
-}
-
 function actualizarPaginacionProductos(cantidad) {
   const paginacion = document.querySelector('[data-paginacion-admin="productos"]');
   const informacion = document.querySelector('[data-informacion-pagina-admin]');
@@ -263,7 +156,7 @@ function renderizarListado(recurso, registros) {
 
   cabecera.replaceChildren();
   const filaCabecera = document.createElement('tr');
-  COLUMNAS[recurso].forEach(({ texto }) => {
+  COLUMNAS_RECURSOS[recurso].forEach(({ texto }) => {
     const celda = document.createElement('th');
     celda.scope = 'col';
     celda.textContent = texto;
@@ -298,7 +191,7 @@ function renderizarListado(recurso, registros) {
 
   visibles.forEach((registro) => {
     const fila = document.createElement('tr');
-    COLUMNAS[recurso].forEach(({ clave }) => {
+    COLUMNAS_RECURSOS[recurso].forEach(({ clave }) => {
       const celda = document.createElement('td');
       if (clave === 'imagen_principal') {
         const imagenPrincipal = obtenerImagenPrincipal(registro);
@@ -360,27 +253,6 @@ async function cargarRecurso(recurso) {
     : undefined;
   const registros = await invocar('listar', { recurso, filtro_archivados: filtroArchivados });
   renderizarListado(recurso, registros);
-}
-
-function crearOpcion(valor, texto, seleccionada = false) {
-  const opcion = document.createElement('option');
-  opcion.value = valor;
-  opcion.textContent = texto;
-  opcion.selected = seleccionada;
-  return opcion;
-}
-
-function crearEtiqueta(definicion, asociadaAlCampo = false) {
-  const etiqueta = document.createElement(asociadaAlCampo ? 'label' : 'span');
-  etiqueta.textContent = definicion.etiqueta;
-  if (definicion.obligatorio) {
-    const obligatorio = document.createElement('b');
-    obligatorio.className = 'indicador-obligatorio';
-    obligatorio.textContent = ' *';
-    obligatorio.setAttribute('aria-label', 'Campo obligatorio');
-    etiqueta.append(obligatorio);
-  }
-  return etiqueta;
 }
 
 function actualizarCategoriasDisponibles() {
@@ -525,7 +397,7 @@ function abrirDialogo(recurso, registro = null) {
   registroEdicion = registro;
   tituloDialogo.textContent = registro ? `Editar ${registro.nombre || registro.titulo}` : 'Crear nuevo registro';
   camposFormulario.replaceChildren();
-  const definiciones = ESQUEMAS[recurso];
+  const definiciones = ESQUEMAS_RECURSOS[recurso];
   definiciones.filter((definicion) => !definicion.avanzado).forEach((definicion) => {
     if (recurso === 'productos' && registro && definicion.nombre === 'imagenes_nuevas') {
       camposFormulario.append(crearGestorImagenesProducto(registro));
@@ -556,7 +428,7 @@ function abrirDialogo(recurso, registro = null) {
 
 function obtenerDatosFormulario() {
   const datos = {};
-  ESQUEMAS[recursoDialogo].forEach((definicion) => {
+  ESQUEMAS_RECURSOS[recursoDialogo].forEach((definicion) => {
     const campo = formularioRecurso.elements[definicion.nombre];
     if (!campo || definicion.soloCreacion && idEdicion || definicion.tipo === 'file') return;
 
@@ -873,7 +745,7 @@ document.addEventListener('click', async (evento) => {
 
 document.querySelectorAll('[data-descripcion-recurso]').forEach((elemento) => {
   const recurso = elemento.closest('[data-panel-admin]')?.dataset.panelAdmin;
-  elemento.textContent = DESCRIPCIONES[recurso] || '';
+  elemento.textContent = DESCRIPCIONES_RECURSOS[recurso] || '';
 });
 
 document.querySelectorAll('[data-buscar-recurso]').forEach((campo) => {
