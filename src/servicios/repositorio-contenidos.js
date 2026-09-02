@@ -153,6 +153,36 @@ export async function obtenerProductosPublicados({ tipo } = {}) {
   return datos.map(normalizarProducto);
 }
 
+export async function obtenerSlugsProductosPublicados() {
+  if (!configuracionSupabaseDisponible()) {
+    return crearStickersDemostracion().map((producto) => producto.slug);
+  }
+
+  const cliente = obtenerClienteSupabase();
+  const slugs = [];
+  const tamanoLote = 500;
+
+  for (let inicio = 0; ; inicio += tamanoLote) {
+    const { data, error } = await cliente
+      .from('productos')
+      .select('slug')
+      .eq('estado', 'publicado')
+      .order('id')
+      .range(inicio, inicio + tamanoLote - 1);
+
+    // Un error debe impedir publicar un sitemap incompleto.
+    if (error) {
+      throw error;
+    }
+
+    slugs.push(...data.map((producto) => producto.slug));
+
+    if (data.length < tamanoLote) {
+      return slugs;
+    }
+  }
+}
+
 export async function obtenerProductoPorSlug(slug) {
   const producto = await ejecutarConRespaldo(
     `No se pudo obtener el producto ${slug}`,

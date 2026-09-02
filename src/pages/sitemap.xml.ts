@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { obtenerProductosPublicados } from '../servicios/repositorio-contenidos.js';
+import { obtenerSlugsProductosPublicados } from '../servicios/repositorio-contenidos.js';
 import { crearUrlAbsoluta, escaparXml } from '../servicios/seo';
 
 export const prerender = false;
@@ -25,8 +25,8 @@ function entradaSitemap(ruta: string, prioridad: string, frecuencia: string) {
 }
 
 export const GET: APIRoute = async () => {
-  const productos = await obtenerProductosPublicados();
-  const rutasProductos = [...new Set(productos.map((producto) => `/productos/${producto.slug}`))];
+  const slugs = await obtenerSlugsProductosPublicados();
+  const rutasProductos = [...new Set(slugs.map((slug) => `/productos/${slug}`))];
   const paginas = PAGINAS_PUBLICAS.map(({ ruta, prioridad, frecuencia }) =>
     entradaSitemap(ruta, prioridad, frecuencia),
   );
