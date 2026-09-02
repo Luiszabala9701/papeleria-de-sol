@@ -22,7 +22,7 @@ function crearStickersDemostracion() {
       sku: `ST-${String(numero).padStart(4, '0')}`,
       descripcion: `Diseño de sticker número ${numero} disponible para consultar por WhatsApp.`,
       tipo_producto: 'sticker',
-      precio: 100,
+      precio: 500,
       moneda: 'ARS',
       controla_stock: false,
       stock: null,

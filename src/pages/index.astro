@@ -8,6 +8,7 @@ import {
   obtenerSeccionesPublicadas,
 } from '../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
+import { crearUrlAbsoluta, escaparJsonLd } from '../servicios/seo';
 
 const [configuracion, secciones, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
@@ -34,40 +35,53 @@ const seccionDestacados: SeccionSitio = secciones.find((seccion) => seccion.clav
   orden: 2,
 };
 const destacados = productos.filter((producto) => producto.destacado).slice(0, 8);
-const escaparJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
-const urlInicio = new URL('/', Astro.site || Astro.url.origin).href;
-const logo = new URL('/marca/logo-papeleria-de-sol-transparente.png', Astro.site || Astro.url.origin).href;
-const descripcionSeo = 'Papelería creativa en CABA y GBA: stickers para cuadernos, agendas y notebook, plantillas y productos personalizados. Consultá por WhatsApp.';
+const urlInicio = crearUrlAbsoluta('/');
+const logo = crearUrlAbsoluta('/marca/logo-papeleria-de-sol-transparente.png');
+const descripcionSeo = 'Papelería creativa en CABA y GBA: stickers para cuadernos, agendas y notebook, regalos personalizados y pedidos por WhatsApp.';
+const redesSociales = [configuracion.instagram, configuracion.tiktok]
+  .filter((enlace): enlace is string => typeof enlace === 'string' && Boolean(enlace));
 
 const datosEstructurados = {
   '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
-  '@id': `${urlInicio}#papeleria-de-sol`,
-  name: 'Papelería de Sol',
-  description: descripcionSeo,
-  url: urlInicio,
-  logo,
-  email: configuracion.correo,
-  telephone: `+${configuracion.whatsapp}`,
-  currenciesAccepted: 'ARS',
-  areaServed: ['Ciudad Autónoma de Buenos Aires', 'Gran Buenos Aires'],
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'Ciudad Autónoma de Buenos Aires',
-    addressCountry: 'AR',
-  },
-  sameAs: [configuracion.instagram, configuracion.tiktok].filter(Boolean),
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${urlInicio}#organizacion`,
+      name: 'Papelería de Sol',
+      description: descripcionSeo,
+      url: urlInicio,
+      logo,
+      image: crearUrlAbsoluta('/stickers/1.webp'),
+      email: configuracion.correo,
+      telephone: configuracion.whatsapp ? `+${configuracion.whatsapp}` : undefined,
+      currenciesAccepted: 'ARS',
+      areaServed: [
+        { '@type': 'City', name: 'Ciudad Autónoma de Buenos Aires' },
+        { '@type': 'AdministrativeArea', name: 'Gran Buenos Aires' },
+      ],
+      sameAs: redesSociales,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${urlInicio}#sitio-web`,
+      name: 'Papelería de Sol',
+      url: urlInicio,
+      inLanguage: 'es-AR',
+      publisher: { '@id': `${urlInicio}#organizacion` },
+    },
+  ],
 };
 ---
 
 <DisenoPrincipal
-  titulo="Papelería creativa y stickers en CABA y GBA | Papelería de Sol"
+  titulo="Papelería creativa y stickers en CABA | Papelería de Sol"
   descripcion={descripcionSeo}
   configuracion={configuracion}
   imagenSocialAlt="Stickers y papelería creativa de Papelería de Sol"
+  palabrasClave="papelería creativa CABA, papelería online GBA, stickers para cuadernos, stickers para agendas, regalos personalizados, pedidos por WhatsApp"
 >
   <Fragment slot="cabecera">
-    <script is:inline type="application/ld+json" set:html={escaparJson(datosEstructurados)}></script>
+    <script is:inline type="application/ld+json" set:html={escaparJsonLd(datosEstructurados)}></script>
   </Fragment>
 
   <section class="contenedor hero">

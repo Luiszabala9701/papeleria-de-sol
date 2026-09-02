@@ -7,6 +7,12 @@ import BotonWhatsAppFlotante from '../componentes/BotonWhatsAppFlotante.astro';
 import AvisoWhatsApp from '../componentes/AvisoWhatsApp.astro';
 import ModalesLegales from '../componentes/ModalesLegales.astro';
 import { esColorHexadecimal, obtenerEstiloGlobal } from '../servicios/estilos-visuales';
+import {
+  crearDescripcionSeo,
+  crearTituloSeo,
+  crearUrlAbsoluta,
+  PALABRAS_CLAVE_SITIO,
+} from '../servicios/seo';
 
 const {
   titulo = 'Papelería de Sol',
@@ -14,13 +20,16 @@ const {
   configuracion,
   imagenSocial = '/stickers/1.webp',
   imagenSocialAlt = titulo,
+  palabrasClave = PALABRAS_CLAVE_SITIO,
   ocultarNavegacion = false,
   noIndexar = false,
 } = Astro.props;
 
 const rutaActual = Astro.url.pathname;
-const urlCanonica = new URL(Astro.url.pathname, Astro.site || Astro.url.origin);
-const imagenAbsoluta = new URL(imagenSocial, Astro.site || Astro.url.origin);
+const tituloSeo = crearTituloSeo(titulo);
+const descripcionSeo = crearDescripcionSeo(descripcion);
+const urlCanonica = crearUrlAbsoluta(Astro.url.pathname);
+const imagenAbsoluta = crearUrlAbsoluta(imagenSocial);
 const colorTema = esColorHexadecimal(configuracion?.color_principal)
   ? configuracion.color_principal
   : '#98b7ff';
@@ -49,32 +58,35 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
         window.addEventListener('orientationchange', actualizarVistaMovil);
       })();
     </script>
+    <meta name="application-name" content="Papelería de Sol" />
     <meta name="theme-color" content={colorTema} />
-    <meta name="description" content={descripcion} />
+    <meta name="description" content={descripcionSeo} />
+    <meta name="keywords" content={palabrasClave} />
     {noIndexar ? (
       <meta name="robots" content="noindex, nofollow" />
     ) : (
       <meta name="robots" content="index, follow, max-image-preview:large" />
     )}
     <link rel="canonical" href={urlCanonica} />
+    <link rel="sitemap" type="application/xml" title="Sitemap de Papelería de Sol" href="/sitemap.xml" />
     <link rel="icon" href="/marca/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/marca/logo-papeleria-de-sol.png" />
 
     <meta property="og:locale" content="es_AR" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Papelería de Sol" />
-    <meta property="og:title" content={titulo} />
-    <meta property="og:description" content={descripcion} />
+    <meta property="og:title" content={tituloSeo} />
+    <meta property="og:description" content={descripcionSeo} />
     <meta property="og:url" content={urlCanonica} />
     <meta property="og:image" content={imagenAbsoluta} />
     <meta property="og:image:alt" content={imagenSocialAlt} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={titulo} />
-    <meta name="twitter:description" content={descripcion} />
+    <meta name="twitter:title" content={tituloSeo} />
+    <meta name="twitter:description" content={descripcionSeo} />
     <meta name="twitter:image" content={imagenAbsoluta} />
     <meta name="twitter:image:alt" content={imagenSocialAlt} />
 
-    <title>{titulo}</title>
+    <title>{tituloSeo}</title>
     <slot name="cabecera" />
   </head>
   <body id="inicio-pagina" style={estiloGlobal}>

@@ -83,7 +83,6 @@ const CLAVES_TEXTO_PUBLICO = [
   'producto_destacado', 'producto_tipo_fisico', 'producto_agregar',
   'producto_agregar_seleccion', 'producto_sku', 'producto_categoria',
   'producto_disponibilidad', 'producto_en_stock', 'producto_consultar',
-  'producto_aviso_whatsapp',
   'carrito_etiqueta', 'carrito_titulo', 'carrito_vacio', 'carrito_explorar_catalogo',
   'carrito_productos_seleccionados', 'carrito_total', 'carrito_continuar_whatsapp',
   'carrito_vaciar', 'carrito_aclaracion', 'carrito_cantidad', 'carrito_agregado',

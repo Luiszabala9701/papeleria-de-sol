@@ -26,3 +26,10 @@ El sitio local queda disponible en `http://127.0.0.1:4321`. La tienda funciona c
 
 - [Manual para clientes](documentacion/manuales/manual-uso-clientes.docx)
 - [Manual para administración](documentacion/manuales/manual-uso-administracion.docx)
+
+## Base de datos
+
+La estructura inicial de Supabase está reunida en
+[`supabase/migrations/20260901000000_esquema_base_completo.sql`](supabase/migrations/20260901000000_esquema_base_completo.sql).
+Es una base para crear un proyecto Supabase nuevo y vacío; no debe ejecutarse
+sobre las bases de pruebas ni de producción existentes.
