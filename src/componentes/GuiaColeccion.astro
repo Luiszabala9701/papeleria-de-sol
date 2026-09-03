@@ -1,0 +1,40 @@
+---
+import type { TipoProducto } from '../tipos/contenidos';
+interface Props { tipo: TipoProducto; }
+const guias = {
+  sticker: {
+    titulo: 'Stickers para cuadernos, agendas y notebooks',
+    descripcion: 'Dale tu estilo a tus útiles y accesorios con los stickers de Papelería de Sol. También conocidos como calcomanías o pegatinas, podés elegirlos por diseño y cantidad. Consultá las medidas y el material de cada modelo antes de elegir dónde pegarlo.',
+    enlace: '/productos-fisicos',
+    textoEnlace: 'Conocé también nuestros cuadernos y llaveros',
+  },
+  fisico: {
+    titulo: 'Papelería y regalos personalizados en Buenos Aires',
+    descripcion: 'Explorá los llaveros acrílicos, cuadernos A6 y demás productos de Papelería de Sol. Cada ficha muestra el precio y, cuando corresponde, la disponibilidad. Si buscás un regalo personalizado, consultanos qué opciones podemos preparar.',
+    enlace: '/stickers',
+    textoEnlace: 'Elegí stickers para acompañar tu pedido',
+  },
+  plantilla: {
+    titulo: 'Plantillas para organizar, estudiar y crear',
+    descripcion: 'Consultá por las plantillas creativas de Papelería de Sol. La ficha de cada diseño publicado indica sus características; por WhatsApp podés confirmar el formato, cómo se entrega y si admite personalización. La disponibilidad se muestra en esta sección.',
+    enlace: '/productos-fisicos',
+    textoEnlace: 'Recorré también nuestra papelería y regalos',
+  },
+};
+const guia = guias[Astro.props.tipo];
+---
+<section class="contenedor guia-coleccion">
+  <h2>{guia.titulo}</h2>
+  <p>{guia.descripcion}</p>
+  <p>
+    Atendemos pedidos en CABA y GBA. Revisá <a href="/ayuda">cómo comprar por WhatsApp</a>
+    para coordinar el pago y el retiro o envío.
+  </p>
+  <a href={guia.enlace}>{guia.textoEnlace} →</a>
+</section>
+<style>
+  .guia-coleccion { padding-bottom: clamp(2rem, 5vw, 4rem); }
+  h2 { font-size: clamp(1.4rem, 2.5vw, 2rem); line-height: 1.3; }
+  p { max-width: 58rem; color: var(--tinta-suave); }
+  a { color: var(--azul-profundo); text-decoration: underline; text-underline-offset: 0.2em; }
+</style>

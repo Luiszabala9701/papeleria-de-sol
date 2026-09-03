@@ -10,6 +10,7 @@
     "build": "astro build",
     "previsualizar": "astro preview",
     "verificar": "astro check",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "optimizar:stickers": "node scripts/optimizar-stickers.mjs"
   },
   "dependencies": {

@@ -1,6 +1,8 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import ListadoProductosFiltrable from '../../componentes/ListadoProductosFiltrable.astro';
+import GuiaColeccion from '../../componentes/GuiaColeccion.astro';
+import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
 import type { ConfiguracionSitio, Producto, TipoProducto } from '../../tipos/contenidos';
 import {
   obtenerCategoriasPublicadas,
@@ -14,14 +16,17 @@ const [configuracion, productos, categorias] = await Promise.all([
   obtenerProductosPublicados({ tipo: 'sticker' }),
   obtenerCategoriasPublicadas(),
 ]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: TipoProducto }[]];
+const paginaCatalogo = obtenerPaginaCatalogo(productos, Astro.url.searchParams);
 ---
 
 <DisenoPrincipal
-  titulo="Stickers en CABA y GBA | Papelería de Sol"
-  descripcion="Comprá stickers para cuadernos, agendas y notebook en CABA y GBA. Consultá precio, disponibilidad y envío por WhatsApp."
+  titulo={tituloPaginaCatalogo('sticker', paginaCatalogo.pagina)}
+  descripcion={`Stickers y calcomanías de Papelería de Sol para cuadernos, agendas y notebooks. Pedidos en CABA y GBA por WhatsApp.${paginaCatalogo.pagina > 1 ? ` Página ${paginaCatalogo.pagina}.` : ''}`}
+  rutaCanonica={crearUrlCatalogo(Astro.url.pathname, paginaCatalogo)}
+  noIndexar={paginaCatalogo.tieneFiltros}
   configuracion={configuracion}
   imagenSocialAlt="Stickers de Papelería de Sol"
-  palabrasClave="stickers CABA, stickers Buenos Aires, stickers GBA, stickers para cuadernos, stickers para agendas, stickers para notebook"
+  palabrasClave="stickers, calcomanías, pegatinas, stickers para cuadernos, stickers para agendas, stickers para notebooks, stickers Buenos Aires, Papelería de Sol"
 >
   <header class="contenedor cabecera-pagina">
     <p class="etiqueta">{obtenerTextoPublico(configuracion, 'catalogo_etiqueta')}</p>
@@ -36,4 +41,5 @@ const [configuracion, productos, categorias] = await Promise.all([
     tipo="sticker"
     etiquetaAria="Filtros de stickers"
   />
+  {paginaCatalogo.pagina === 1 && !paginaCatalogo.tieneFiltros && <GuiaColeccion tipo="sticker" />}
 </DisenoPrincipal>

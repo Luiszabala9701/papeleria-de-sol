@@ -1,3 +1,6 @@
+import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../servicios/catalogo.js';
+import { crearTituloSeo, crearUrlAbsoluta } from '../servicios/seo';
+
 const datosCatalogo = document.querySelector('#datos-catalogo');
 const galeria = document.querySelector('#galeria-catalogo');
 const formularioBusqueda = document.querySelector('#formulario-busqueda-catalogo');
@@ -8,25 +11,19 @@ const informacionPagina = document.querySelector('#informacion-pagina-catalogo')
 const botonAnterior = document.querySelector('#pagina-anterior');
 const botonSiguiente = document.querySelector('#pagina-siguiente');
 
-const PRODUCTOS_POR_PAGINA = 48;
 let paginaActual = 1;
 let productos = [];
 let textos = {};
+let tipoCatalogo = 'sticker';
 
 try {
   const datos = JSON.parse(datosCatalogo?.textContent || '{}');
   productos = Array.isArray(datos) ? datos : Array.isArray(datos.productos) ? datos.productos : [];
   textos = datos.textos || {};
+  tipoCatalogo = datos.tipo || 'sticker';
 } catch {
   productos = [];
   textos = {};
-}
-
-function textoNormalizado(texto) {
-  return String(texto || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
 }
 
 function imagenSegura(url) {
@@ -122,59 +119,72 @@ function crearTarjeta(producto) {
   return tarjeta;
 }
 
-function productosFiltrados() {
-  const termino = textoNormalizado(buscador?.value);
-  const categoria = filtroCategoria?.value || '';
-
-  return productos.filter((producto) => {
-    const coincideCategoria = !categoria || producto.categoria?.id === categoria;
-    const texto = textoNormalizado(
-      [producto.nombre, producto.sku, producto.descripcion].join(' '),
-    );
-    const coincideBusqueda = !termino || texto.includes(termino);
-    return coincideCategoria && coincideBusqueda;
-  });
+function actualizarEnlace(enlace, pagina, estado, habilitado) {
+  if (!enlace) return;
+  if (habilitado) {
+    enlace.href = crearUrlCatalogo(location.pathname, { ...estado, pagina });
+    enlace.removeAttribute('aria-disabled');
+    enlace.removeAttribute('tabindex');
+  } else {
+    enlace.removeAttribute('href');
+    enlace.setAttribute('aria-disabled', 'true');
+    enlace.tabIndex = -1;
+  }
 }
 
-function actualizarDireccion() {
-  const parametros = new URLSearchParams();
-  if (buscador?.value) parametros.set('buscar', buscador.value);
-  if (filtroCategoria?.value) parametros.set('categoria', filtroCategoria.value);
-  const consulta = parametros.toString();
-  history.replaceState(null, '', `${location.pathname}${consulta ? `?${consulta}` : ''}`);
-}
-
-function renderizar() {
+function renderizar(reconstruir = true) {
   if (!galeria) return;
 
-  const filtrados = productosFiltrados();
-  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PRODUCTOS_POR_PAGINA));
-  paginaActual = Math.min(paginaActual, totalPaginas);
-  const inicio = (paginaActual - 1) * PRODUCTOS_POR_PAGINA;
-  const visibles = filtrados.slice(inicio, inicio + PRODUCTOS_POR_PAGINA);
+  const parametros = new URLSearchParams({
+    buscar: buscador?.value || '',
+    categoria: filtroCategoria?.value || '',
+    pagina: String(paginaActual),
+  });
+  const estado = obtenerPaginaCatalogo(productos, parametros);
+  const { visibles, totalPaginas, totalProductos } = estado;
+  paginaActual = estado.pagina;
 
-  galeria.replaceChildren();
-  if (visibles.length === 0) {
-    const vacio = document.createElement('div');
-    vacio.className = 'estado-vacio';
-    vacio.style.gridColumn = '1 / -1';
-    const texto = document.createElement('p');
-    texto.textContent = textos.resultadosVacios || 'No encontramos productos con esos filtros.';
-    vacio.append(texto);
-    galeria.append(vacio);
-  } else {
-    const fragmento = document.createDocumentFragment();
-    visibles.forEach((producto) => fragmento.append(crearTarjeta(producto)));
-    galeria.append(fragmento);
+  if (reconstruir) {
+    galeria.replaceChildren();
+    if (visibles.length === 0) {
+      const vacio = document.createElement('div');
+      vacio.className = 'estado-vacio';
+      vacio.style.gridColumn = '1 / -1';
+      const texto = document.createElement('p');
+      texto.textContent = textos.resultadosVacios || 'No encontramos productos con esos filtros.';
+      vacio.append(texto);
+      galeria.append(vacio);
+    } else {
+      const fragmento = document.createDocumentFragment();
+      visibles.forEach((producto) => fragmento.append(crearTarjeta(producto)));
+      galeria.append(fragmento);
+    }
   }
 
   if (informacionResultados) {
-    informacionResultados.textContent = `${filtrados.length} producto${filtrados.length === 1 ? '' : 's'}`;
+    informacionResultados.textContent = `${totalProductos} producto${totalProductos === 1 ? '' : 's'}`;
   }
   if (informacionPagina) informacionPagina.textContent = `${textos.pagina || 'Página'} ${paginaActual} de ${totalPaginas}`;
-  if (botonAnterior) botonAnterior.disabled = paginaActual <= 1;
-  if (botonSiguiente) botonSiguiente.disabled = paginaActual >= totalPaginas;
-  actualizarDireccion();
+  actualizarEnlace(botonAnterior, paginaActual - 1, estado, paginaActual > 1);
+  actualizarEnlace(botonSiguiente, paginaActual + 1, estado, paginaActual < totalPaginas);
+  if (reconstruir) {
+    const ruta = crearUrlCatalogo(location.pathname, estado);
+    history.pushState(null, '', ruta);
+    document.title = crearTituloSeo(tituloPaginaCatalogo(tipoCatalogo, paginaActual));
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', crearUrlAbsoluta(ruta));
+    document.querySelector('meta[name="robots"]')?.setAttribute('content', estado.tieneFiltros ? 'noindex, follow' : 'index, follow, max-image-preview:large');
+    const datosColeccion = document.querySelector('#datos-coleccion');
+    if (datosColeccion) {
+      const coleccion = JSON.parse(datosColeccion.textContent);
+      coleccion.name = tituloPaginaCatalogo(tipoCatalogo, paginaActual);
+      coleccion.url = crearUrlAbsoluta(ruta);
+      coleccion.mainEntity.itemListElement = visibles.map((producto, indice) => ({
+        '@type': 'ListItem', position: indice + 1, name: producto.nombre,
+        url: crearUrlAbsoluta(`/productos/${producto.slug}`),
+      }));
+      datosColeccion.textContent = JSON.stringify(coleccion);
+    }
+  }
 }
 
 function reiniciarYRenderizar() {
@@ -183,6 +193,7 @@ function reiniciarYRenderizar() {
 }
 
 const parametros = new URLSearchParams(location.search);
+paginaActual = obtenerPaginaCatalogo(productos, parametros).pagina;
 if (buscador) buscador.value = parametros.get('buscar') || '';
 if (filtroCategoria) filtroCategoria.value = parametros.get('categoria') || '';
 
@@ -192,16 +203,24 @@ formularioBusqueda?.addEventListener('submit', (evento) => {
 });
 filtroCategoria?.addEventListener('change', reiniciarYRenderizar);
 
-botonAnterior?.addEventListener('click', () => {
+botonAnterior?.addEventListener('click', (evento) => {
+  if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+  evento.preventDefault();
+  if (botonAnterior.getAttribute('aria-disabled') === 'true') return;
   paginaActual -= 1;
   renderizar();
   document.querySelector('#catalogo-resultados')?.scrollIntoView({ behavior: 'smooth' });
 });
 
-botonSiguiente?.addEventListener('click', () => {
+botonSiguiente?.addEventListener('click', (evento) => {
+  if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey) return;
+  evento.preventDefault();
+  if (botonSiguiente.getAttribute('aria-disabled') === 'true') return;
   paginaActual += 1;
   renderizar();
   document.querySelector('#catalogo-resultados')?.scrollIntoView({ behavior: 'smooth' });
 });
 
-renderizar();
+window.addEventListener('popstate', () => location.reload());
+
+renderizar(false);

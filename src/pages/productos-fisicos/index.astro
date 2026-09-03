@@ -1,6 +1,8 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import ListadoProductosFiltrable from '../../componentes/ListadoProductosFiltrable.astro';
+import GuiaColeccion from '../../componentes/GuiaColeccion.astro';
+import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
 import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
@@ -14,14 +16,17 @@ const [configuracion, productos, categorias] = await Promise.all([
   obtenerProductosPublicados({ tipo: 'fisico' }),
   obtenerCategoriasPublicadas(),
 ]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: 'fisico' }[]];
+const paginaCatalogo = obtenerPaginaCatalogo(productos, Astro.url.searchParams);
 ---
 
 <DisenoPrincipal
-  titulo="Regalos personalizados en CABA | Papelería de Sol"
-  descripcion="Descubrí regalos personalizados, cuadernos y papelería creativa en CABA y GBA. Consultá disponibilidad, retiro o envío por WhatsApp."
+  titulo={tituloPaginaCatalogo('fisico', paginaCatalogo.pagina)}
+  descripcion="Llaveros acrílicos, cuadernos A6 y regalos de Papelería de Sol. Consultá stock y personalización por WhatsApp. Retiro o envío a coordinar en CABA y GBA."
+  rutaCanonica={crearUrlCatalogo(Astro.url.pathname, paginaCatalogo)}
+  noIndexar={paginaCatalogo.tieneFiltros}
   configuracion={configuracion}
   imagenSocialAlt="Productos físicos personalizados de Papelería de Sol"
-  palabrasClave="regalos personalizados, papelería creativa, cuadernos creativos, agendas creativas, papelería para estudiantes, CABA, GBA"
+  palabrasClave="llaveros acrílicos, cuadernos A6, regalos personalizados, papelería para regalar, papelería creativa Buenos Aires, CABA, GBA, Papelería de Sol"
 >
   <header class="contenedor cabecera-pagina">
     <p class="etiqueta">{obtenerTextoPublico(configuracion, 'fisicos_etiqueta')}</p>
@@ -49,6 +54,7 @@ const [configuracion, productos, categorias] = await Promise.all([
       </div>
   </section>
   )}
+  {paginaCatalogo.pagina === 1 && !paginaCatalogo.tieneFiltros && <GuiaColeccion tipo="fisico" />}
 </DisenoPrincipal>
 
 <style>

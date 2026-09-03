@@ -21,14 +21,16 @@ const {
   imagenSocial = '/stickers/1.webp',
   imagenSocialAlt = titulo,
   palabrasClave = PALABRAS_CLAVE_SITIO,
+  marcaPrimero = false,
+  rutaCanonica = Astro.url.pathname,
   ocultarNavegacion = false,
   noIndexar = false,
 } = Astro.props;
 
 const rutaActual = Astro.url.pathname;
-const tituloSeo = crearTituloSeo(titulo);
+const tituloSeo = crearTituloSeo(titulo, marcaPrimero);
 const descripcionSeo = crearDescripcionSeo(descripcion);
-const urlCanonica = crearUrlAbsoluta(Astro.url.pathname);
+const urlCanonica = crearUrlAbsoluta(rutaCanonica);
 const imagenAbsoluta = crearUrlAbsoluta(imagenSocial);
 const colorTema = esColorHexadecimal(configuracion?.color_principal)
   ? configuracion.color_principal
@@ -63,7 +65,7 @@ const estiloGlobal = obtenerEstiloGlobal(configuracion);
     <meta name="description" content={descripcionSeo} />
     <meta name="keywords" content={palabrasClave} />
     {noIndexar ? (
-      <meta name="robots" content="noindex, nofollow" />
+      <meta name="robots" content="noindex, follow" />
     ) : (
       <meta name="robots" content="index, follow, max-image-preview:large" />
     )}

@@ -1,0 +1,60 @@
+<section class="contenedor presentacion-tienda" aria-labelledby="titulo-tienda">
+  <header>
+    <h2 id="titulo-tienda">Papelería de Sol: papelería creativa en CABA y GBA</h2>
+    <p>
+      En Papelería de Sol encontrás stickers, cuadernos y llaveros para regalar o darle tu estilo
+      a lo que usás todos los días. Elegí tus favoritos en nuestro catálogo de papelería online
+      y coordiná tu pedido por WhatsApp en la Ciudad de Buenos Aires y el Gran Buenos Aires.
+    </p>
+  </header>
+  <div class="colecciones-tienda">
+    <article>
+      <h3><a href="/stickers">Stickers y calcomanías</a></h3>
+      <p>
+        Descubrí pegatinas para decorar cuadernos, agendas y notebooks. Buscá stickers por nombre
+        o número y elegí cuántos querés de cada diseño.
+      </p>
+      <a class="enlace-coleccion" href="/stickers">Explorar el catálogo de stickers →</a>
+    </article>
+    <article>
+      <h3><a href="/productos-fisicos">Llaveros, cuadernos y regalos</a></h3>
+      <p>
+        Conocé nuestros llaveros acrílicos, cuadernos A6 y productos de papelería para regalar.
+        Consultá el stock y las opciones de regalos personalizados antes de confirmar tu pedido.
+      </p>
+      <a class="enlace-coleccion" href="/productos-fisicos">Ver productos de papelería →</a>
+    </article>
+    <article>
+      <h3><a href="/plantillas">Plantillas para tus proyectos</a></h3>
+      <p>
+        Visitá la sección de plantillas para organizar, estudiar y crear. Consultanos por los
+        diseños disponibles, su formato y las posibilidades de personalización.
+      </p>
+      <a class="enlace-coleccion" href="/plantillas">Consultar plantillas creativas →</a>
+    </article>
+  </div>
+  <p class="ayuda-tienda">
+    ¿Es tu primer pedido? Conocé <a href="/ayuda">cómo comprar en Papelería de Sol por WhatsApp</a>.
+    Allí te explicamos cómo armar tu selección y coordinar disponibilidad, pago, retiro o envío.
+  </p>
+</section>
+
+<style>
+  .presentacion-tienda { padding-block: 1rem clamp(2rem, 5vw, 4rem); }
+  header { max-width: 58rem; }
+  h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); line-height: 1.2; }
+  p { color: var(--tinta-suave); }
+  .colecciones-tienda {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  article { display: flex; flex-direction: column; padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid var(--borde); border-radius: var(--radio); }
+  h3 { font-size: 1.1rem; line-height: 1.4; }
+  h3 a { color: inherit; }
+  .enlace-coleccion, .ayuda-tienda a { color: var(--azul-profundo); text-decoration: underline; text-underline-offset: 0.2em; }
+  .enlace-coleccion { margin-top: auto; align-self: flex-start; }
+  .ayuda-tienda { margin-top: 1.5rem; max-width: 58rem; }
+  @media (max-width: 48rem) { .colecciones-tienda { grid-template-columns: 1fr; } }
+</style>

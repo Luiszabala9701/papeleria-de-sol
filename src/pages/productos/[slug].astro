@@ -8,7 +8,7 @@ import {
 } from '../../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 import {
-  crearDescripcionSeo,
+  crearDescripcionProductoSeo,
   crearUrlAbsoluta,
   escaparJsonLd,
 } from '../../servicios/seo';
@@ -35,10 +35,7 @@ const precio = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 }).format(producto.precio);
 const tituloSeo = producto.meta_titulo?.trim() || `${producto.nombre} | Papelería de Sol`;
-const descripcionSeo = crearDescripcionSeo(
-  producto.meta_descripcion?.trim()
-    || `Comprá ${producto.nombre} en Papelería de Sol. ${producto.descripcion} Consultá disponibilidad y entrega en CABA y GBA por WhatsApp.`,
-);
+const descripcionSeo = crearDescripcionProductoSeo(producto);
 const urlProducto = crearUrlAbsoluta(Astro.url.pathname);
 const stockDisponible = producto.controla_stock
   ? Math.max(0, Math.floor(Number(producto.stock) || 0))
@@ -88,7 +85,7 @@ const datosEstructurados = {
         price: Number(producto.precio),
         availability: disponibilidadEstructurada,
         itemCondition: 'https://schema.org/NewCondition',
-        seller: { '@id': `${crearUrlAbsoluta('/')}#organizacion` },
+        seller: { '@type': 'Organization', '@id': `${crearUrlAbsoluta('/')}#organizacion`, name: 'Papelería de Sol', url: crearUrlAbsoluta('/') },
       },
     },
     {
@@ -175,6 +172,15 @@ const datosEstructurados = {
       </button>
     </div>
   </article>
+  <nav class="contenedor enlaces-producto" aria-label="Seguir explorando">
+    <a href={coleccion.ruta}>Ver más {coleccion.nombre.toLocaleLowerCase('es-AR')} de Papelería de Sol</a>
+    <a href="/ayuda">Cómo comprar por WhatsApp</a>
+  </nav>
   <script is:inline src={rutaScriptGaleria}></script>
   <script is:inline src={rutaScriptCantidad}></script>
 </DisenoPrincipal>
+
+<style>
+  .enlaces-producto { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; padding-bottom: 2rem; }
+  .enlaces-producto a { color: var(--azul-profundo); text-decoration: underline; text-underline-offset: 0.2em; }
+</style>

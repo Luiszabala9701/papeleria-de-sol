@@ -793,7 +793,8 @@ h3 {
   font-weight: 750;
 }
 
-.boton-paginacion:disabled {
+.boton-paginacion:disabled,
+.boton-paginacion[aria-disabled="true"] {
   opacity: 0.4;
   cursor: not-allowed;
 }

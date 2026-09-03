@@ -1,6 +1,8 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import ListadoProductosFiltrable from '../../componentes/ListadoProductosFiltrable.astro';
+import GuiaColeccion from '../../componentes/GuiaColeccion.astro';
+import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
 import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
@@ -14,14 +16,17 @@ const [configuracion, plantillas, categorias] = await Promise.all([
   obtenerProductosPublicados({ tipo: 'plantilla' }),
   obtenerCategoriasPublicadas(),
 ]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: 'plantilla' }[]];
+const paginaCatalogo = obtenerPaginaCatalogo(plantillas, Astro.url.searchParams);
 ---
 
 <DisenoPrincipal
-  titulo="Plantillas imprimibles en Argentina | Papelería de Sol"
-  descripcion="Descubrí plantillas digitales imprimibles y editables para organizar, estudiar y crear. Consultá por WhatsApp desde Argentina."
+  titulo={tituloPaginaCatalogo('plantilla', paginaCatalogo.pagina)}
+  descripcion="Plantillas creativas de Papelería de Sol para organizar, estudiar y crear. Consultá diseños disponibles, formatos y personalización por WhatsApp."
+  rutaCanonica={crearUrlCatalogo(Astro.url.pathname, paginaCatalogo)}
+  noIndexar={paginaCatalogo.tieneFiltros}
   configuracion={configuracion}
   imagenSocialAlt="Plantillas digitales de Papelería de Sol"
-  palabrasClave="plantillas imprimibles, plantillas digitales Argentina, planificadores imprimibles, agenda imprimible, imprimibles para organizar"
+  palabrasClave="plantillas creativas, plantillas para organizar, diseños personalizados, plantillas para estudiar, Papelería de Sol"
 >
   <header class="contenedor cabecera-pagina">
     <p class="etiqueta">{obtenerTextoPublico(configuracion, 'plantillas_etiqueta')}</p>
@@ -49,6 +54,7 @@ const [configuracion, plantillas, categorias] = await Promise.all([
       </div>
   </section>
   )}
+  {paginaCatalogo.pagina === 1 && !paginaCatalogo.tieneFiltros && <GuiaColeccion tipo="plantilla" />}
 </DisenoPrincipal>
 
 <style>

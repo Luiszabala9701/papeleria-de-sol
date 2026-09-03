@@ -1,15 +1,25 @@
+import type { Producto } from '../tipos/contenidos';
+
 export const URL_SITIO_PRINCIPAL = 'https://papeleriadesol.com.ar';
 
+export const NOMBRE_SITIO = 'Papelería de Sol';
+export const NOMBRES_ALTERNATIVOS_SITIO = ['Papeleria de Sol', 'papeleriadesol', 'papeleriadesol.com.ar'];
+
 export const PALABRAS_CLAVE_SITIO = [
+  NOMBRE_SITIO,
   'papelería creativa',
   'stickers CABA',
   'stickers GBA',
   'papelería personalizada',
   'regalos personalizados',
   'comprar por WhatsApp',
+  'calcomanías',
+  'pegatinas para cuadernos',
+  'llaveros acrílicos',
+  'cuadernos A6',
 ].join(', ');
 
-const MARCA = 'Papelería de Sol';
+const MARCA = NOMBRE_SITIO;
 const SUFIJO_MARCA = ` | ${MARCA}`;
 const LONGITUD_MAXIMA_TITULO = 60;
 const LONGITUD_MAXIMA_DESCRIPCION = 160;
@@ -29,8 +39,9 @@ function recortarEnPalabra(texto: string, longitudMaxima: number) {
   return `${recorte.slice(0, limite).trimEnd()}…`;
 }
 
-export function crearTituloSeo(titulo: string) {
+export function crearTituloSeo(titulo: string, marcaPrimero = false) {
   const tituloSinMarca = normalizarTexto(titulo)
+    .replace(/^Papelería de Sol\s*\|\s*/i, '')
     .replace(/\s*\|\s*Papelería de Sol\s*$/i, '')
     .trim();
 
@@ -39,11 +50,29 @@ export function crearTituloSeo(titulo: string) {
   }
 
   const longitudDisponible = LONGITUD_MAXIMA_TITULO - SUFIJO_MARCA.length;
-  return `${recortarEnPalabra(tituloSinMarca, longitudDisponible)}${SUFIJO_MARCA}`;
+  const detalle = recortarEnPalabra(tituloSinMarca, longitudDisponible);
+  return marcaPrimero ? `${MARCA} | ${detalle}` : `${detalle}${SUFIJO_MARCA}`;
 }
 
 export function crearDescripcionSeo(descripcion: string) {
   return recortarEnPalabra(normalizarTexto(descripcion), LONGITUD_MAXIMA_DESCRIPCION);
+}
+
+export function crearDescripcionProductoSeo(producto: Pick<Producto, 'nombre' | 'descripcion' | 'meta_descripcion' | 'tipo_producto'>) {
+  if (producto.meta_descripcion?.trim()) {
+    return crearDescripcionSeo(producto.meta_descripcion);
+  }
+
+  const nombre = recortarEnPalabra(normalizarTexto(producto.nombre), 70);
+  const cierre = ' Consultá por WhatsApp en CABA y GBA.';
+  const descripcion = normalizarTexto(producto.descripcion || 'Consultá las características y la disponibilidad de este producto.');
+  const esDescripcionGenerica = producto.tipo_producto === 'sticker'
+    && /^Diseño de sticker número \d+ disponible para consultar por WhatsApp\.?$/i.test(descripcion);
+  const resumen = esDescripcionGenerica
+    ? 'Sticker para decorar cuadernos, agendas y notebooks.'
+    : descripcion;
+  const espacioResumen = LONGITUD_MAXIMA_DESCRIPCION - nombre.length - cierre.length - 2;
+  return `${nombre}. ${recortarEnPalabra(resumen, espacioResumen)}${cierre}`;
 }
 
 export function crearUrlAbsoluta(ruta: string | URL) {

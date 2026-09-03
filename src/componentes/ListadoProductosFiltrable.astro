@@ -2,7 +2,8 @@
 import TarjetaProducto from './TarjetaProducto.astro';
 import type { ConfiguracionSitio, Producto, TipoProducto } from '../tipos/contenidos';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
-import rutaScriptListado from '../scripts/catalogo.js?url&no-inline';
+import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../servicios/catalogo.js';
+import { crearUrlAbsoluta, escaparJsonLd } from '../servicios/seo';
 
 interface Props {
   productos: Producto[];
@@ -13,7 +14,9 @@ interface Props {
 }
 
 const { productos, categorias, configuracion, tipo, etiquetaAria } = Astro.props;
-const productosIniciales = productos.slice(0, 48);
+const estado = obtenerPaginaCatalogo(productos, Astro.url.searchParams);
+const ruta = Astro.url.pathname;
+const enlacePagina = (pagina: number) => crearUrlCatalogo(ruta, { ...estado, pagina });
 const categoriasDelTipo = categorias.filter((categoria) => categoria.tipo_producto === tipo);
 const nombreTipo = tipo === 'fisico'
   ? 'productos físicos'
@@ -22,6 +25,7 @@ const nombreTipo = tipo === 'fisico'
     : 'stickers';
 const datosSeguros = JSON.stringify({
   productos,
+  tipo,
   textos: {
     tipoFisico: obtenerTextoPublico(configuracion, 'producto_tipo_fisico'),
     agregar: obtenerTextoPublico(configuracion, 'producto_agregar'),
@@ -29,16 +33,34 @@ const datosSeguros = JSON.stringify({
     pagina: 'Página',
   },
 }).replace(/</g, '\\u003c');
+const datosColeccion = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: tituloPaginaCatalogo(tipo, estado.pagina),
+  url: crearUrlAbsoluta(enlacePagina(estado.pagina)),
+  isPartOf: { '@id': `${crearUrlAbsoluta('/')}#sitio-web` },
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: estado.visibles.map((producto, indice) => ({
+      '@type': 'ListItem',
+      position: indice + 1,
+      name: producto.nombre,
+      url: crearUrlAbsoluta(`/productos/${producto.slug}`),
+    })),
+  },
+};
 ---
 
 <section id="catalogo-resultados" class="contenedor seccion-catalogo" data-tipo-listado={tipo}>
   <div class="barra-catalogo" aria-label={etiquetaAria}>
-    <form id="formulario-busqueda-catalogo" class="busqueda-catalogo" role="search">
+    <form id="formulario-busqueda-catalogo" class="busqueda-catalogo" role="search" method="get" action={ruta}>
       <label class="solo-lectores" for="buscador-catalogo">Buscar {nombreTipo}</label>
       <input
         id="buscador-catalogo"
         class="campo"
         type="search"
+        name="buscar"
+        value={estado.buscar}
         placeholder={obtenerTextoPublico(configuracion, 'catalogo_busqueda_placeholder')}
         autocomplete="off"
       />
@@ -52,31 +74,36 @@ const datosSeguros = JSON.stringify({
     </form>
     <label>
       <span class="solo-lectores">Categoría de {nombreTipo}</span>
-      <select id="filtro-categoria" class="selector">
+      <select id="filtro-categoria" class="selector" name="categoria" form="formulario-busqueda-catalogo">
         <option value="">{obtenerTextoPublico(configuracion, 'catalogo_todas_categorias')}</option>
-        {categoriasDelTipo.map((categoria) => <option value={categoria.id}>{categoria.nombre}</option>)}
+        {estado.categoria && !categoriasDelTipo.some((categoria) => categoria.id === estado.categoria) && <option value={estado.categoria} selected>Categoría no disponible</option>}
+        {categoriasDelTipo.map((categoria) => <option value={categoria.id} selected={categoria.id === estado.categoria}>{categoria.nombre}</option>)}
       </select>
     </label>
   </div>
 
   <div class="resultado-catalogo">
-    <span id="informacion-resultados">{productos.length} productos</span>
+    <span id="informacion-resultados">{estado.totalProductos} productos</span>
     <span>{obtenerTextoPublico(configuracion, 'catalogo_aviso_disponibilidad')}</span>
   </div>
 
   <div id="galeria-catalogo" class="cuadricula-productos">
-    {productosIniciales.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
+    {estado.visibles.map((producto) => <TarjetaProducto producto={producto} configuracion={configuracion} />)}
+    {estado.totalProductos === 0 && <p class="estado-vacio">No encontramos productos con esos filtros.</p>}
   </div>
 
   <nav class="paginacion" aria-label={`Paginación de ${nombreTipo}`}>
-    <button id="pagina-anterior" class="boton-paginacion" type="button" disabled>{obtenerTextoPublico(configuracion, 'catalogo_pagina_anterior')}</button>
-    <span id="informacion-pagina-catalogo">Página 1</span>
-    <button id="pagina-siguiente" class="boton-paginacion" type="button">{obtenerTextoPublico(configuracion, 'catalogo_pagina_siguiente')}</button>
+    <a id="pagina-anterior" class="boton-paginacion" href={estado.pagina > 1 ? enlacePagina(estado.pagina - 1) : undefined} aria-disabled={estado.pagina <= 1 ? 'true' : undefined} tabindex={estado.pagina <= 1 ? -1 : undefined}>{obtenerTextoPublico(configuracion, 'catalogo_pagina_anterior')}</a>
+    <span id="informacion-pagina-catalogo">Página {estado.pagina} de {estado.totalPaginas}</span>
+    <a id="pagina-siguiente" class="boton-paginacion" href={estado.pagina < estado.totalPaginas ? enlacePagina(estado.pagina + 1) : undefined} aria-disabled={estado.pagina >= estado.totalPaginas ? 'true' : undefined} tabindex={estado.pagina >= estado.totalPaginas ? -1 : undefined}>{obtenerTextoPublico(configuracion, 'catalogo_pagina_siguiente')}</a>
   </nav>
 </section>
 
 <script is:inline id="datos-catalogo" type="application/json" set:html={datosSeguros}></script>
-<script is:inline src={rutaScriptListado}></script>
+<script is:inline id="datos-coleccion" type="application/ld+json" set:html={escaparJsonLd(datosColeccion)}></script>
+<script>
+  import '../scripts/catalogo.js';
+</script>
 
 <style>
   .seccion-catalogo {

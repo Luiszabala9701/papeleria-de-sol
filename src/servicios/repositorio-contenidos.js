@@ -124,25 +124,35 @@ export async function obtenerCategoriasPublicadas() {
 export async function obtenerProductosPublicados({ tipo } = {}) {
   const datos = await ejecutarConRespaldo(
     'No se pudieron obtener los productos',
-    (cliente) => {
-      let consulta = cliente
-        .from('productos')
-        .select(
-          `
-            *,
-            categoria:categorias(*),
-            imagenes(*)
-          `,
-        )
-        .eq('estado', 'publicado')
-        .order('orden')
-        .order('creado_en', { ascending: false });
+    async (cliente) => {
+      const productos = [];
+      const tamanoLote = 500;
 
-      if (tipo) {
-        consulta = consulta.eq('tipo_producto', tipo);
+      for (let inicio = 0; ; inicio += tamanoLote) {
+        let consulta = cliente
+          .from('productos')
+          .select(
+            `
+              *,
+              categoria:categorias(*),
+              imagenes(*)
+            `,
+          )
+          .eq('estado', 'publicado')
+          .order('orden')
+          .order('creado_en', { ascending: false })
+          .order('id')
+          .range(inicio, inicio + tamanoLote - 1);
+
+        if (tipo) {
+          consulta = consulta.eq('tipo_producto', tipo);
+        }
+
+        const { data, error } = await consulta;
+        if (error) return { data: null, error };
+        productos.push(...data);
+        if (data.length < tamanoLote) return { data: productos, error: null };
       }
-
-      return consulta;
     },
     () => {
       const productos = crearStickersDemostracion();
