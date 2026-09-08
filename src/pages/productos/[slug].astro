@@ -14,6 +14,7 @@ import {
 } from '../../servicios/seo';
 import rutaScriptGaleria from '../../scripts/galeria-producto.js?url&no-inline';
 import rutaScriptCantidad from '../../scripts/cantidad-producto.js?url&no-inline';
+import { crearLineaSeleccion, necesitaElegirVariante, productoSinStock } from '../../servicios/variantes.js';
 
 export const prerender = false;
 
@@ -32,7 +33,7 @@ const esSticker = producto.tipo_producto === 'sticker';
 const precio = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: producto.moneda || 'ARS',
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0, maximumFractionDigits: 2,
 }).format(producto.precio);
 const tituloSeo = producto.meta_titulo?.trim() || `${producto.nombre} | Papelería de Sol`;
 const descripcionSeo = crearDescripcionProductoSeo(producto);
@@ -40,7 +41,10 @@ const urlProducto = crearUrlAbsoluta(Astro.url.pathname);
 const stockDisponible = producto.controla_stock
   ? Math.max(0, Math.floor(Number(producto.stock) || 0))
   : 0;
-const sinStock = producto.controla_stock && stockDisponible === 0;
+const sinStock = productoSinStock(producto);
+const elegir = necesitaElegirVariante(producto);
+const varianteInicial = producto.usa_variantes && producto.variantes?.length === 1 ? producto.variantes[0] : null;
+const imagenesIniciales = varianteInicial?.imagenes?.length ? varianteInicial.imagenes : producto.imagenes;
 const coleccion = {
   sticker: { nombre: 'Stickers', ruta: '/stickers' },
   plantilla: { nombre: 'Plantillas', ruta: '/plantillas' },
@@ -53,18 +57,7 @@ const disponibilidadEstructurada = sinStock
   ? 'https://schema.org/OutOfStock'
   : 'https://schema.org/InStock';
 
-const datosCarrito = JSON.stringify({
-  id: producto.id,
-  nombre: producto.nombre,
-  sku: producto.sku || '',
-  slug: producto.slug,
-  tipo_producto: producto.tipo_producto,
-  precio: producto.precio,
-  moneda: producto.moneda,
-  imagen: imagen?.url_publica || '/stickers/1.webp',
-  controla_stock: producto.controla_stock,
-  stock: producto.controla_stock ? stockDisponible : null,
-});
+const datosCarrito = JSON.stringify(crearLineaSeleccion(producto));
 
 const datosEstructurados = {
   '@context': 'https://schema.org',
@@ -78,7 +71,11 @@ const datosEstructurados = {
       category: producto.categoria?.nombre || coleccion.nombre,
       url: urlProducto,
       brand: { '@type': 'Brand', name: 'Papelería de Sol' },
-      offers: {
+      offers: producto.usa_variantes ? producto.variantes?.map(variante => ({
+        '@type': 'Offer', name: variante.nombre, sku: variante.sku,
+        url: urlProducto, price: variante.precio, priceCurrency: producto.moneda || 'ARS',
+        availability: producto.tipo_producto === 'fisico' && !variante.stock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+      })) : {
         '@type': 'Offer',
         url: urlProducto,
         priceCurrency: producto.moneda || 'ARS',
@@ -127,19 +124,29 @@ const datosEstructurados = {
     <script is:inline type="application/ld+json" set:html={escaparJsonLd(datosEstructurados)}></script>
   </Fragment>
 
-  <article class="contenedor detalle-producto">
-    <GaleriaProducto imagenes={producto.imagenes} nombreProducto={producto.nombre} proteger={esSticker} compacta={esSticker} />
+  <article class="contenedor detalle-producto" data-detalle-variantes data-producto-venta={JSON.stringify(producto)}>
+    <GaleriaProducto imagenes={imagenesIniciales} nombreProducto={producto.nombre} proteger={esSticker} compacta={esSticker} />
 
     <div class="informacion-detalle">
       <p class="etiqueta">{producto.tipo_producto === 'fisico' ? obtenerTextoPublico(configuracion, 'producto_tipo_fisico') : producto.tipo_producto}</p>
       <h1>{producto.nombre}</h1>
-      <p class="precio-detalle"><strong>{precio}</strong></p>
+      <p class="precio-detalle" aria-live="polite"><strong data-precio-variante>{elegir ? 'Desde ' : ''}{precio}</strong></p>
       <p class="descripcion-detalle">{producto.descripcion}</p>
+      {producto.usa_variantes && <label class="grupo-campo selector-version">
+        <span>{esSticker ? 'Versión del sticker' : 'Variante del producto'}</span>
+        <select class="selector" data-elegir-variante aria-label={esSticker ? 'Versión del sticker' : 'Variante del producto'}>
+          {elegir && <option value="">Elegí una opción</option>}
+          {producto.variantes?.map(variante => <option value={variante.id} selected={variante.id === varianteInicial?.id} disabled={producto.tipo_producto === 'fisico' && !variante.stock}>
+            {variante.nombre}{producto.tipo_producto === 'fisico' && !variante.stock ? ' — Sin stock' : ''}
+          </option>)}
+        </select>
+      </label>}
+      <p class="descripcion-detalle" data-descripcion-variante hidden={!varianteInicial?.descripcion}>{varianteInicial?.descripcion}</p>
 
       <ul class="lista-detalle">
-        {producto.sku && <li><strong>{obtenerTextoPublico(configuracion, 'producto_sku')}:</strong> {producto.sku}</li>}
+        {producto.sku && <li><strong>{obtenerTextoPublico(configuracion, 'producto_sku')}:</strong> <span data-sku-variante>{varianteInicial?.sku || producto.sku}</span></li>}
         {producto.categoria?.nombre && <li><strong>{obtenerTextoPublico(configuracion, 'producto_categoria')}:</strong> {producto.categoria.nombre}</li>}
-        {producto.controla_stock && <li><strong>{obtenerTextoPublico(configuracion, 'producto_disponibilidad')}:</strong> {stockDisponible > 0 ? obtenerTextoPublico(configuracion, 'producto_en_stock') : obtenerTextoPublico(configuracion, 'producto_consultar')}</li>}
+        {producto.controla_stock && <li><strong>{obtenerTextoPublico(configuracion, 'producto_disponibilidad')}:</strong> <span data-stock-variante>{elegir ? 'Elegí una variante' : sinStock ? 'Sin stock' : 'En stock'}</span></li>}
       </ul>
 
       <div
@@ -147,16 +154,17 @@ const datosEstructurados = {
         data-selector-cantidad
         data-controla-stock={producto.controla_stock ? 'true' : 'false'}
         data-maximo={producto.controla_stock ? stockDisponible : undefined}
+        data-pendiente-variante={elegir ? 'true' : 'false'}
       >
         <span class="etiqueta-cantidad-producto">Cantidad</span>
         <div class="controles-cantidad" aria-label={`Cantidad de ${producto.nombre}`}>
           <button type="button" data-selector-cantidad-restar aria-label="Reducir cantidad" disabled>−</button>
           <output data-selector-cantidad-valor aria-live="polite">1</output>
-          <button type="button" data-selector-cantidad-sumar aria-label="Aumentar cantidad" disabled={sinStock}>+</button>
+          <button type="button" data-selector-cantidad-sumar aria-label="Aumentar cantidad" disabled={sinStock || elegir}>+</button>
         </div>
         {producto.controla_stock && (
-          <small class="disponibilidad-cantidad-producto">
-            {sinStock ? 'Sin unidades disponibles por ahora.' : `${stockDisponible} ${stockDisponible === 1 ? 'unidad disponible' : 'unidades disponibles'}.`}
+          <small class="disponibilidad-cantidad-producto" data-unidades-variante>
+            {elegir ? 'El stock corresponde a la variante elegida.' : sinStock ? 'Sin unidades disponibles por ahora.' : `${stockDisponible} ${stockDisponible === 1 ? 'unidad disponible' : 'unidades disponibles'}.`}
           </small>
         )}
       </div>
@@ -166,9 +174,10 @@ const datosEstructurados = {
         data-agregar-producto
         data-producto={datosCarrito}
         data-cantidad="1"
-        disabled={sinStock}
+        disabled={sinStock || elegir}
+        data-texto-agregar={obtenerTextoPublico(configuracion, 'producto_agregar_seleccion')}
       >
-        {sinStock ? 'Sin stock' : obtenerTextoPublico(configuracion, 'producto_agregar_seleccion')}
+        {elegir ? 'Elegí una versión' : sinStock ? 'Sin stock' : obtenerTextoPublico(configuracion, 'producto_agregar_seleccion')}
       </button>
     </div>
   </article>
@@ -178,6 +187,7 @@ const datosEstructurados = {
   </nav>
   <script is:inline src={rutaScriptGaleria}></script>
   <script is:inline src={rutaScriptCantidad}></script>
+  <script>import '../../scripts/variantes-producto.js';</script>
 </DisenoPrincipal>
 
 <style>

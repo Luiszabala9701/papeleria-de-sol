@@ -2071,3 +2071,14 @@ h3 {
     animation-iteration-count: 1 !important;
   }
 }
+/* Versiones: controles fluidos y galerías que no ensanchan el viewport. */
+.selector-version { display: grid; gap: .4rem; margin-block: .75rem; min-width: 0; }
+.selector-version select { width: 100%; min-width: 0; max-width: 100%; }
+[data-sku-variante] { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  /* Deja libre el lateral ocupado por los accesos flotantes. */
+  .selector-version { padding-inline-end: 3.5rem; }
+}
+.miniaturas-galeria[hidden], [data-descripcion-variante][hidden] { display: none; }
+a.boton-agregar-producto { display: inline-flex; justify-content: center; text-align: center; }
+.aviso-seleccion { padding: .75rem; background: #fff3d6; color: #433311; border-radius: .75rem; }

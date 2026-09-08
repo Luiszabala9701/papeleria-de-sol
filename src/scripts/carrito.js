@@ -44,7 +44,7 @@ function cargarCarrito() {
 
 function limitarCantidad(valor, minimo = 1) {
   const cantidad = Math.floor(Number(valor));
-  return Number.isFinite(cantidad) ? Math.max(minimo, cantidad) : minimo;
+  return Number.isFinite(cantidad) ? Math.min(9999, Math.max(minimo, cantidad)) : minimo;
 }
 
 function limiteDeStock(producto) {
@@ -56,11 +56,14 @@ function limiteDeStock(producto) {
 
 function normalizarProductoCarrito(producto) {
   if (!producto?.id || !producto?.nombre) return null;
+  producto = { ...producto, controla_stock: producto.tipo_producto === 'fisico' };
+  if (!producto.controla_stock) producto.stock = null;
 
   const limite = limiteDeStock(producto);
   const cantidad = limitarCantidad(producto.cantidad);
   return {
     ...producto,
+    clave_linea: `${producto.id}:${producto.variante_id || 'simple'}`,
     cantidad: limite === null ? cantidad : Math.min(cantidad, limite),
   };
 }
@@ -84,7 +87,7 @@ function formatearDinero(valor) {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0, maximumFractionDigits: 2,
   }).format(valor);
 }
 
@@ -146,7 +149,7 @@ function crearControlesCantidad(producto) {
   const restar = document.createElement('button');
   restar.type = 'button';
   restar.dataset.accionCarrito = 'restar';
-  restar.dataset.idProducto = producto.id;
+  restar.dataset.idProducto = producto.clave_linea;
   restar.setAttribute('aria-label', `Restar una unidad de ${producto.nombre}`);
   restar.textContent = '−';
 
@@ -157,7 +160,7 @@ function crearControlesCantidad(producto) {
   const sumar = document.createElement('button');
   sumar.type = 'button';
   sumar.dataset.accionCarrito = 'sumar';
-  sumar.dataset.idProducto = producto.id;
+  sumar.dataset.idProducto = producto.clave_linea;
   sumar.setAttribute('aria-label', `Agregar otra unidad de ${producto.nombre}`);
   const limite = limiteDeStock(producto);
   sumar.disabled = limite !== null && producto.cantidad >= limite;
@@ -187,18 +190,20 @@ function crearElementoCarrito(producto) {
   const informacion = document.createElement('div');
   const nombre = document.createElement('h3');
   nombre.textContent = producto.nombre;
+  const precio = document.createElement('small');
+  precio.textContent = `${formatearDinero(producto.precio)} c/u · ${formatearDinero(producto.precio * producto.cantidad)}`;
   const cantidad = document.createElement('small');
   cantidad.textContent = texto('cantidad', 'Cantidad');
   const filaCantidad = document.createElement('div');
   filaCantidad.className = 'fila-cantidad-carrito';
   filaCantidad.append(cantidad, crearControlesCantidad(producto));
-  informacion.append(nombre, filaCantidad);
+  informacion.append(nombre, precio, filaCantidad);
 
   const eliminar = document.createElement('button');
   eliminar.type = 'button';
   eliminar.className = 'eliminar-elemento';
   eliminar.dataset.accionCarrito = 'eliminar';
-  eliminar.dataset.idProducto = producto.id;
+  eliminar.dataset.idProducto = producto.clave_linea;
   eliminar.setAttribute('aria-label', `Eliminar ${producto.nombre}`);
   eliminar.textContent = '×';
 
@@ -230,11 +235,13 @@ function renderizarCarrito() {
 function agregarProducto(producto, cantidadSolicitada = 1) {
   if (!producto?.id || !producto?.nombre) return;
 
-  const existente = carrito.find((elemento) => elemento.id === producto.id);
+  producto = normalizarProductoCarrito({ ...producto, cantidad: cantidadSolicitada });
+  const existente = carrito.find((elemento) => elemento.clave_linea === producto.clave_linea);
+  if (!existente && carrito.length >= 100) { mostrarNotificacion('Podés seleccionar hasta 100 versiones distintas por consulta.'); return; }
   const cantidad = limitarCantidad(cantidadSolicitada);
   const limite = limiteDeStock(producto);
   const cantidadActual = existente?.cantidad || 0;
-  const disponible = limite === null ? cantidad : Math.max(0, limite - cantidadActual);
+  const disponible = Math.max(0, (limite ?? 9999) - cantidadActual);
   const cantidadAAgregar = Math.min(cantidad, disponible);
 
   if (cantidadAAgregar <= 0) {
@@ -260,18 +267,18 @@ function agregarProducto(producto, cantidadSolicitada = 1) {
 }
 
 function modificarCantidad(idProducto, cambio) {
-  const producto = carrito.find((elemento) => elemento.id === idProducto);
+  const producto = carrito.find((elemento) => elemento.clave_linea === idProducto);
   if (!producto) return;
 
   const limite = limiteDeStock(producto);
-  if (cambio > 0 && limite !== null && producto.cantidad >= limite) {
+  if (cambio > 0 && producto.cantidad >= (limite ?? 9999)) {
     mostrarNotificacion(`${producto.nombre} ya alcanzó el stock disponible.`);
     return;
   }
 
   producto.cantidad += cambio;
   if (producto.cantidad <= 0) {
-    carrito = carrito.filter((elemento) => elemento.id !== idProducto);
+    carrito = carrito.filter((elemento) => elemento.clave_linea !== idProducto);
   }
 
   guardarCarrito();
@@ -326,7 +333,7 @@ document.addEventListener('click', (evento) => {
   if (accionCarrito === 'sumar') modificarCantidad(idProducto, 1);
   if (accionCarrito === 'restar') modificarCantidad(idProducto, -1);
   if (accionCarrito === 'eliminar') {
-    carrito = carrito.filter((producto) => producto.id !== idProducto);
+    carrito = carrito.filter((producto) => producto.clave_linea !== idProducto);
     guardarCarrito();
     renderizarCarrito();
   }
@@ -342,8 +349,34 @@ botonVaciar?.addEventListener('click', () => {
   renderizarCarrito();
 });
 
-botonEnviar?.addEventListener('click', () => {
+botonEnviar?.addEventListener('click', async () => {
   if (carrito.length === 0 || !panelCarrito) return;
+  const seleccionEnviada = JSON.stringify(carrito);
+  botonEnviar.disabled = true;
+  try {
+    const respuesta = await fetch('/api/seleccion.json', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lineas: carrito.map(({ id, variante_id, cantidad, precio }) => ({ id, variante_id, cantidad, precio })) }),
+    });
+    if (!respuesta.ok) throw new Error('No pudimos comprobar los precios y el stock. Intentá nuevamente.');
+    const resultado = await respuesta.json();
+    if (JSON.stringify(carrito) !== seleccionEnviada) throw new Error('Cambiaste la selección. Revisala y volvé a continuar.');
+    carrito = resultado.lineas;
+    guardarCarrito();
+    renderizarCarrito();
+    if (resultado.avisos.length) {
+      const aviso = document.createElement('p');
+      aviso.className = 'aviso-seleccion';
+      aviso.setAttribute('role', 'status');
+      aviso.textContent = `${resultado.avisos.join(' ')} Revisá la selección y volvé a continuar.`;
+      contenidoCarrito.prepend(aviso);
+      return;
+    }
+    if (!carrito.length) return;
+  } catch (error) {
+    mostrarNotificacion(error.message);
+    return;
+  } finally { botonEnviar.disabled = carrito.length === 0; }
 
   const numero = panelCarrito.dataset.whatsapp;
   const enlace = `https://wa.me/${numero}?text=${encodeURIComponent(crearMensajeWhatsApp())}`;

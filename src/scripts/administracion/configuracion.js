@@ -17,7 +17,6 @@ export const ESQUEMAS_RECURSOS = {
       ],
     },
     { nombre: 'categoria_id', etiqueta: 'Categoría', tipo: 'select-categorias', dependeDe: 'tipo_producto' },
-    { nombre: 'sku', etiqueta: 'SKU', tipo: 'text', obligatorio: true, soloCreacion: true },
     { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', obligatorio: true, completo: true },
     { nombre: 'precio', etiqueta: 'Precio en pesos', tipo: 'number', minimo: 0, obligatorio: true },
     {
@@ -27,8 +26,7 @@ export const ESQUEMAS_RECURSOS = {
         { valor: 'publicado', texto: 'Publicado' },
       ],
     },
-    { nombre: 'controla_stock', etiqueta: 'Controlar stock', tipo: 'checkbox' },
-    { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0, dependeDe: 'controla_stock' },
+    { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0 },
     { nombre: 'destacado', etiqueta: 'Mostrar como destacado', tipo: 'checkbox' },
     { nombre: 'imagenes_nuevas', etiqueta: 'Agregar nuevas imágenes (máximo 5 en total)', tipo: 'file', multiple: true, completo: true, ayuda: 'Podés seleccionar varias imágenes a la vez. Cada archivo puede pesar hasta 5 MB.' },
     { nombre: 'meta_titulo', etiqueta: 'Título para buscadores', tipo: 'text', completo: true, avanzado: true, ayuda: 'Es el título que podría mostrarse en Google. Si se deja vacío, se usa el nombre del producto.' },

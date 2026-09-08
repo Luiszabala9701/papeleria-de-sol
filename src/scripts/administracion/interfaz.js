@@ -28,7 +28,7 @@ export function valorVisible(registro, clave) {
       : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(valor);
   }
 
-  if (clave === 'stock') return registro.controla_stock ? String(valor ?? 0) : 'Sin control';
+  if (clave === 'stock') return registro.tipo_producto === 'fisico' ? String(valor ?? 0) : 'No aplica';
   if (clave === 'estado' && valor === 'borrador') return 'No publicado';
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
   if (clave === 'tipo_producto' && valor === 'fisico') return 'Producto físico';
@@ -37,7 +37,8 @@ export function valorVisible(registro, clave) {
 }
 
 export function obtenerImagenPrincipal(registro) {
-  const imagenes = [...(registro.imagenes || [])].sort(
+  const generales = (registro.imagenes || []).filter(imagen => !imagen.variante_id);
+  const imagenes = [...(generales.length ? generales : registro.imagenes || [])].sort(
     (primera, segunda) => primera.orden - segunda.orden,
   );
 

@@ -1,4 +1,5 @@
 import contenidoDemostracion from '../datos/contenido-demostracion.json';
+import { normalizarProductoVenta } from './variantes.js';
 import {
   configuracionSupabaseDisponible,
   obtenerClienteSupabase,
@@ -44,13 +45,7 @@ function crearStickersDemostracion() {
 }
 
 function normalizarProducto(producto) {
-  return {
-    ...producto,
-    precio: Number(producto.precio),
-    imagenes: [...(producto.imagenes || [])].sort(
-      (primera, segunda) => primera.orden - segunda.orden,
-    ),
-  };
+  return normalizarProductoVenta(producto);
 }
 
 async function ejecutarConRespaldo(contexto, consulta, respaldo) {
@@ -135,7 +130,8 @@ export async function obtenerProductosPublicados({ tipo } = {}) {
             `
               *,
               categoria:categorias(*),
-              imagenes(*)
+              imagenes(*),
+              variantes(*)
             `,
           )
           .eq('estado', 'publicado')
@@ -214,4 +210,14 @@ export async function obtenerProductoPorSlug(slug) {
   );
 
   return producto ? normalizarProducto(producto) : null;
+}
+
+export async function obtenerProductosPorIds(ids) {
+  const datos = await ejecutarConRespaldo(
+    'No se pudo comprobar la selección',
+    (cliente) => cliente.from('productos').select('*, imagenes(*), variantes(*)')
+      .eq('estado', 'publicado').in('id', ids),
+    () => crearStickersDemostracion().filter((producto) => ids.includes(producto.id)),
+  );
+  return datos.map(normalizarProducto);
 }

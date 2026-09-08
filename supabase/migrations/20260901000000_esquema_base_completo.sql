@@ -445,7 +445,7 @@ insert into public.configuraciones_sitio (clave, valor, descripcion, publica) va
   ('color_texto_suave', to_jsonb('#676579'::text), 'Color del texto secundario', true);
 
 insert into public.configuraciones_sitio (clave, valor, descripcion, publica)
-select clave, to_jsonb(valor), 'Texto público editable desde el administrador', true
+select key, to_jsonb(value), 'Texto público editable desde el administrador', true
 from jsonb_each_text(
   '{
     "navegacion_inicio": "Inicio",

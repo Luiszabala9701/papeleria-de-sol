@@ -1,5 +1,6 @@
 import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../servicios/catalogo.js';
 import { crearTituloSeo, crearUrlAbsoluta } from '../servicios/seo';
+import { crearLineaSeleccion, necesitaElegirVariante, productoSinStock } from '../servicios/variantes.js';
 
 const datosCatalogo = document.querySelector('#datos-catalogo');
 const galeria = document.querySelector('#galeria-catalogo');
@@ -31,22 +32,6 @@ function imagenSegura(url) {
   return valor.startsWith('/') || valor.startsWith('https://')
     ? valor
     : '/stickers/1.webp';
-}
-
-function datosProductoCarrito(producto) {
-  const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
-  return {
-    id: producto.id,
-    nombre: producto.nombre,
-    sku: producto.sku || '',
-    slug: producto.slug,
-    tipo_producto: producto.tipo_producto,
-    precio: producto.precio,
-    moneda: producto.moneda,
-    imagen: imagenSegura(imagen?.url_publica),
-    controla_stock: producto.controla_stock === true,
-    stock: producto.controla_stock ? Math.max(0, Math.floor(Number(producto.stock) || 0)) : null,
-  };
 }
 
 function crearTarjeta(producto) {
@@ -100,18 +85,24 @@ function crearTarjeta(producto) {
   precio.textContent = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: producto.moneda || 'ARS',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0, maximumFractionDigits: 2,
   }).format(producto.precio);
 
-  const agregar = document.createElement('button');
-  agregar.type = 'button';
+  const elegir = necesitaElegirVariante(producto);
+  if (elegir) precio.textContent = `Desde ${precio.textContent}`;
+  const agregar = document.createElement(elegir ? 'a' : 'button');
   agregar.className = 'boton-agregar-producto';
-  agregar.dataset.agregarProducto = '';
-  agregar.dataset.producto = JSON.stringify(datosProductoCarrito(producto));
-  agregar.setAttribute('aria-label', `Agregar ${producto.nombre} a mi selección`);
-  const sinStock = producto.controla_stock && Math.max(0, Number(producto.stock) || 0) === 0;
-  agregar.disabled = sinStock;
-  agregar.textContent = sinStock ? 'Sin stock' : (textos.agregar || 'Agregar');
+  if (elegir) {
+    agregar.href = enlaceTitulo.href;
+    agregar.textContent = 'Elegir versión';
+  } else {
+    agregar.type = 'button';
+    agregar.dataset.agregarProducto = '';
+    agregar.dataset.producto = JSON.stringify(crearLineaSeleccion(producto));
+    agregar.setAttribute('aria-label', `Agregar ${producto.nombre} a mi selección`);
+    agregar.disabled = productoSinStock(producto);
+    agregar.textContent = agregar.disabled ? 'Sin stock' : (textos.agregar || 'Agregar');
+  }
 
   pie.append(precio, agregar);
   contenido.append(tipo, titulo, descripcion, pie);

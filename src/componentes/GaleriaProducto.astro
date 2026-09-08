@@ -37,8 +37,7 @@ const imagenPrincipal = imagenesVisibles[0];
     <span class="indicador-ampliar-galeria" aria-hidden="true">Ampliar</span>
   </button>
 
-  {imagenesVisibles.length > 1 && (
-    <div class="miniaturas-galeria" aria-label={`Imágenes de ${nombreProducto}`}>
+    <div class="miniaturas-galeria" hidden={imagenesVisibles.length < 2} aria-label={`Imágenes de ${nombreProducto}`}>
       {imagenesVisibles.map((imagen, indice) => (
         <button
           class:list={['miniatura-galeria', { activa: indice === 0 }]}
@@ -53,7 +52,6 @@ const imagenPrincipal = imagenesVisibles[0];
         </button>
       ))}
     </div>
-  )}
 
   <dialog class="visor-galeria" data-visor-galeria aria-label={`Imagen ampliada de ${nombreProducto}`}>
     <div class="contenido-visor-galeria">

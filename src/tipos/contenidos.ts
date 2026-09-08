@@ -34,6 +34,7 @@ export interface Categoria {
 
 export interface ImagenProducto {
   id: string;
+  variante_id?: string | null;
   url_publica: string;
   texto_alternativo: string;
   es_principal: boolean;
@@ -42,10 +43,15 @@ export interface ImagenProducto {
 
 export interface VarianteProducto {
   id: string;
+  clave?: string;
   nombre: string;
+  descripcion?: string;
   sku?: string;
   precio?: number | null;
   stock?: number | null;
+  estado?: EstadoProducto;
+  orden?: number;
+  imagenes?: ImagenProducto[];
 }
 
 export type TipoProducto = 'sticker' | 'plantilla' | 'fisico';
@@ -63,6 +69,7 @@ export interface Producto {
   precio: number;
   moneda: string;
   controla_stock: boolean;
+  usa_variantes?: boolean;
   stock: number | null;
   estado: EstadoProducto;
   destacado: boolean;

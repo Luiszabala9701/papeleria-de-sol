@@ -2,6 +2,7 @@
 import type { Producto } from '../tipos/contenidos';
 import type { ConfiguracionSitio } from '../tipos/contenidos';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
+import { crearLineaSeleccion, necesitaElegirVariante, productoSinStock } from '../servicios/variantes.js';
 
 interface Props {
   producto: Producto;
@@ -16,9 +17,10 @@ const esSticker = producto.tipo_producto === 'sticker';
 const precio = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: producto.moneda || 'ARS',
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0, maximumFractionDigits: 2,
 }).format(producto.precio);
-const sinStock = producto.controla_stock && Math.max(0, Number(producto.stock) || 0) === 0;
+const sinStock = productoSinStock(producto);
+const elegir = necesitaElegirVariante(producto);
 ---
 
 <article class:list={['tarjeta-producto', { compacta }]} data-tipo={producto.tipo_producto}>
@@ -46,28 +48,18 @@ const sinStock = producto.controla_stock && Math.max(0, Number(producto.stock) |
     <h3><a href={`/productos/${producto.slug}`}>{producto.nombre}</a></h3>
     {!compacta && <p class="descripcion-producto">{producto.descripcion}</p>}
     <div class="pie-producto">
-      <strong class="precio-producto">{precio}</strong>
+      <strong class="precio-producto">{elegir ? 'Desde ' : ''}{precio}</strong>
+      {elegir ? <a class="boton-agregar-producto" href={`/productos/${producto.slug}`}>Elegir versión</a> : (
       <button
         class="boton-agregar-producto"
         type="button"
         data-agregar-producto
-        data-producto={JSON.stringify({
-          id: producto.id,
-          nombre: producto.nombre,
-          sku: producto.sku || '',
-          slug: producto.slug,
-          tipo_producto: producto.tipo_producto,
-          precio: producto.precio,
-          moneda: producto.moneda,
-          imagen: imagen?.url_publica || '/stickers/1.webp',
-          controla_stock: producto.controla_stock,
-          stock: producto.controla_stock ? Math.max(0, Math.floor(Number(producto.stock) || 0)) : null,
-        })}
+        data-producto={JSON.stringify(crearLineaSeleccion(producto))}
         aria-label={`${obtenerTextoPublico(configuracion, 'producto_agregar')} ${producto.nombre} a mi selección`}
         disabled={sinStock}
       >
         {sinStock ? 'Sin stock' : obtenerTextoPublico(configuracion, 'producto_agregar')}
-      </button>
+      </button>)}
     </div>
   </div>
 </article>

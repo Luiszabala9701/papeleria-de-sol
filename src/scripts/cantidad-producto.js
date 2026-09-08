@@ -6,7 +6,8 @@ if (selectorCantidad && botonAgregarProducto) {
   const botonSumar = selectorCantidad.querySelector('[data-selector-cantidad-sumar]');
   const valorCantidad = selectorCantidad.querySelector('[data-selector-cantidad-valor]');
   const controlaStock = selectorCantidad.dataset.controlaStock === 'true';
-  const maximo = Math.max(0, Math.floor(Number(selectorCantidad.dataset.maximo) || 0));
+  const maximo = () => controlaStock ? Math.max(0, Math.floor(Number(selectorCantidad.dataset.maximo) || 0)) : 9999;
+  const pendiente = () => selectorCantidad.dataset.pendienteVariante === 'true';
   let cantidad = 1;
 
   function actualizarSelector() {
@@ -14,7 +15,7 @@ if (selectorCantidad && botonAgregarProducto) {
     botonAgregarProducto.dataset.cantidad = String(cantidad);
 
     if (botonRestar) botonRestar.disabled = cantidad <= 1;
-    if (botonSumar) botonSumar.disabled = controlaStock && cantidad >= maximo;
+    if (botonSumar) botonSumar.disabled = pendiente() || cantidad >= maximo();
   }
 
   botonRestar?.addEventListener('click', () => {
@@ -23,9 +24,14 @@ if (selectorCantidad && botonAgregarProducto) {
   });
 
   botonSumar?.addEventListener('click', () => {
-    cantidad = controlaStock ? Math.min(maximo, cantidad + 1) : cantidad + 1;
+    if (pendiente()) return;
+    cantidad = Math.max(1, Math.min(maximo(), cantidad + 1));
     actualizarSelector();
   });
 
+  selectorCantidad.addEventListener('reiniciar-cantidad', () => {
+    cantidad = 1;
+    actualizarSelector();
+  });
   actualizarSelector();
 }

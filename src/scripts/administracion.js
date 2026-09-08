@@ -1,4 +1,5 @@
 import { obtenerClienteSupabase } from '../servicios/cliente-supabase.js';
+import { crearEditorVariantes } from './administracion/variantes.js';
 import {
   COLUMNAS_RECURSOS,
   DESCRIPCIONES_RECURSOS,
@@ -45,6 +46,8 @@ let idEdicion = null;
 let registrosActuales = new Map();
 let categorias = [];
 let registroEdicion = null;
+let editorVariantes = null;
+const archivosSubidos = new WeakSet();
 let minutosInactividad = 30;
 let ultimaActividadConfirmada = Date.now();
 let paginaProductos = 1;
@@ -277,43 +280,6 @@ function actualizarCategoriasDisponibles() {
   ));
 }
 
-function actualizarCampoStock() {
-  const controlaStock = formularioRecurso?.elements.controla_stock;
-  const stock = formularioRecurso?.elements.stock;
-  if (!controlaStock || !stock) return;
-  stock.disabled = !controlaStock.checked;
-  stock.setAttribute('aria-disabled', String(!controlaStock.checked));
-  if (!controlaStock.checked) stock.value = '';
-}
-
-async function actualizarSugerenciaSku({ cambioTipo = false } = {}) {
-  const selectorTipo = formularioRecurso?.elements.tipo_producto;
-  const campoSku = formularioRecurso?.elements.sku;
-  if (!selectorTipo || !campoSku) return;
-
-  if (!selectorTipo.value) {
-    campoSku.placeholder = 'Primero elegí el tipo de producto';
-    return;
-  }
-
-  if (cambioTipo && !idEdicion) {
-    campoSku.value = '';
-    delete campoSku.dataset.editado;
-  }
-
-  try {
-    const sugerencia = await invocar('obtener_sugerencia_sku', {
-      tipo_producto: selectorTipo.value,
-    });
-    if (selectorTipo.value !== sugerencia.tipo_producto) return;
-
-    campoSku.placeholder = sugerencia.siguiente_sku;
-    if (!idEdicion && !campoSku.dataset.editado) campoSku.value = sugerencia.siguiente_sku;
-  } catch {
-    campoSku.placeholder = 'Escribí un SKU con el prefijo del tipo elegido';
-  }
-}
-
 function crearCampo(definicion, registro = {}) {
   const contenedor = document.createElement('label');
   contenedor.className = `grupo-campo${definicion.completo ? ' campo-completo' : ''}`;
@@ -395,6 +361,7 @@ function abrirDialogo(recurso, registro = null) {
   recursoDialogo = recurso;
   idEdicion = registro?.id || null;
   registroEdicion = registro;
+  editorVariantes = null;
   tituloDialogo.textContent = registro ? `Editar ${registro.nombre || registro.titulo}` : 'Crear nuevo registro';
   camposFormulario.replaceChildren();
   const definiciones = ESQUEMAS_RECURSOS[recurso];
@@ -405,6 +372,13 @@ function abrirDialogo(recurso, registro = null) {
     camposFormulario.append(crearCampo(definicion, registro || {}));
   });
   const avanzadas = definiciones.filter((definicion) => definicion.avanzado);
+  if (recurso === 'productos') {
+    const sku = document.createElement('p');
+    sku.className = 'campo-completo';
+    sku.textContent = registro?.sku ? `SKU: ${registro.sku}` : 'El SKU se asigna automáticamente al guardar.';
+    editorVariantes = crearEditorVariantes(formularioRecurso, registro || {}, crearGestorImagenesProducto);
+    camposFormulario.append(sku, editorVariantes.contenedor);
+  }
   if (avanzadas.length) {
     const detalle = document.createElement('details');
     detalle.className = 'opciones-avanzadas campo-completo';
@@ -420,8 +394,7 @@ function abrirDialogo(recurso, registro = null) {
   }
   ocultarError(errorFormulario);
   actualizarCategoriasDisponibles();
-  actualizarCampoStock();
-  actualizarSugerenciaSku();
+  editorVariantes?.actualizarTipo();
   document.body.classList.add('dialogo-abierto');
   if (!dialogo.open) dialogo.showModal();
 }
@@ -440,7 +413,9 @@ function obtenerDatosFormulario() {
 
   if (recursoDialogo === 'productos') {
     datos.moneda = 'ARS';
-    if (!datos.controla_stock) datos.stock = null;
+    datos.tipo_producto = formularioRecurso.elements.tipo_producto.value;
+    Object.assign(datos, editorVariantes.obtener());
+    if (datos.tipo_producto !== 'fisico') datos.stock = null;
   }
 
   return datos;
@@ -448,31 +423,54 @@ function obtenerDatosFormulario() {
 
 async function subirImagenesSiCorresponde(producto) {
   if (recursoDialogo !== 'productos') return;
-  const archivos = Array.from(formularioRecurso.elements.imagenes_nuevas?.files || []);
+  const cargas = [{ varianteId: null, campo: formularioRecurso.elements.imagenes_nuevas, maximo: 5 }, ...editorVariantes.cargas()];
+  for (const carga of cargas) await subirGaleria(producto, carga);
+}
+
+function validarCargasAntesDeGuardar() {
+  if (recursoDialogo !== 'productos') return;
+  const cargas = [{ varianteId: null, campo: formularioRecurso.elements.imagenes_nuevas, maximo: 5 }, ...editorVariantes.cargas()];
+  for (const { varianteId, campo, maximo } of cargas) {
+    const archivos = Array.from(campo?.files || []).filter(archivo => !archivosSubidos.has(archivo));
+    const actuales = (registroEdicion?.imagenes || []).filter(i => (i.variante_id || null) === varianteId).length;
+    if (actuales + archivos.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
+    for (const archivo of archivos) {
+      if (archivo.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivo.name} supera el máximo de 5 MB.`);
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(archivo.type)) throw new Error(`El formato de ${archivo.name} no está permitido.`);
+    }
+  }
+}
+
+async function subirGaleria(producto, { varianteId, campo, maximo }) {
+  const archivos = Array.from(campo?.files || []).filter(archivo => !archivosSubidos.has(archivo));
   if (!archivos.length) return;
-  const cantidadExistente = registroEdicion?.imagenes?.length || 0;
-  if (cantidadExistente + archivos.length > 5) throw new Error('Un producto puede tener como máximo 5 imágenes.');
+  const cantidadExistente = (registroEdicion?.imagenes || []).filter(i => (i.variante_id || null) === varianteId).length;
+  if (cantidadExistente + archivos.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
 
   for (const [indice, archivo] of archivos.entries()) {
     if (archivo.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivo.name} supera el máximo de 5 MB.`);
     const preparacion = await invocar('preparar_subida', {
-      datos: { producto_id: producto.id, tipo: archivo.type },
+      datos: { producto_id: producto.id, variante_id: varianteId, tipo: archivo.type },
     });
     const { error } = await cliente.storage
       .from('productos')
       .uploadToSignedUrl(preparacion.ruta, preparacion.token, archivo, { contentType: archivo.type });
     if (error) throw error;
 
-    await invocar('registrar_imagen', {
+    const imagen = await invocar('registrar_imagen', {
       datos: {
         producto_id: producto.id,
+        variante_id: varianteId,
         ruta: preparacion.ruta,
         texto_alternativo: `${producto.nombre} de Papelería de Sol`,
         es_principal: cantidadExistente === 0 && indice === 0,
         orden: cantidadExistente + indice + 1,
       },
     });
+    archivosSubidos.add(archivo);
+    registroEdicion.imagenes.push(imagen);
   }
+  campo.value = '';
 }
 
 function imagenesOrdenadas(registro) {
@@ -482,9 +480,9 @@ function imagenesOrdenadas(registro) {
   });
 }
 
-function crearGestorImagenesProducto(registro) {
+function crearGestorImagenesProducto(registro, varianteId = null) {
   const seccion = document.createElement('section');
-  seccion.id = 'gestor-imagenes-producto';
+  seccion.id = varianteId ? `gestor-imagenes-${varianteId}` : 'gestor-imagenes-producto';
   seccion.className = 'gestor-imagenes-producto campo-completo';
 
   const cabecera = document.createElement('div');
@@ -496,7 +494,7 @@ function crearGestorImagenesProducto(registro) {
   cabecera.append(titulo, descripcion);
   seccion.append(cabecera);
 
-  const imagenes = imagenesOrdenadas(registro);
+  const imagenes = imagenesOrdenadas(registro).filter(i => (i.variante_id || null) === varianteId);
   if (!imagenes.length) {
     const vacio = document.createElement('p');
     vacio.className = 'estado-imagenes-vacio';
@@ -536,6 +534,7 @@ function crearGestorImagenesProducto(registro) {
     eliminar.textContent = 'Eliminar';
     eliminar.dataset.eliminarImagen = imagen.id;
     eliminar.dataset.productoImagen = registro.id;
+    if (varianteId) eliminar.dataset.varianteImagen = varianteId;
     pie.append(estado, eliminar);
     tarjeta.append(ampliar, pie);
     cuadricula.append(tarjeta);
@@ -544,10 +543,10 @@ function crearGestorImagenesProducto(registro) {
   return seccion;
 }
 
-function actualizarGestorImagenesProducto() {
-  const actual = formularioRecurso?.querySelector('#gestor-imagenes-producto');
+function actualizarGestorImagenesProducto(varianteId = null) {
+  const actual = document.getElementById(varianteId ? `gestor-imagenes-${varianteId}` : 'gestor-imagenes-producto');
   if (!actual || !registroEdicion) return;
-  actual.replaceWith(crearGestorImagenesProducto(registroEdicion));
+  actual.replaceWith(crearGestorImagenesProducto(registroEdicion, varianteId));
 }
 
 function abrirVisorImagenAdmin(url, alt) {
@@ -707,7 +706,7 @@ document.addEventListener('click', async (evento) => {
       registroEdicion.imagenes = (registroEdicion.imagenes || []).filter(
         (imagen) => imagen.id !== eliminarImagen.dataset.eliminarImagen,
       );
-      actualizarGestorImagenesProducto();
+      actualizarGestorImagenesProducto(eliminarImagen.dataset.varianteImagen || null);
       notificar(resultado?.archivo_pendiente
         ? 'La imagen dejó de estar publicada. Su archivo se eliminará automáticamente al reintentarlo.'
         : 'La imagen se eliminó correctamente.');
@@ -778,16 +777,11 @@ document.querySelector('[data-pagina-admin-siguiente]')?.addEventListener('click
   document.querySelector('[data-lista-recurso="productos"]')?.closest('.tabla-contenedor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-formularioRecurso?.addEventListener('change', async (evento) => {
+formularioRecurso?.addEventListener('change', (evento) => {
   if (evento.target.name === 'tipo_producto') {
     actualizarCategoriasDisponibles();
-    await actualizarSugerenciaSku({ cambioTipo: true });
+    editorVariantes?.actualizarTipo();
   }
-  if (evento.target.name === 'controla_stock') actualizarCampoStock();
-});
-
-formularioRecurso?.addEventListener('input', (evento) => {
-  if (evento.target.name === 'sku') evento.target.dataset.editado = 'true';
 });
 
 formularioRecurso?.addEventListener('submit', async (evento) => {
@@ -798,11 +792,18 @@ formularioRecurso?.addEventListener('submit', async (evento) => {
   boton.textContent = 'Guardando…';
 
   try {
+    validarCargasAntesDeGuardar();
     const producto = await invocar('guardar', {
       recurso: recursoDialogo,
       id: idEdicion,
       datos: obtenerDatosFormulario(),
     });
+    // Si falla Storage, reintentar edita este mismo producto y conserva las subidas completadas.
+    if (recursoDialogo === 'productos') {
+      idEdicion = producto.id;
+      registroEdicion = { ...producto, imagenes: producto.imagenes || [] };
+      formularioRecurso.elements.tipo_producto.disabled = true;
+    }
     await subirImagenesSiCorresponde(producto);
     dialogo.close();
     document.body.classList.remove('dialogo-abierto');

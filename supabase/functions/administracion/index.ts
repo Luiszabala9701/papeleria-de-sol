@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { validarProductoConVariantes } from './validar-producto.ts';
 
 const URL_SUPABASE = Deno.env.get('SUPABASE_URL') || '';
 const CLAVE_SERVICIO = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -11,7 +12,7 @@ const clienteServicio = createClient(URL_SUPABASE, CLAVE_SERVICIO, {
 const RECURSOS = {
   productos: {
     tabla: 'productos',
-    seleccion: '*, categoria:categorias(id,nombre), imagenes(*)',
+    seleccion: '*, categoria:categorias(id,nombre), imagenes(*), variantes(*)',
     campos: [
       'categoria_id', 'tipo_producto', 'nombre', 'sku',
       'descripcion', 'precio', 'moneda', 'controla_stock', 'stock', 'estado',
@@ -94,11 +95,6 @@ const CLAVES_TEXTO_PUBLICO = [
   'ayuda_paso_3_titulo', 'ayuda_paso_3_descripcion',
   'ayuda_consultas_titulo', 'ayuda_consultas_descripcion', 'ayuda_consultas_boton',
 ];
-const PREFIJOS_SKU: Record<string, string> = {
-  sticker: 'ST',
-  plantilla: 'PL',
-  fisico: 'PF',
-};
 const EXPRESION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TAMANO_LOTE_LISTADO = 1000;
 
@@ -214,12 +210,6 @@ function mensajeSeguroError(error: unknown) {
     : 'No se pudo completar la operación. Revisá los datos e intentá nuevamente.';
 }
 
-function obtenerPrefijoSku(tipoProducto: unknown) {
-  const prefijo = PREFIJOS_SKU[String(tipoProducto)];
-  if (!prefijo) throw new Error('El tipo de producto no es válido.');
-  return prefijo;
-}
-
 function seleccionarCampos(datos: Record<string, unknown>, campos: readonly string[]) {
   return Object.fromEntries(
     campos
@@ -235,42 +225,6 @@ function esColorHexadecimal(valor: unknown) {
 function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
   if ('nombre' in datos && !String(datos.nombre || '').trim()) {
     throw new Error('El nombre es obligatorio.');
-  }
-
-  if (recurso === 'productos') {
-    if (!String(datos.nombre || '').trim()) {
-      throw new Error('El nombre del producto es obligatorio.');
-    }
-    if (!['sticker', 'plantilla', 'fisico'].includes(String(datos.tipo_producto))) {
-      throw new Error('El tipo de producto no es válido.');
-    }
-    const prefijoSku = obtenerPrefijoSku(datos.tipo_producto);
-    const sku = String(datos.sku || '').trim().toUpperCase();
-    if (!sku) throw new Error('El SKU es obligatorio.');
-    if (!new RegExp(`^${prefijoSku}-\\d+$`).test(sku)) {
-      throw new Error(`El SKU para este tipo debe comenzar con ${prefijoSku}- y terminar con números.`);
-    }
-    if (
-      datos.precio === null ||
-      datos.precio === undefined ||
-      datos.precio === '' ||
-      !Number.isFinite(Number(datos.precio)) ||
-      Number(datos.precio) < 0
-    ) {
-      throw new Error('El precio en pesos es obligatorio y no puede ser negativo.');
-    }
-    if (!String(datos.descripcion || '').trim()) {
-      throw new Error('La descripción del producto es obligatoria.');
-    }
-    if (
-      datos.controla_stock &&
-      (!Number.isFinite(Number(datos.stock)) || Number(datos.stock) < 0)
-    ) {
-      throw new Error('El stock es obligatorio al activar el control de stock y no puede ser negativo.');
-    }
-    if (!['borrador', 'publicado'].includes(String(datos.estado))) {
-      throw new Error('Elegí si el producto está publicado o no publicado.');
-    }
   }
 
   if (recurso === 'categorias') {
@@ -291,40 +245,6 @@ function validarDatos(recurso: NombreRecurso, datos: Record<string, unknown>) {
       throw new Error('La imagen de la sección debe ser una dirección interna o HTTPS válida.');
     }
   }
-}
-
-async function obtenerSugerenciaSku(tipoProducto: unknown) {
-  const tipo = String(tipoProducto);
-  const prefijo = obtenerPrefijoSku(tipo);
-  const { data, error } = await clienteServicio
-    .from('productos')
-    .select('sku')
-    .eq('tipo_producto', tipo)
-    .not('sku', 'is', null);
-  if (error) throw error;
-
-  const expresion = new RegExp(`^${prefijo}-(\\d+)$`, 'i');
-  let numeroMayor = 0;
-  let digitosSku = 4;
-  let ultimoSku: string | null = null;
-
-  (data || []).forEach(({ sku }) => {
-    const coincidencia = expresion.exec(String(sku || '').trim());
-    if (!coincidencia) return;
-    const numero = Number(coincidencia[1]);
-    if (numero > numeroMayor) {
-      numeroMayor = numero;
-      digitosSku = Math.max(4, coincidencia[1].length);
-      ultimoSku = `${prefijo}-${String(numero).padStart(digitosSku, '0')}`;
-    }
-  });
-
-  const digitos = Math.max(digitosSku, String(numeroMayor + 1).length);
-  return {
-    tipo_producto: tipo,
-    ultimo_sku: ultimoSku,
-    siguiente_sku: `${prefijo}-${String(numeroMayor + 1).padStart(digitos, '0')}`,
-  };
 }
 
 async function crearSlugDisponible(tabla: string, texto: unknown, id?: string) {
@@ -526,7 +446,8 @@ async function listarRecurso(recurso: NombreRecurso, filtroArchivados = 'activos
     const { data, error } = await consulta;
     if (error) throw error;
 
-    const lote = data || [];
+    const lote: unknown = data || [];
+    if (!Array.isArray(lote) || !lote.every(esObjetoPlano)) throw new Error('Los registros recibidos no tienen un formato válido.');
     registros.push(...lote);
     if (lote.length < TAMANO_LOTE_LISTADO) return registros;
   }
@@ -568,7 +489,7 @@ async function guardarTextoInicio(
   const titulo = textoLimpio(datos.titulo, predeterminado.titulo);
   if (!titulo) throw new Error('El título del bloque es obligatorio.');
 
-  const registro = {
+  const registro: Record<string, unknown> = {
     ...predeterminado,
     titulo,
     subtitulo: textoLimpio(datos.subtitulo, predeterminado.subtitulo),
@@ -588,6 +509,49 @@ async function guardarTextoInicio(
   return data;
 }
 
+async function guardarProducto(originales: Record<string, unknown>, id: string | undefined, usuarioId: string) {
+  let entrada = originales;
+  if (id) {
+    const { data, error } = await clienteServicio.from('productos').select('tipo_producto').eq('id', id).single();
+    if (error || !data) throw new Error('El producto que querés editar no existe.');
+    entrada = { ...originales, tipo_producto: data.tipo_producto };
+  }
+  const datos = validarProductoConVariantes(entrada);
+  for (const variante of datos.variantes) if (variante.id) validarIdentificador(variante.id, 'La variante');
+  await validarCategoriaDeProducto(datos.categoria_id, datos.tipo_producto);
+  const campos = {
+    ...datos,
+    slug: id ? undefined : await crearSlugDisponible('productos', datos.nombre),
+    orden: id ? undefined : await siguienteOrdenProducto(),
+  };
+  const { data: productoId, error } = await clienteServicio.rpc('guardar_producto_con_variantes', {
+    p_id: id || null, p_datos: campos, p_variantes: datos.variantes, p_usuario: usuarioId,
+  });
+  if (error) throw error;
+  const { data, error: errorLectura } = await clienteServicio.from('productos')
+    .select(RECURSOS.productos.seleccion).eq('id', productoId).single();
+  if (errorLectura) throw errorLectura;
+  await registrarAuditoria(usuarioId, id ? 'actualizar' : 'crear', 'productos', productoId, { variantes: datos.variantes.length });
+  return data;
+}
+
+async function validarGaleriaImagen(productoId: string, valor: unknown) {
+  const varianteId = valor ? validarIdentificador(valor, 'La variante') : null;
+  if (varianteId) {
+    const { data, error } = await clienteServicio.from('variantes').select('id, producto:productos(tipo_producto)')
+      .eq('id', varianteId).eq('producto_id', productoId).neq('estado', 'archivado').single();
+    if (error || !data) throw new Error('La variante no pertenece al producto o está archivada.');
+    const producto = Array.isArray(data.producto) ? data.producto[0] : data.producto;
+    if (producto?.tipo_producto !== 'fisico') throw new Error('Solo las variantes físicas tienen galería propia.');
+  }
+  let consulta = clienteServicio.from('imagenes').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
+  consulta = varianteId ? consulta.eq('variante_id', varianteId) : consulta.is('variante_id', null);
+  const { count, error } = await consulta;
+  if (error) throw error;
+  if ((count || 0) >= (varianteId ? 3 : 5)) throw new Error('La galería ya tiene el máximo de imágenes.');
+  return varianteId;
+}
+
 async function guardarRecurso(
   recurso: NombreRecurso,
   datosOriginales: Record<string, unknown>,
@@ -596,37 +560,14 @@ async function guardarRecurso(
 ) {
   if (!esObjetoPlano(datosOriginales)) throw new Error('Los datos enviados no tienen un formato válido.');
   if (id) validarIdentificador(id);
+  if (recurso === 'variantes') throw new Error('Las variantes se editan desde su producto.');
+  if (recurso === 'productos') return guardarProducto(datosOriginales, id, usuarioId);
 
-  let datosValidados = datosOriginales;
-  if (recurso === 'productos' && id) {
-    const { data: productoActual, error: errorProductoActual } = await clienteServicio
-      .from('productos')
-      .select('tipo_producto, sku')
-      .eq('id', id)
-      .maybeSingle();
-    if (errorProductoActual || !productoActual) throw new Error('El producto que querés editar no existe.');
-
-    // El tipo y el SKU determinan la identidad del producto. Siempre se conservan
-    // desde la base de datos aunque alguien intente enviarlos por fuera del formulario.
-    datosValidados = {
-      ...datosOriginales,
-      tipo_producto: productoActual.tipo_producto,
-      sku: productoActual.sku,
-    };
-  }
-
-  validarDatos(recurso, datosValidados);
+  validarDatos(recurso, datosOriginales);
   const definicion = RECURSOS[recurso];
-  const datos = seleccionarCampos(datosValidados, definicion.campos);
+  const datos = seleccionarCampos(datosOriginales, definicion.campos);
 
-  if (recurso === 'productos') {
-    datos.slug = await crearSlugDisponible('productos', datos.nombre, id);
-    datos.sku = String(datos.sku || '').trim().toUpperCase();
-    datos.descripcion_corta = String(datos.descripcion || '').trim();
-    datos.stock = datos.controla_stock ? Number(datos.stock) : null;
-    await validarCategoriaDeProducto(datos.categoria_id, datos.tipo_producto);
-    if (!id) datos.orden = await siguienteOrdenProducto();
-  } else if (recurso === 'categorias') {
+  if (recurso === 'categorias') {
     datos.slug = await crearSlugDisponible('categorias', datos.slug || datos.nombre, id);
   } else if ('slug' in datos) {
     datos.slug = crearSlug(datos.slug || datos.nombre);
@@ -635,38 +576,18 @@ async function guardarRecurso(
     datos.clave = crearSlug(datos.titulo).replace(/-/g, '_');
   }
 
-  let precioAnterior: number | null | undefined;
-  if (recurso === 'productos' && id && Object.prototype.hasOwnProperty.call(datos, 'precio')) {
-    const resultadoAnterior = await clienteServicio
-      .from('productos')
-      .select('precio')
-      .eq('id', id)
-      .maybeSingle();
-    precioAnterior = resultadoAnterior.data?.precio;
-  }
-
   const consulta = id
     ? clienteServicio.from(definicion.tabla).update(datos).eq('id', id).select().single()
     : clienteServicio.from(definicion.tabla).insert(datos).select().single();
   const { data, error } = await consulta;
   if (error) throw error;
 
-  if (recurso === 'productos') {
-    if (id && precioAnterior !== data.precio) {
-      await clienteServicio.from('historial_precios').insert({
-        producto_id: data.id,
-        precio_anterior: precioAnterior,
-        precio_nuevo: data.precio,
-        usuario_id: usuarioId,
-      });
-    }
-  }
-
   await registrarAuditoria(usuarioId, id ? 'actualizar' : 'crear', recurso, data.id, datos);
   return data;
 }
 
 async function eliminarRecurso(recurso: NombreRecurso, id: string, usuarioId: string) {
+  if (recurso === 'variantes') throw new Error('Las variantes se archivan desde su producto.');
   validarIdentificador(id);
   const definicion = RECURSOS[recurso];
   const consulta = recurso === 'productos'
@@ -726,12 +647,7 @@ async function prepararSubida(datos: Record<string, unknown>) {
     .maybeSingle();
   if (errorProducto || !producto) throw new Error('El producto seleccionado no existe.');
 
-  const { count, error: errorConteo } = await clienteServicio
-    .from('imagenes')
-    .select('*', { count: 'exact', head: true })
-    .eq('producto_id', productoId);
-  if (errorConteo) throw errorConteo;
-  if ((count || 0) >= 5) throw new Error('Un producto puede tener como máximo 5 imágenes.');
+  await validarGaleriaImagen(productoId, datos.variante_id);
 
   const ruta = `${productoId}/${crypto.randomUUID()}.${extensiones[tipo]}`;
   const { data, error } = await clienteServicio.storage
@@ -753,27 +669,26 @@ async function registrarImagen(
     throw new Error('La ruta de la imagen no es válida.');
   }
 
-  const { count, error: errorConteo } = await clienteServicio
-    .from('imagenes')
-    .select('*', { count: 'exact', head: true })
-    .eq('producto_id', productoId);
-  if (errorConteo) throw errorConteo;
-  if ((count || 0) >= 5) throw new Error('Un producto puede tener como máximo 5 imágenes.');
+  const varianteId = await validarGaleriaImagen(productoId, datos.variante_id);
 
   const { data: url } = clienteServicio.storage.from('productos').getPublicUrl(ruta);
   const principal = Boolean(datos.es_principal);
 
   if (principal) {
-    await clienteServicio
+    let consultaPrincipal = clienteServicio
       .from('imagenes')
       .update({ es_principal: false })
       .eq('producto_id', productoId);
+    consultaPrincipal = varianteId ? consultaPrincipal.eq('variante_id', varianteId) : consultaPrincipal.is('variante_id', null);
+    const { error: errorPrincipal } = await consultaPrincipal;
+    if (errorPrincipal) throw errorPrincipal;
   }
 
   const { data, error } = await clienteServicio
     .from('imagenes')
     .insert({
       producto_id: productoId,
+      variante_id: varianteId,
       deposito: 'productos',
       ruta,
       url_publica: url.publicUrl,
@@ -971,10 +886,6 @@ Deno.serve(async (solicitud) => {
 
     if (accion === 'resumen') {
       return responder(solicitud, { datos: await obtenerResumen() });
-    }
-
-    if (accion === 'obtener_sugerencia_sku') {
-      return responder(solicitud, { datos: await obtenerSugerenciaSku(cuerpo.tipo_producto) });
     }
 
     if (accion === 'obtener_textos_inicio') {
