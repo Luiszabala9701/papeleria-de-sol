@@ -561,7 +561,8 @@ body.dialogo-abierto {
   font-size: 0.72rem;
 }
 
-.acciones-tabla button[data-eliminar] {
+.acciones-tabla button[data-eliminar],
+.acciones-tabla button[data-eliminar-definitivamente] {
   color: var(--peligro);
 }
 
@@ -863,6 +864,19 @@ body.dialogo-abierto {
 .editor-variantes > p { color: var(--tinta-suave); }
 .lista-variantes-admin { display: grid; gap: 1rem; margin-block: 1rem; }
 .variante-admin { min-width: 0; padding: 1rem; border: 1px solid var(--borde); border-radius: 1rem; }
+.cabecera-variante-admin { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.cabecera-variante-admin .grupo-checkbox { margin: 0; }
+.boton-eliminar-variante-admin {
+  padding: .4rem .7rem;
+  border: 1px solid color-mix(in srgb, var(--peligro) 28%, var(--borde));
+  border-radius: .6rem;
+  color: var(--peligro);
+  background: var(--blanco);
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 750;
+}
+.boton-eliminar-variante-admin:disabled { cursor: wait; opacity: .55; }
 .variante-admin fieldset { border: 0; padding: .75rem 0 0; margin: 0; min-width: 0; }
 .variante-admin fieldset:disabled { display: none; }
 .variante-admin input[type=file] { max-width: 100%; }

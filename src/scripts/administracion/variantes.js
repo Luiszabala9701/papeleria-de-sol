@@ -7,7 +7,7 @@ function elemento(etiqueta, texto, clase) {
   return nodo;
 }
 
-export function crearEditorVariantes(formulario, registro = {}, crearGaleria) {
+export function crearEditorVariantes(formulario, registro = {}, crearGaleria, eliminarVariante) {
   const contenedor = elemento('section', '', 'editor-variantes campo-completo');
   const activar = elemento('input');
   activar.type = 'checkbox';
@@ -28,9 +28,13 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria) {
     const habilitada = elemento('input');
     habilitada.type = 'checkbox';
     habilitada.checked = version.estado !== 'archivado';
-    const cabecera = elemento('label', '', 'grupo-checkbox');
+    const cabecera = elemento('div', '', 'cabecera-variante-admin');
+    const selectorEstado = elemento('label', '', 'grupo-checkbox');
     const rotulo = elemento('span', version.nombre);
-    cabecera.append(habilitada, rotulo);
+    selectorEstado.append(habilitada, rotulo);
+    const eliminar = elemento('button', version.sku ? 'Eliminar variante' : 'Quitar variante', 'boton-eliminar-variante-admin');
+    eliminar.type = 'button';
+    cabecera.append(selectorEstado, eliminar);
     const campos = elemento('fieldset', '', 'formulario-dos-columnas');
     const controles = {};
     function campo(nombre, etiqueta, tipo, obligatorio = true) {
@@ -66,6 +70,25 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria) {
     const fila = { version, tarjeta, habilitada, campos, controles, rotulo };
     habilitada.addEventListener('change', actualizarVisibilidad);
     controles.nombre?.addEventListener('input', actualizarVisibilidad);
+    eliminar.addEventListener('click', async () => {
+      const usa = tipoActual === 'sticker' || tipoActual === 'fisico' && activar.checked;
+      const activas = filas.filter(f => f.habilitada.checked);
+      if (usa && habilitada.checked && activas.length === 1) {
+        alert('No podés eliminar la última variante mientras el producto use variantes.');
+        return;
+      }
+      if (version.sku && !confirm(`¿Querés eliminar definitivamente la variante ${version.nombre}? Su SKU quedará libre.`)) return;
+      eliminar.disabled = true;
+      try {
+        if (version.sku) await eliminarVariante(version);
+        filas = filas.filter(f => f !== fila);
+        tarjeta.remove();
+        actualizarVisibilidad();
+      } catch (error) {
+        alert(error.message || 'No se pudo eliminar la variante.');
+        eliminar.disabled = false;
+      }
+    });
     filas.push(fila);
     lista.append(tarjeta);
     return fila;
@@ -84,7 +107,7 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria) {
     for (const fila of filas) {
       fila.campos.disabled = !usa || !fila.habilitada.checked;
       fila.habilitada.disabled = !usa;
-      if (fisico) fila.rotulo.textContent = `${fila.controles.nombre.value || fila.version.nombre || 'Nueva variante'} — ${fila.habilitada.checked ? 'Activa (desmarcar para archivar)' : 'Archivada (marcar para recuperar)'}`;
+      if (fisico) fila.rotulo.textContent = `${fila.controles.nombre.value || fila.version.nombre || 'Nueva variante'} — ${fila.habilitada.checked ? 'Disponible' : 'Archivada'}`;
     }
     for (const nombre of ['precio', 'stock']) {
       const campo = formulario.elements[nombre];
@@ -111,7 +134,7 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria) {
         });
       } else if (tipo === 'fisico') {
         titulo.textContent = 'Variantes del producto';
-        ayuda.textContent = 'Hasta 10 variantes activas, con precio, stock y hasta 3 fotos propias. Archivarlas conserva sus datos y su SKU.';
+        ayuda.textContent = 'Hasta 10 variantes activas, con precio, stock y hasta 3 fotos propias. Desmarcar archiva; Eliminar variante borra sus datos y libera su SKU.';
         (registro.variantes || []).forEach(v => crearFila(v, false));
       }
     }

@@ -6,6 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 const administrador = '00000000-0000-4000-8000-000000000001';
 const base = await readFile(new URL('../supabase/migrations/20260901000000_esquema_base_completo.sql', import.meta.url), 'utf8');
 const migracion = await readFile(new URL('../supabase/migrations/20260903000000_variantes_y_stock_por_tipo.sql', import.meta.url), 'utf8');
+const eliminacion = await readFile(new URL('../supabase/migrations/20260909000000_eliminacion_y_reutilizacion_sku.sql', import.meta.url), 'utf8');
 
 test('migración de variantes en PostgreSQL: preservación, límites, seguridad y guardado atómico', async t => {
   const db = new PGlite();
@@ -33,6 +34,8 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
     throw error;
   });
   await db.exec(migracion); // Reejecución segura.
+  await db.exec(eliminacion);
+  await db.exec(eliminacion); // También debe poder reejecutarse sin alterar datos.
   assert.deepEqual((await db.query('select id,slug,sku,precio from productos order by id')).rows, originales);
   assert.deepEqual((await db.query('select id,url_publica from imagenes order by id')).rows, fotos);
   assert.equal((await db.query("select count(*)::int n from variantes where clave='comun'")).rows[0].n, 1000);
@@ -83,4 +86,18 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   await assert.rejects(db.query('select guardar_producto_con_variantes($1,$2::jsonb,$3::jsonb,$4)', [id, '{}', '[]', administrador]), /permission denied/);
   await db.exec('reset role;');
   await assert.rejects(db.query('select guardar_producto_con_variantes($1,$2::jsonb,$3::jsonb,$4)', [id, JSON.stringify(producto), JSON.stringify(versiones), '00000000-0000-4000-8000-000000000099']), /permisos/);
+
+  // Eliminar una variante borra sus fotos, libera el SKU y el siguiente alta reutiliza el hueco.
+  await db.query('delete from variantes where id=$1', [versiones[1].id]);
+  assert.equal((await db.query('select count(*)::int n from imagenes where variante_id=$1', [versiones[1].id])).rows[0].n, 0);
+  assert.equal((await db.query('select count(*)::int n from codigos_sku where codigo=$1', [versiones[1].sku])).rows[0].n, 0);
+  await guardar(producto, [versiones[0], { clave: 'verde', nombre: 'Verde', precio: 4700, stock: 1, estado: 'publicado' }], id);
+  const verde = (await db.query("select sku from variantes where producto_id=$1 and clave='verde'", [id])).rows[0];
+  assert.equal(verde.sku, versiones[1].sku);
+
+  // El borrado definitivo de un producto libera también el número de su SKU.
+  const skuPlantilla = (await db.query('select sku from productos where id=$1', [plantilla])).rows[0].sku;
+  await db.query('delete from productos where id=$1', [plantilla]);
+  const plantillaNueva = await guardar({ nombre: 'Plantilla nueva', slug: 'plantilla-nueva', descripcion: 'Plantilla nueva', tipo_producto: 'plantilla', estado: 'borrador', precio: 950, stock: null });
+  assert.equal((await db.query('select sku from productos where id=$1', [plantillaNueva])).rows[0].sku, skuPlantilla);
 });

@@ -729,6 +729,85 @@ async function limpiarArchivosPendientes() {
   }
 }
 
+async function eliminarArchivosDeStorage(
+  imagenes: unknown,
+  productoId: string,
+  productoPendienteId: string | null,
+) {
+  if (!Array.isArray(imagenes)) return 0;
+  let pendientes = 0;
+
+  for (const imagen of imagenes) {
+    if (!esObjetoPlano(imagen) || imagen.deposito !== 'productos' || typeof imagen.ruta !== 'string' ||
+      !esRutaDeArchivoDeProductoSegura(imagen.ruta, productoId)) continue;
+    const ruta = String(imagen.ruta);
+    const { error: errorStorage } = await clienteServicio.storage.from('productos').remove([ruta]);
+    if (!errorStorage) continue;
+
+    pendientes += 1;
+    const { error: errorPendiente } = await clienteServicio
+      .from('archivos_pendientes_eliminar')
+      .upsert({ ruta, deposito: 'productos', producto_id: productoPendienteId }, { onConflict: 'ruta,deposito' });
+    if (errorPendiente) console.error('No se pudo registrar la limpieza pendiente:', errorPendiente);
+  }
+  return pendientes;
+}
+
+async function eliminarVariante(productoOriginal: unknown, varianteOriginal: unknown, usuarioId: string) {
+  const productoId = validarIdentificador(productoOriginal, 'El producto');
+  const varianteId = validarIdentificador(varianteOriginal, 'La variante');
+  const { data: variante, error: errorLectura } = await clienteServicio
+    .from('variantes')
+    .select('id, nombre, sku, imagenes(id, deposito, ruta)')
+    .eq('id', varianteId)
+    .eq('producto_id', productoId)
+    .maybeSingle();
+  if (errorLectura || !variante) throw new Error('La variante no pertenece al producto seleccionado.');
+
+  const { data: eliminada, error } = await clienteServicio
+    .from('variantes')
+    .delete()
+    .eq('id', varianteId)
+    .eq('producto_id', productoId)
+    .select('id')
+    .maybeSingle();
+  if (error) throw error;
+  if (!eliminada) throw new Error('La variante ya no existe.');
+
+  const pendientes = await eliminarArchivosDeStorage(variante.imagenes, productoId, productoId);
+  await registrarAuditoria(usuarioId, 'eliminar_definitivamente', 'variantes', varianteId, {
+    producto_id: productoId, sku: variante.sku, archivos_pendientes: pendientes,
+  });
+  return { archivos_pendientes: pendientes };
+}
+
+async function eliminarProductoDefinitivamente(idOriginal: unknown, usuarioId: string) {
+  const productoId = validarIdentificador(idOriginal, 'El producto');
+  const { data: producto, error: errorLectura } = await clienteServicio
+    .from('productos')
+    .select('id, nombre, sku, estado, imagenes(id, deposito, ruta)')
+    .eq('id', productoId)
+    .maybeSingle();
+  if (errorLectura || !producto) throw new Error('El producto ya no existe.');
+  if (producto.estado !== 'archivado') throw new Error('Primero archivá el producto antes de eliminarlo definitivamente.');
+
+  const { data: eliminado, error } = await clienteServicio
+    .from('productos')
+    .delete()
+    .eq('id', productoId)
+    .eq('estado', 'archivado')
+    .select('id')
+    .maybeSingle();
+  if (error) throw error;
+  if (!eliminado) throw new Error('El producto debe seguir archivado para poder eliminarlo.');
+
+  const pendientes = await eliminarArchivosDeStorage(producto.imagenes, productoId, null);
+  await registrarAuditoria(usuarioId, 'eliminar_definitivamente', 'productos', productoId, {
+    nombre: producto.nombre, sku: producto.sku, archivos_pendientes: pendientes,
+  });
+  return { archivos_pendientes: pendientes };
+}
+
 async function eliminarImagen(
   datos: Record<string, unknown>,
   usuarioId: string,
@@ -924,6 +1003,18 @@ Deno.serve(async (solicitud) => {
       const recurso = validarRecurso(cuerpo.recurso);
       await restaurarRecurso(recurso, String(cuerpo.id), autenticacion.user.id);
       return responder(solicitud, { datos: true });
+    }
+
+    if (accion === 'eliminar_producto_definitivamente') {
+      return responder(solicitud, {
+        datos: await eliminarProductoDefinitivamente(cuerpo.id, autenticacion.user.id),
+      });
+    }
+
+    if (accion === 'eliminar_variante') {
+      return responder(solicitud, {
+        datos: await eliminarVariante(cuerpo.producto_id, cuerpo.variante_id, autenticacion.user.id),
+      });
     }
 
     if (accion === 'preparar_subida') {

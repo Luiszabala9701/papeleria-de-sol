@@ -227,6 +227,7 @@ function renderizarListado(recurso, registros) {
     grupo.append(crearBotonAccion('Editar', 'editar', registro.id));
     if (recurso === 'productos' && registro.estado === 'archivado') {
       grupo.append(crearBotonAccion('Restaurar', 'restaurar', registro.id));
+      grupo.append(crearBotonAccion('Eliminar definitivamente', 'eliminarDefinitivamente', registro.id));
     } else {
       grupo.append(crearBotonAccion(recurso === 'productos' ? 'Archivar' : 'Eliminar', 'eliminar', registro.id));
     }
@@ -357,6 +358,19 @@ function crearCampo(definicion, registro = {}) {
   return contenedor;
 }
 
+async function eliminarVarianteDesdeEditor(variante) {
+  if (!registroEdicion?.id || !variante?.id) return;
+  const resultado = await invocar('eliminar_variante', {
+    producto_id: registroEdicion.id,
+    variante_id: variante.id,
+  });
+  registroEdicion.variantes = (registroEdicion.variantes || []).filter(actual => actual.id !== variante.id);
+  registroEdicion.imagenes = (registroEdicion.imagenes || []).filter(imagen => imagen.variante_id !== variante.id);
+  notificar(resultado?.archivos_pendientes
+    ? 'La variante se eliminó. Algunas imágenes quedaron pendientes de limpieza automática.'
+    : 'La variante se eliminó definitivamente y su SKU quedó disponible.');
+}
+
 function abrirDialogo(recurso, registro = null) {
   recursoDialogo = recurso;
   idEdicion = registro?.id || null;
@@ -376,7 +390,12 @@ function abrirDialogo(recurso, registro = null) {
     const sku = document.createElement('p');
     sku.className = 'campo-completo';
     sku.textContent = registro?.sku ? `SKU: ${registro.sku}` : 'El SKU se asigna automáticamente al guardar.';
-    editorVariantes = crearEditorVariantes(formularioRecurso, registro || {}, crearGestorImagenesProducto);
+    editorVariantes = crearEditorVariantes(
+      formularioRecurso,
+      registro || {},
+      crearGestorImagenesProducto,
+      eliminarVarianteDesdeEditor,
+    );
     camposFormulario.append(sku, editorVariantes.contenedor);
   }
   if (avanzadas.length) {
@@ -724,6 +743,24 @@ document.addEventListener('click', async (evento) => {
       await invocar('eliminar', { recurso: recursoActual, id: eliminar.dataset.eliminar });
       notificar('El cambio se guardó correctamente.');
       await cargarRecurso(recursoActual);
+    } catch (error) {
+      notificar(error.message);
+    }
+  }
+
+  const eliminarDefinitivamente = evento.target.closest('[data-eliminar-definitivamente]');
+  if (eliminarDefinitivamente) {
+    const producto = registrosActuales.get(eliminarDefinitivamente.dataset.eliminarDefinitivamente);
+    const nombre = producto?.nombre || 'este producto';
+    if (!confirm(`¿Querés eliminar definitivamente ${nombre}? Se borrarán sus variantes e imágenes y sus SKU quedarán libres. Esta acción no se puede deshacer.`)) return;
+    try {
+      const resultado = await invocar('eliminar_producto_definitivamente', {
+        id: eliminarDefinitivamente.dataset.eliminarDefinitivamente,
+      });
+      notificar(resultado?.archivos_pendientes
+        ? 'El producto se eliminó. Algunas imágenes quedaron pendientes de limpieza automática.'
+        : 'El producto se eliminó definitivamente y sus SKU quedaron disponibles.');
+      await cargarRecurso('productos');
     } catch (error) {
       notificar(error.message);
     }
