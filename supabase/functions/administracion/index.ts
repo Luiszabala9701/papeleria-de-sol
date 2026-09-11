@@ -16,7 +16,8 @@ const RECURSOS = {
     campos: [
       'categoria_id', 'tipo_producto', 'nombre', 'sku',
       'descripcion', 'precio', 'moneda', 'controla_stock', 'stock', 'estado',
-      'destacado', 'mensaje_whatsapp', 'meta_titulo', 'meta_descripcion',
+      'destacado', 'en_carrusel_inicio', 'orden_carrusel',
+      'mensaje_whatsapp', 'meta_titulo', 'meta_descripcion',
     ],
   },
   categorias: {
@@ -524,7 +525,7 @@ async function guardarProducto(originales: Record<string, unknown>, id: string |
     slug: id ? undefined : await crearSlugDisponible('productos', datos.nombre),
     orden: id ? undefined : await siguienteOrdenProducto(),
   };
-  const { data: productoId, error } = await clienteServicio.rpc('guardar_producto_con_variantes', {
+  const { data: productoId, error } = await clienteServicio.rpc('guardar_producto_con_variantes_v2', {
     p_id: id || null, p_datos: campos, p_variantes: datos.variantes, p_usuario: usuarioId,
   });
   if (error) throw error;
@@ -704,6 +705,31 @@ async function registrarImagen(
   return data;
 }
 
+async function reordenarImagenes(
+  datos: Record<string, unknown>,
+  usuarioId: string,
+) {
+  if (!esObjetoPlano(datos) || !Array.isArray(datos.imagenes)) {
+    throw new Error('El orden de imágenes no tiene un formato válido.');
+  }
+  const productoId = validarIdentificador(datos.producto_id, 'El producto');
+  const varianteId = datos.variante_id
+    ? validarIdentificador(datos.variante_id, 'La variante')
+    : null;
+  const imagenes = datos.imagenes.map((id) => validarIdentificador(id, 'La imagen'));
+  const { error } = await clienteServicio.rpc('reordenar_imagenes_producto', {
+    p_producto: productoId,
+    p_variante: varianteId,
+    p_imagenes: imagenes,
+    p_usuario: usuarioId,
+  });
+  if (error) throw error;
+  await registrarAuditoria(usuarioId, 'reordenar', 'imagenes', productoId, {
+    variante_id: varianteId, imagenes,
+  });
+  return true;
+}
+
 async function limpiarArchivosPendientes() {
   const { data: pendientes, error } = await clienteServicio
     .from('archivos_pendientes_eliminar')
@@ -789,17 +815,14 @@ async function eliminarProductoDefinitivamente(idOriginal: unknown, usuarioId: s
     .eq('id', productoId)
     .maybeSingle();
   if (errorLectura || !producto) throw new Error('El producto ya no existe.');
-  if (producto.estado !== 'archivado') throw new Error('Primero archivá el producto antes de eliminarlo definitivamente.');
-
   const { data: eliminado, error } = await clienteServicio
     .from('productos')
     .delete()
     .eq('id', productoId)
-    .eq('estado', 'archivado')
     .select('id')
     .maybeSingle();
   if (error) throw error;
-  if (!eliminado) throw new Error('El producto debe seguir archivado para poder eliminarlo.');
+  if (!eliminado) throw new Error('El producto ya no existe.');
 
   const pendientes = await eliminarArchivosDeStorage(producto.imagenes, productoId, null);
   await registrarAuditoria(usuarioId, 'eliminar_definitivamente', 'productos', productoId, {
@@ -952,6 +975,9 @@ Deno.serve(async (solicitud) => {
     }
 
     await validarActividad(autenticacion.user.id, sesionId);
+    if (accion === 'registrar_actividad') {
+      return responder(solicitud, { datos: true });
+    }
     await limpiarArchivosPendientes();
 
     if (accion === 'cerrar_sesion') {
@@ -1024,6 +1050,12 @@ Deno.serve(async (solicitud) => {
     if (accion === 'registrar_imagen') {
       return responder(solicitud, {
         datos: await registrarImagen(cuerpo.datos || {}, autenticacion.user.id),
+      });
+    }
+
+    if (accion === 'reordenar_imagenes') {
+      return responder(solicitud, {
+        datos: await reordenarImagenes(cuerpo.datos || {}, autenticacion.user.id),
       });
     }
 

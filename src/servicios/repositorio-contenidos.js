@@ -28,6 +28,8 @@ function crearStickersDemostracion() {
       controla_stock: false,
       stock: null,
       destacado: numero <= 8,
+      en_carrusel_inicio: numero <= 3,
+      orden_carrusel: numero,
       estado: 'publicado',
       orden: numero,
       categoria: null,

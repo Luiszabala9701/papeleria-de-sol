@@ -8,8 +8,20 @@
   display: none !important;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
+html.dialogo-abierto,
 body.dialogo-abierto {
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.dialogo-abierto {
+  position: fixed;
+  inset-inline: 0;
+  width: 100%;
 }
 
 .admin-cabecera {
@@ -452,6 +464,12 @@ body.dialogo-abierto {
   border: 1px solid var(--borde);
   border-radius: 0.7rem;
   background: var(--blanco);
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.tarjeta-imagen-admin:active {
+  cursor: grabbing;
 }
 
 .admin-lateral-cabecera {
@@ -564,6 +582,28 @@ body.dialogo-abierto {
 .acciones-tabla button[data-eliminar],
 .acciones-tabla button[data-eliminar-definitivamente] {
   color: var(--peligro);
+}
+
+.controles-orden-imagen {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.controles-orden-imagen button {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 0.4rem;
+  color: var(--azul-profundo);
+  background: var(--blanco);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.controles-orden-imagen button:disabled {
+  cursor: default;
+  opacity: 0.35;
 }
 
 .formulario-dos-columnas {
@@ -748,6 +788,8 @@ body.dialogo-abierto {
 .formulario-dialogo .formulario-admin {
   margin: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   border: 0;
   border-radius: 0;
 }

@@ -1,0 +1,32 @@
+---
+import TarjetaProducto from './TarjetaProducto.astro';
+import type { ConfiguracionSitio, Producto } from '../tipos/contenidos';
+
+interface Props {
+  productos: Producto[];
+  configuracion: ConfiguracionSitio;
+}
+
+const { productos, configuracion } = Astro.props;
+---
+
+<div class="hero-carrusel" data-carrusel-inicio aria-label="Productos elegidos para el inicio">
+  <div class="hero-carrusel-ventana" aria-live="polite">
+    {productos.map((producto, indice) => (
+      <div class="hero-carrusel-diapo" data-diapo-carrusel hidden={indice !== 0}>
+        <TarjetaProducto producto={producto} configuracion={configuracion} compacta />
+      </div>
+    ))}
+  </div>
+  {productos.length > 1 && (
+    <div class="hero-carrusel-controles">
+      <button type="button" data-carrusel-anterior aria-label="Ver producto anterior">←</button>
+      <span data-carrusel-indicador>1 / {productos.length}</span>
+      <button type="button" data-carrusel-siguiente aria-label="Ver producto siguiente">→</button>
+    </div>
+  )}
+</div>
+
+<script>
+  import '../scripts/carrusel-inicio.js';
+</script>

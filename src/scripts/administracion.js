@@ -48,10 +48,41 @@ let categorias = [];
 let registroEdicion = null;
 let editorVariantes = null;
 const archivosSubidos = new WeakSet();
+const gestoresImagenes = new Map();
 let minutosInactividad = 30;
 let ultimaActividadConfirmada = Date.now();
+let ultimaActividadUsuario = Date.now();
+let pulsoActividadEnCurso = false;
+let posicionScrollBloqueada = null;
 let paginaProductos = 1;
 const PRODUCTOS_POR_PAGINA = 50;
+
+function sincronizarBloqueoModal() {
+  const hayModalAbierto = Boolean(document.querySelector('dialog[open]'));
+  if (hayModalAbierto && posicionScrollBloqueada === null) {
+    posicionScrollBloqueada = window.scrollY;
+    document.documentElement.classList.add('dialogo-abierto');
+    document.body.classList.add('dialogo-abierto');
+    document.body.style.top = `-${posicionScrollBloqueada}px`;
+  } else if (!hayModalAbierto && posicionScrollBloqueada !== null) {
+    const posicion = posicionScrollBloqueada;
+    posicionScrollBloqueada = null;
+    document.documentElement.classList.remove('dialogo-abierto');
+    document.body.classList.remove('dialogo-abierto');
+    document.body.style.removeProperty('top');
+    window.scrollTo({ top: posicion, left: 0, behavior: 'auto' });
+  }
+}
+
+new MutationObserver(sincronizarBloqueoModal).observe(document.body, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['open'],
+});
+
+function registrarActividadUsuario() {
+  if (!panelAdministracion?.hidden) ultimaActividadUsuario = Date.now();
+}
 
 async function obtenerMensajeErrorFuncion(error) {
   const respuesta = error?.context;
@@ -86,14 +117,17 @@ async function invocar(accion, contenido = {}) {
 async function abrirAdministracion() {
   const datos = await invocar('iniciar_sesion');
   minutosInactividad = Number(datos.inactividad_minutos || 30);
+  ultimaActividadUsuario = Date.now();
+  ultimaActividadConfirmada = Date.now();
   pantallaLogin.hidden = true;
   panelAdministracion.hidden = false;
   datosSesion.hidden = false;
   await Promise.all([cargarAuxiliares(), cargarResumen()]);
 }
 
-async function cerrarSesionLocal() {
-  await cliente?.auth.signOut().catch(() => {});
+async function cerrarSesionLocal(cerrarAutenticacion = true) {
+  document.querySelectorAll('dialog[open]').forEach(modal => modal.close());
+  if (cerrarAutenticacion) await cliente?.auth.signOut().catch(() => {});
   panelAdministracion.hidden = true;
   datosSesion.hidden = true;
   pantallaLogin.hidden = false;
@@ -106,6 +140,21 @@ async function cerrarSesionCompleta() {
     // El cierre local debe continuar aunque la sesión ya haya expirado en el servidor.
   }
   await cerrarSesionLocal();
+}
+
+async function enviarPulsoActividad() {
+  if (pulsoActividadEnCurso || panelAdministracion?.hidden) return;
+  const ahora = Date.now();
+  const activaRecientemente = ahora - ultimaActividadUsuario < 90_000;
+  if (!activaRecientemente || ahora - ultimaActividadConfirmada < 45_000) return;
+  pulsoActividadEnCurso = true;
+  try {
+    await invocar('registrar_actividad');
+  } catch {
+    // invocar ya gestiona sesiones vencidas; un fallo de red se reintentará.
+  } finally {
+    pulsoActividadEnCurso = false;
+  }
 }
 
 async function cargarResumen() {
@@ -227,9 +276,11 @@ function renderizarListado(recurso, registros) {
     grupo.append(crearBotonAccion('Editar', 'editar', registro.id));
     if (recurso === 'productos' && registro.estado === 'archivado') {
       grupo.append(crearBotonAccion('Restaurar', 'restaurar', registro.id));
-      grupo.append(crearBotonAccion('Eliminar definitivamente', 'eliminarDefinitivamente', registro.id));
     } else {
       grupo.append(crearBotonAccion(recurso === 'productos' ? 'Archivar' : 'Eliminar', 'eliminar', registro.id));
+    }
+    if (recurso === 'productos') {
+      grupo.append(crearBotonAccion('Eliminar definitivamente', 'eliminarDefinitivamente', registro.id));
     }
     celdaAcciones.append(grupo);
     fila.append(celdaAcciones);
@@ -368,10 +419,29 @@ async function eliminarVarianteDesdeEditor(variante) {
   registroEdicion.imagenes = (registroEdicion.imagenes || []).filter(imagen => imagen.variante_id !== variante.id);
   notificar(resultado?.archivos_pendientes
     ? 'La variante se eliminó. Algunas imágenes quedaron pendientes de limpieza automática.'
-    : 'La variante se eliminó definitivamente y su SKU quedó disponible.');
+    : 'La variante se eliminó definitivamente. Su SKU permanece reservado como utilizado.');
+}
+
+function actualizarCamposCarrusel() {
+  const mostrar = formularioRecurso?.elements.en_carrusel_inicio;
+  const orden = formularioRecurso?.elements.orden_carrusel;
+  if (!mostrar || !orden) return;
+  const grupo = orden.closest('label');
+  grupo.hidden = !mostrar.checked;
+  orden.disabled = !mostrar.checked;
+}
+
+function limpiarGestoresImagenes() {
+  for (const estado of gestoresImagenes.values()) {
+    for (const item of estado.items) {
+      if (item.tipo === 'nueva' && item.urlTemporal) URL.revokeObjectURL(item.urlTemporal);
+    }
+  }
+  gestoresImagenes.clear();
 }
 
 function abrirDialogo(recurso, registro = null) {
+  limpiarGestoresImagenes();
   recursoDialogo = recurso;
   idEdicion = registro?.id || null;
   registroEdicion = registro;
@@ -380,8 +450,8 @@ function abrirDialogo(recurso, registro = null) {
   camposFormulario.replaceChildren();
   const definiciones = ESQUEMAS_RECURSOS[recurso];
   definiciones.filter((definicion) => !definicion.avanzado).forEach((definicion) => {
-    if (recurso === 'productos' && registro && definicion.nombre === 'imagenes_nuevas') {
-      camposFormulario.append(crearGestorImagenesProducto(registro));
+    if (recurso === 'productos' && definicion.nombre === 'imagenes_nuevas') {
+      camposFormulario.append(crearGestorImagenesProducto(registro || {}));
     }
     camposFormulario.append(crearCampo(definicion, registro || {}));
   });
@@ -413,9 +483,10 @@ function abrirDialogo(recurso, registro = null) {
   }
   ocultarError(errorFormulario);
   actualizarCategoriasDisponibles();
+  actualizarCamposCarrusel();
   editorVariantes?.actualizarTipo();
-  document.body.classList.add('dialogo-abierto');
   if (!dialogo.open) dialogo.showModal();
+  sincronizarBloqueoModal();
 }
 
 function obtenerDatosFormulario() {
@@ -443,30 +514,29 @@ function obtenerDatosFormulario() {
 async function subirImagenesSiCorresponde(producto) {
   if (recursoDialogo !== 'productos') return;
   const cargas = [{ varianteId: null, campo: formularioRecurso.elements.imagenes_nuevas, maximo: 5 }, ...editorVariantes.cargas()];
-  for (const carga of cargas) await subirGaleria(producto, carga);
+  for (const carga of cargas) await guardarGaleria(producto, carga);
 }
 
 function validarCargasAntesDeGuardar() {
   if (recursoDialogo !== 'productos') return;
   const cargas = [{ varianteId: null, campo: formularioRecurso.elements.imagenes_nuevas, maximo: 5 }, ...editorVariantes.cargas()];
-  for (const { varianteId, campo, maximo } of cargas) {
-    const archivos = Array.from(campo?.files || []).filter(archivo => !archivosSubidos.has(archivo));
-    const actuales = (registroEdicion?.imagenes || []).filter(i => (i.variante_id || null) === varianteId).length;
-    if (actuales + archivos.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
-    for (const archivo of archivos) {
+  for (const { varianteId, maximo } of cargas) {
+    const estado = obtenerEstadoGaleria(registroEdicion || {}, varianteId, maximo);
+    if (estado.items.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
+    for (const { archivo } of estado.items.filter(item => item.tipo === 'nueva')) {
       if (archivo.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivo.name} supera el máximo de 5 MB.`);
       if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(archivo.type)) throw new Error(`El formato de ${archivo.name} no está permitido.`);
     }
   }
 }
 
-async function subirGaleria(producto, { varianteId, campo, maximo }) {
-  const archivos = Array.from(campo?.files || []).filter(archivo => !archivosSubidos.has(archivo));
-  if (!archivos.length) return;
-  const cantidadExistente = (registroEdicion?.imagenes || []).filter(i => (i.variante_id || null) === varianteId).length;
-  if (cantidadExistente + archivos.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
+async function guardarGaleria(producto, { varianteId, campo, maximo }) {
+  const estado = obtenerEstadoGaleria(registroEdicion || producto, varianteId, maximo);
+  if (estado.items.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
 
-  for (const [indice, archivo] of archivos.entries()) {
+  for (const [indice, item] of estado.items.entries()) {
+    if (item.tipo !== 'nueva') continue;
+    const { archivo } = item;
     if (archivo.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivo.name} supera el máximo de 5 MB.`);
     const preparacion = await invocar('preparar_subida', {
       datos: { producto_id: producto.id, variante_id: varianteId, tipo: archivo.type },
@@ -482,12 +552,25 @@ async function subirGaleria(producto, { varianteId, campo, maximo }) {
         variante_id: varianteId,
         ruta: preparacion.ruta,
         texto_alternativo: `${producto.nombre} de Papelería de Sol`,
-        es_principal: cantidadExistente === 0 && indice === 0,
-        orden: cantidadExistente + indice + 1,
+        es_principal: false,
+        orden: indice + 1,
       },
     });
     archivosSubidos.add(archivo);
     registroEdicion.imagenes.push(imagen);
+    if (item.urlTemporal) URL.revokeObjectURL(item.urlTemporal);
+    Object.assign(item, { tipo: 'existente', imagen, urlTemporal: null, archivo: null });
+  }
+
+  const ids = estado.items.map(item => item.imagen.id);
+  if (ids.length) {
+    await invocar('reordenar_imagenes', {
+      datos: { producto_id: producto.id, variante_id: varianteId, imagenes: ids },
+    });
+    estado.items.forEach((item, indice) => {
+      item.imagen.orden = indice + 1;
+      item.imagen.es_principal = indice === 0;
+    });
   }
   campo.value = '';
 }
@@ -497,6 +580,39 @@ function imagenesOrdenadas(registro) {
     if (primera.es_principal !== segunda.es_principal) return primera.es_principal ? -1 : 1;
     return Number(primera.orden || 0) - Number(segunda.orden || 0);
   });
+}
+
+function claveGaleria(varianteId) {
+  return varianteId || 'producto';
+}
+
+function obtenerEstadoGaleria(registro, varianteId = null, maximo = varianteId ? 3 : 5) {
+  const clave = claveGaleria(varianteId);
+  if (!gestoresImagenes.has(clave)) {
+    const existentes = imagenesOrdenadas(registro)
+      .filter(imagen => (imagen.variante_id || null) === varianteId)
+      .map(imagen => ({ tipo: 'existente', clave: imagen.id, imagen }));
+    gestoresImagenes.set(clave, { clave, varianteId, maximo, items: existentes });
+  }
+  return gestoresImagenes.get(clave);
+}
+
+function sincronizarArchivosGaleria(campo, varianteId = null, maximo = varianteId ? 3 : 5) {
+  const estado = obtenerEstadoGaleria(registroEdicion || {}, varianteId, maximo);
+  for (const item of estado.items.filter(item => item.tipo === 'nueva')) {
+    if (item.urlTemporal) URL.revokeObjectURL(item.urlTemporal);
+  }
+  const existentes = estado.items.filter(item => item.tipo === 'existente');
+  const nuevas = Array.from(campo.files || [])
+    .filter(archivo => !archivosSubidos.has(archivo))
+    .map(archivo => ({
+      tipo: 'nueva',
+      clave: `nueva-${crypto.randomUUID()}`,
+      archivo,
+      urlTemporal: URL.createObjectURL(archivo),
+    }));
+  estado.items = [...existentes, ...nuevas];
+  actualizarGestorImagenesProducto(varianteId);
 }
 
 function crearGestorImagenesProducto(registro, varianteId = null) {
@@ -509,12 +625,12 @@ function crearGestorImagenesProducto(registro, varianteId = null) {
   const titulo = document.createElement('h3');
   titulo.textContent = 'Imágenes actuales';
   const descripcion = document.createElement('p');
-  descripcion.textContent = 'Podés ampliar una imagen o eliminarla. Las nuevas se agregan desde el campo de carga de abajo.';
+  descripcion.textContent = 'Arrastrá las miniaturas o usá las flechas para ordenarlas. La primera será la portada.';
   cabecera.append(titulo, descripcion);
   seccion.append(cabecera);
 
-  const imagenes = imagenesOrdenadas(registro).filter(i => (i.variante_id || null) === varianteId);
-  if (!imagenes.length) {
+  const estadoGaleria = obtenerEstadoGaleria(registro, varianteId);
+  if (!estadoGaleria.items.length) {
     const vacio = document.createElement('p');
     vacio.className = 'estado-imagenes-vacio';
     vacio.textContent = 'Este producto todavía no tiene imágenes cargadas.';
@@ -524,37 +640,63 @@ function crearGestorImagenesProducto(registro, varianteId = null) {
 
   const cuadricula = document.createElement('div');
   cuadricula.className = 'cuadricula-imagenes-admin';
-  imagenes.forEach((imagen, indice) => {
+  estadoGaleria.items.forEach((item, indice) => {
+    const imagen = item.imagen;
+    const url = item.tipo === 'nueva' ? item.urlTemporal : imagen.url_publica;
+    const alt = item.tipo === 'nueva' ? item.archivo.name : (imagen.texto_alternativo || registro.nombre);
     const tarjeta = document.createElement('article');
     tarjeta.className = 'tarjeta-imagen-admin';
+    tarjeta.draggable = true;
+    tarjeta.dataset.claveGaleria = estadoGaleria.clave;
+    tarjeta.dataset.claveImagenOrden = item.clave;
 
     const ampliar = document.createElement('button');
     ampliar.type = 'button';
     ampliar.className = 'boton-miniatura-admin';
     ampliar.dataset.ampliarImagenAdmin = '';
-    ampliar.dataset.imagenUrl = imagen.url_publica;
-    ampliar.dataset.imagenAlt = imagen.texto_alternativo || registro.nombre;
+    ampliar.dataset.imagenUrl = url;
+    ampliar.dataset.imagenAlt = alt;
     ampliar.setAttribute('aria-label', `Ampliar imagen ${indice + 1} de ${registro.nombre}`);
     const vista = document.createElement('img');
-    vista.src = imagen.url_publica;
-    vista.alt = imagen.texto_alternativo || `Imagen ${indice + 1} de ${registro.nombre}`;
+    vista.src = url;
+    vista.alt = alt || `Imagen ${indice + 1} de ${registro.nombre || 'producto'}`;
     vista.width = 160;
     vista.height = 160;
     vista.loading = 'lazy';
+    vista.draggable = false;
     ampliar.append(vista);
 
     const pie = document.createElement('div');
     pie.className = 'acciones-imagen-admin';
     const estado = document.createElement('span');
-    estado.textContent = imagen.es_principal ? 'Principal' : `Imagen ${indice + 1}`;
+    estado.textContent = indice === 0 ? 'Portada' : `Imagen ${indice + 1}`;
+    const controlesOrden = document.createElement('div');
+    controlesOrden.className = 'controles-orden-imagen';
+    for (const [direccion, texto] of [['anterior', '←'], ['siguiente', '→']]) {
+      const mover = document.createElement('button');
+      mover.type = 'button';
+      mover.textContent = texto;
+      mover.dataset.moverImagen = direccion;
+      mover.dataset.claveGaleria = estadoGaleria.clave;
+      mover.dataset.claveImagenOrden = item.clave;
+      mover.disabled = direccion === 'anterior' ? indice === 0 : indice === estadoGaleria.items.length - 1;
+      mover.setAttribute('aria-label', `${direccion === 'anterior' ? 'Mover antes' : 'Mover después'} la imagen ${indice + 1}`);
+      controlesOrden.append(mover);
+    }
     const eliminar = document.createElement('button');
     eliminar.type = 'button';
     eliminar.className = 'boton-eliminar-imagen-admin';
     eliminar.textContent = 'Eliminar';
-    eliminar.dataset.eliminarImagen = imagen.id;
-    eliminar.dataset.productoImagen = registro.id;
-    if (varianteId) eliminar.dataset.varianteImagen = varianteId;
-    pie.append(estado, eliminar);
+    if (item.tipo === 'nueva') {
+      eliminar.textContent = 'Quitar';
+      eliminar.dataset.quitarImagenNueva = item.clave;
+      eliminar.dataset.claveGaleria = estadoGaleria.clave;
+    } else {
+      eliminar.dataset.eliminarImagen = imagen.id;
+      eliminar.dataset.productoImagen = registro.id;
+      if (varianteId) eliminar.dataset.varianteImagen = varianteId;
+    }
+    pie.append(estado, controlesOrden, eliminar);
     tarjeta.append(ampliar, pie);
     cuadricula.append(tarjeta);
   });
@@ -564,8 +706,21 @@ function crearGestorImagenesProducto(registro, varianteId = null) {
 
 function actualizarGestorImagenesProducto(varianteId = null) {
   const actual = document.getElementById(varianteId ? `gestor-imagenes-${varianteId}` : 'gestor-imagenes-producto');
-  if (!actual || !registroEdicion) return;
-  actual.replaceWith(crearGestorImagenesProducto(registroEdicion, varianteId));
+  if (!actual) return;
+  actual.replaceWith(crearGestorImagenesProducto(registroEdicion || {}, varianteId));
+}
+
+function moverImagenGaleria(clave, imagenClave, destino) {
+  const estado = gestoresImagenes.get(clave);
+  if (!estado) return;
+  const origen = estado.items.findIndex(item => item.clave === imagenClave);
+  const objetivo = typeof destino === 'number'
+    ? origen + destino
+    : estado.items.findIndex(item => item.clave === destino);
+  if (origen < 0 || objetivo < 0 || objetivo >= estado.items.length || origen === objetivo) return;
+  const [item] = estado.items.splice(origen, 1);
+  estado.items.splice(objetivo, 0, item);
+  actualizarGestorImagenesProducto(estado.varianteId);
 }
 
 function abrirVisorImagenAdmin(url, alt) {
@@ -712,6 +867,26 @@ document.addEventListener('click', async (evento) => {
     return;
   }
 
+  const moverImagen = evento.target.closest('[data-mover-imagen]');
+  if (moverImagen) {
+    moverImagenGaleria(
+      moverImagen.dataset.claveGaleria,
+      moverImagen.dataset.claveImagenOrden,
+      moverImagen.dataset.moverImagen === 'anterior' ? -1 : 1,
+    );
+    return;
+  }
+
+  const quitarImagenNueva = evento.target.closest('[data-quitar-imagen-nueva]');
+  if (quitarImagenNueva) {
+    const estado = gestoresImagenes.get(quitarImagenNueva.dataset.claveGaleria);
+    const item = estado?.items.find(actual => actual.clave === quitarImagenNueva.dataset.quitarImagenNueva);
+    if (item?.urlTemporal) URL.revokeObjectURL(item.urlTemporal);
+    if (estado) estado.items = estado.items.filter(actual => actual !== item);
+    actualizarGestorImagenesProducto(estado?.varianteId || null);
+    return;
+  }
+
   const eliminarImagen = evento.target.closest('[data-eliminar-imagen]');
   if (eliminarImagen) {
     if (!registroEdicion || !confirm('¿Querés eliminar esta imagen del producto?')) return;
@@ -725,7 +900,12 @@ document.addEventListener('click', async (evento) => {
       registroEdicion.imagenes = (registroEdicion.imagenes || []).filter(
         (imagen) => imagen.id !== eliminarImagen.dataset.eliminarImagen,
       );
-      actualizarGestorImagenesProducto(eliminarImagen.dataset.varianteImagen || null);
+      const varianteId = eliminarImagen.dataset.varianteImagen || null;
+      const estadoGaleria = gestoresImagenes.get(claveGaleria(varianteId));
+      if (estadoGaleria) {
+        estadoGaleria.items = estadoGaleria.items.filter(item => item.imagen?.id !== eliminarImagen.dataset.eliminarImagen);
+      }
+      actualizarGestorImagenesProducto(varianteId);
       notificar(resultado?.archivo_pendiente
         ? 'La imagen dejó de estar publicada. Su archivo se eliminará automáticamente al reintentarlo.'
         : 'La imagen se eliminó correctamente.');
@@ -752,14 +932,14 @@ document.addEventListener('click', async (evento) => {
   if (eliminarDefinitivamente) {
     const producto = registrosActuales.get(eliminarDefinitivamente.dataset.eliminarDefinitivamente);
     const nombre = producto?.nombre || 'este producto';
-    if (!confirm(`¿Querés eliminar definitivamente ${nombre}? Se borrarán sus variantes e imágenes y sus SKU quedarán libres. Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`¿Seguro que deseas eliminar definitivamente ${nombre}? Esta acción no se puede deshacer. Se borrarán sus variantes e imágenes; los SKU seguirán reservados como utilizados.`)) return;
     try {
       const resultado = await invocar('eliminar_producto_definitivamente', {
         id: eliminarDefinitivamente.dataset.eliminarDefinitivamente,
       });
       notificar(resultado?.archivos_pendientes
         ? 'El producto se eliminó. Algunas imágenes quedaron pendientes de limpieza automática.'
-        : 'El producto se eliminó definitivamente y sus SKU quedaron disponibles.');
+        : 'El producto se eliminó definitivamente y sus SKU quedaron reservados.');
       await cargarRecurso('productos');
     } catch (error) {
       notificar(error.message);
@@ -819,6 +999,38 @@ formularioRecurso?.addEventListener('change', (evento) => {
     actualizarCategoriasDisponibles();
     editorVariantes?.actualizarTipo();
   }
+  if (evento.target.name === 'en_carrusel_inicio') actualizarCamposCarrusel();
+  if (evento.target.type === 'file') {
+    const varianteId = evento.target.dataset.varianteGaleria || null;
+    sincronizarArchivosGaleria(evento.target, varianteId, varianteId ? 3 : 5);
+  }
+});
+
+document.addEventListener('dragstart', (evento) => {
+  const tarjeta = evento.target.closest?.('[data-clave-imagen-orden]');
+  if (!tarjeta || !evento.dataTransfer) return;
+  evento.dataTransfer.effectAllowed = 'move';
+  evento.dataTransfer.setData('text/plain', JSON.stringify({
+    galeria: tarjeta.dataset.claveGaleria,
+    imagen: tarjeta.dataset.claveImagenOrden,
+  }));
+});
+
+document.addEventListener('dragover', (evento) => {
+  if (evento.target.closest?.('[data-clave-imagen-orden]')) evento.preventDefault();
+});
+
+document.addEventListener('drop', (evento) => {
+  const destino = evento.target.closest?.('[data-clave-imagen-orden]');
+  if (!destino || !evento.dataTransfer) return;
+  evento.preventDefault();
+  try {
+    const origen = JSON.parse(evento.dataTransfer.getData('text/plain'));
+    if (origen.galeria !== destino.dataset.claveGaleria) return;
+    moverImagenGaleria(origen.galeria, origen.imagen, destino.dataset.claveImagenOrden);
+  } catch {
+    // Ignora arrastres externos o datos que no pertenecen al administrador.
+  }
 });
 
 formularioRecurso?.addEventListener('submit', async (evento) => {
@@ -843,7 +1055,6 @@ formularioRecurso?.addEventListener('submit', async (evento) => {
     }
     await subirImagenesSiCorresponde(producto);
     dialogo.close();
-    document.body.classList.remove('dialogo-abierto');
     notificar('Contenido guardado correctamente.');
     if (recursoDialogo === 'categorias') await cargarAuxiliares();
     await cargarRecurso(recursoDialogo);
@@ -900,7 +1111,6 @@ formularioEstilosGlobales?.addEventListener('submit', async (evento) => {
 
 function cerrarDialogo() {
   dialogo.close();
-  document.body.classList.remove('dialogo-abierto');
 }
 
 function establecerMenuAdminContraido(contraido) {
@@ -924,7 +1134,10 @@ function establecerMenuAdminContraido(contraido) {
 
 document.querySelector('#cerrar-dialogo')?.addEventListener('click', cerrarDialogo);
 document.querySelector('#cancelar-dialogo')?.addEventListener('click', cerrarDialogo);
-dialogo?.addEventListener('close', () => document.body.classList.remove('dialogo-abierto'));
+dialogo?.addEventListener('close', () => {
+  limpiarGestoresImagenes();
+  sincronizarBloqueoModal();
+});
 botonCerrarSesion?.addEventListener('click', () => dialogoCerrarSesion?.showModal());
 botonCancelarCerrarSesion?.addEventListener('click', () => dialogoCerrarSesion?.close());
 botonConfirmarCerrarSesion?.addEventListener('click', async () => {
@@ -941,14 +1154,22 @@ try {
   // La preferencia es opcional.
 }
 
+for (const tipo of ['pointerdown', 'keydown', 'input', 'change', 'scroll', 'touchstart']) {
+  document.addEventListener(tipo, registrarActividadUsuario, { capture: true, passive: true });
+}
+
 setInterval(() => {
   if (panelAdministracion?.hidden) return;
-  const transcurridos = Date.now() - ultimaActividadConfirmada;
+  const transcurridos = Date.now() - ultimaActividadUsuario;
   const restantes = Math.max(0, minutosInactividad * 60_000 - transcurridos);
   if (restantes <= 0) cerrarSesionCompleta();
+  else enviarPulsoActividad();
 }, 15_000);
 
 if (cliente) {
+  cliente.auth.onAuthStateChange((evento) => {
+    if (evento === 'SIGNED_OUT') cerrarSesionLocal(false);
+  });
   cliente.auth.getSession().then(async ({ data }) => {
     if (!data.session) return;
     try {

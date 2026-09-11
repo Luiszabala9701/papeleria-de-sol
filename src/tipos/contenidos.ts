@@ -73,6 +73,8 @@ export interface Producto {
   stock: number | null;
   estado: EstadoProducto;
   destacado: boolean;
+  en_carrusel_inicio?: boolean;
+  orden_carrusel?: number;
   orden: number;
   meta_titulo?: string;
   meta_descripcion?: string;

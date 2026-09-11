@@ -2,6 +2,7 @@
 import DisenoPrincipal from '../disenos/DisenoPrincipal.astro';
 import TarjetaProducto from '../componentes/TarjetaProducto.astro';
 import PresentacionTienda from '../componentes/PresentacionTienda.astro';
+import CarruselInicio from '../componentes/CarruselInicio.astro';
 import type { ConfiguracionSitio, Producto, SeccionSitio } from '../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
@@ -14,7 +15,7 @@ import { crearUrlAbsoluta, escaparJsonLd, NOMBRE_SITIO, NOMBRES_ALTERNATIVOS_SIT
 const [configuracion, secciones, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
   obtenerSeccionesPublicadas(),
-  obtenerProductosPublicados({ tipo: 'sticker' }),
+  obtenerProductosPublicados(),
 ]) as [ConfiguracionSitio, SeccionSitio[], Producto[]];
 
 const principal: SeccionSitio = secciones.find((seccion) => seccion.clave === 'inicio_principal') || {
@@ -35,7 +36,15 @@ const seccionDestacados: SeccionSitio = secciones.find((seccion) => seccion.clav
   publicada: true,
   orden: 2,
 };
-const destacados = productos.filter((producto) => producto.destacado).slice(0, 8);
+const destacados = productos
+  .filter((producto) => producto.tipo_producto === 'sticker' && producto.destacado)
+  .slice(0, 8);
+const productosCarrusel = productos
+  .filter((producto) => producto.en_carrusel_inicio)
+  .sort((primero, segundo) =>
+    Number(primero.orden_carrusel || 0) - Number(segundo.orden_carrusel || 0)
+    || Number(primero.orden || 0) - Number(segundo.orden || 0)
+    || primero.id.localeCompare(segundo.id));
 const urlInicio = crearUrlAbsoluta('/');
 const logo = crearUrlAbsoluta('/marca/logo-papeleria-de-sol-transparente.png');
 const descripcionSeo = 'Papelería de Sol: stickers, cuadernos A6, llaveros acrílicos y regalos personalizados en CABA y GBA. Explorá el catálogo y consultá por WhatsApp.';
@@ -106,13 +115,17 @@ const datosEstructurados = {
       </div>
     </div>
 
-    <div class="hero-collage" aria-label="Selección de stickers de Papelería de Sol">
-      {[1, 2, 3].map((numero) => (
-        <div class="hero-imagen" data-proteccion-imagen="sticker" data-sin-marca-agua>
-          <img src={`/stickers/${numero}.webp`} alt={`Sticker creativo ${numero}`} width="709" height="709" draggable="false" />
-        </div>
-      ))}
-    </div>
+    {productosCarrusel.length ? (
+      <CarruselInicio productos={productosCarrusel} configuracion={configuracion} />
+    ) : (
+      <div class="hero-collage" aria-label="Selección de stickers de Papelería de Sol">
+        {[1, 2, 3].map((numero) => (
+          <div class="hero-imagen" data-proteccion-imagen="sticker" data-sin-marca-agua>
+            <img src={`/stickers/${numero}.webp`} alt={`Sticker creativo ${numero}`} width="709" height="709" draggable="false" />
+          </div>
+        ))}
+      </div>
+    )}
 
   </section>
 

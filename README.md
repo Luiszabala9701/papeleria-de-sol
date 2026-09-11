@@ -40,12 +40,13 @@ Esta actualización conserva los productos y crea la versión Común de los stic
 con su precio actual. Solo los físicos usan stock; si no tenían existencias registradas,
 quedan en cero hasta cargar el valor real. Las variantes archivadas conservan su SKU y fotos.
 
-Para habilitar el borrado definitivo y reutilizar automáticamente los huecos de SKU,
-ejecutar después
-[`20260909000000_eliminacion_y_reutilizacion_sku.sql`](supabase/migrations/20260909000000_eliminacion_y_reutilizacion_sku.sql).
-Un producto debe archivarse antes de borrarlo. Al eliminar definitivamente un producto
-o una variante, sus SKU quedan libres y la próxima alta del mismo tipo usa el número
-disponible más bajo.
+La migración
+[`20260909000000_eliminacion_y_reutilizacion_sku.sql`](supabase/migrations/20260909000000_eliminacion_y_reutilizacion_sku.sql)
+habilitó inicialmente el borrado definitivo. Después debe ejecutarse
+[`20260911000000_reporte_09.sql`](supabase/migrations/20260911000000_reporte_09.sql),
+que aplica la regla vigente: los SKU eliminados permanecen reservados y nunca vuelven
+a asignarse. La misma migración incorpora el carrusel de inicio y el orden persistente
+de imágenes.
 
 Orden de publicación: respaldo de la base, probar el SQL en el proyecto de pruebas,
 aplicar la migración al destino, desplegar la función `administracion` de ese mismo

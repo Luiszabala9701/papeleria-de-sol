@@ -7,6 +7,7 @@ const administrador = '00000000-0000-4000-8000-000000000001';
 const base = await readFile(new URL('../supabase/migrations/20260901000000_esquema_base_completo.sql', import.meta.url), 'utf8');
 const migracion = await readFile(new URL('../supabase/migrations/20260903000000_variantes_y_stock_por_tipo.sql', import.meta.url), 'utf8');
 const eliminacion = await readFile(new URL('../supabase/migrations/20260909000000_eliminacion_y_reutilizacion_sku.sql', import.meta.url), 'utf8');
+const reporte09 = await readFile(new URL('../supabase/migrations/20260911000000_reporte_09.sql', import.meta.url), 'utf8');
 
 test('migración de variantes en PostgreSQL: preservación, límites, seguridad y guardado atómico', async t => {
   const db = new PGlite();
@@ -36,18 +37,26 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   await db.exec(migracion); // Reejecución segura.
   await db.exec(eliminacion);
   await db.exec(eliminacion); // También debe poder reejecutarse sin alterar datos.
+  await db.exec(reporte09);
+  await db.exec(reporte09); // La corrección de SKU y carrusel también es idempotente.
   assert.deepEqual((await db.query('select id,slug,sku,precio from productos order by id')).rows, originales);
   assert.deepEqual((await db.query('select id,url_publica from imagenes order by id')).rows, fotos);
   assert.equal((await db.query("select count(*)::int n from variantes where clave='comun'")).rows[0].n, 1000);
   assert.equal((await db.query('select count(*)::int n from codigos_sku')).rows[0].n, 2000);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
+  assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes_v2(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   const guardar = async (datos, variantes = [], id = null) => (await db.query(
-    'select guardar_producto_con_variantes($1,$2::jsonb,$3::jsonb,$4) id', [id, JSON.stringify(datos), JSON.stringify(variantes), administrador],
+    'select guardar_producto_con_variantes_v2($1,$2::jsonb,$3::jsonb,$4) id', [id, JSON.stringify(datos), JSON.stringify(variantes), administrador],
   )).rows[0].id;
   const producto = { nombre: 'Llavero', slug: 'llavero-prueba', descripcion: 'Llavero de pruebas', tipo_producto: 'fisico', usa_variantes: true, estado: 'publicado' };
   let versiones = [{ clave: 'rojo', nombre: 'Rojo', precio: 4000, stock: 2, estado: 'publicado' }, { clave: 'azul', nombre: 'Azul', precio: 4500, stock: 0, estado: 'publicado' }];
   const id = await guardar(producto, versiones);
   versiones = (await db.query('select * from variantes where producto_id=$1 order by precio', [id])).rows;
+  await guardar({ ...producto, en_carrusel_inicio: true, orden_carrusel: 2 }, versiones, id);
+  assert.deepEqual(
+    (await db.query('select en_carrusel_inicio,orden_carrusel from productos where id=$1', [id])).rows[0],
+    { en_carrusel_inicio: true, orden_carrusel: 2 },
+  );
   const sku = versiones.map(v => v.sku);
   assert.equal(new Set(sku).size, 2);
   assert.deepEqual((await db.query('select stock,precio,controla_stock from productos where id=$1', [id])).rows[0], { stock: 2, precio: '4000.00', controla_stock: true });
@@ -87,17 +96,35 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   await db.exec('reset role;');
   await assert.rejects(db.query('select guardar_producto_con_variantes($1,$2::jsonb,$3::jsonb,$4)', [id, JSON.stringify(producto), JSON.stringify(versiones), '00000000-0000-4000-8000-000000000099']), /permisos/);
 
-  // Eliminar una variante borra sus fotos, libera el SKU y el siguiente alta reutiliza el hueco.
+  const ordenOriginal = (await db.query('select id from imagenes where variante_id=$1 order by id', [versiones[0].id])).rows.map(fila => fila.id);
+  const ordenDeseado = [...ordenOriginal].reverse();
+  await db.query('select reordenar_imagenes_producto($1,$2,$3,$4)', [id, versiones[0].id, ordenDeseado, administrador]);
+  assert.deepEqual(
+    (await db.query('select id,orden,es_principal from imagenes where variante_id=$1 order by orden', [versiones[0].id])).rows,
+    ordenDeseado.map((imagenId, indice) => ({ id: imagenId, orden: indice + 1, es_principal: indice === 0 })),
+  );
+  await assert.rejects(
+    db.query('select reordenar_imagenes_producto($1,$2,$3,$4)', [id, versiones[0].id, [ordenDeseado[0]], administrador]),
+    /lista debe incluir/,
+  );
+  await db.query('delete from imagenes where id=$1', [ordenDeseado[0]]);
+  assert.deepEqual(
+    (await db.query('select orden,es_principal from imagenes where variante_id=$1 order by orden', [versiones[0].id])).rows,
+    [{ orden: 1, es_principal: true }, { orden: 2, es_principal: false }],
+  );
+
+  // Eliminar una variante borra sus fotos, pero conserva para siempre la reserva del SKU.
   await db.query('delete from variantes where id=$1', [versiones[1].id]);
   assert.equal((await db.query('select count(*)::int n from imagenes where variante_id=$1', [versiones[1].id])).rows[0].n, 0);
-  assert.equal((await db.query('select count(*)::int n from codigos_sku where codigo=$1', [versiones[1].sku])).rows[0].n, 0);
+  assert.equal((await db.query('select count(*)::int n from codigos_sku where codigo=$1', [versiones[1].sku])).rows[0].n, 1);
   await guardar(producto, [versiones[0], { clave: 'verde', nombre: 'Verde', precio: 4700, stock: 1, estado: 'publicado' }], id);
   const verde = (await db.query("select sku from variantes where producto_id=$1 and clave='verde'", [id])).rows[0];
-  assert.equal(verde.sku, versiones[1].sku);
+  assert.notEqual(verde.sku, versiones[1].sku);
 
-  // El borrado definitivo de un producto libera también el número de su SKU.
+  // El borrado definitivo de un producto tampoco libera su número de SKU.
   const skuPlantilla = (await db.query('select sku from productos where id=$1', [plantilla])).rows[0].sku;
   await db.query('delete from productos where id=$1', [plantilla]);
+  assert.equal((await db.query('select count(*)::int n from codigos_sku where codigo=$1', [skuPlantilla])).rows[0].n, 1);
   const plantillaNueva = await guardar({ nombre: 'Plantilla nueva', slug: 'plantilla-nueva', descripcion: 'Plantilla nueva', tipo_producto: 'plantilla', estado: 'borrador', precio: 950, stock: null });
-  assert.equal((await db.query('select sku from productos where id=$1', [plantillaNueva])).rows[0].sku, skuPlantilla);
+  assert.notEqual((await db.query('select sku from productos where id=$1', [plantillaNueva])).rows[0].sku, skuPlantilla);
 });

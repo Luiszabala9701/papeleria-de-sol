@@ -62,8 +62,9 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria, el
       grupo.append(visible, document.createTextNode('Visible para clientes'));
       campos.append(grupo);
       controles.visible = visible;
-      if (registro.id) campos.append(crearGaleria({ ...registro, imagenes: (registro.imagenes || []).filter(i => i.variante_id === version.id) }, version.id));
+      campos.append(crearGaleria({ ...registro, imagenes: (registro.imagenes || []).filter(i => i.variante_id === version.id) }, version.id));
       campo('imagenes', 'Imágenes de esta variante (máximo 3)', 'file', false);
+      controles.imagenes.dataset.varianteGaleria = version.id;
     }
     campos.append(elemento('small', version.sku ? `SKU: ${version.sku}` : 'El SKU se asigna automáticamente al guardar.', 'campo-completo'));
     tarjeta.append(cabecera, campos);
@@ -77,7 +78,7 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria, el
         alert('No podés eliminar la última variante mientras el producto use variantes.');
         return;
       }
-      if (version.sku && !confirm(`¿Querés eliminar definitivamente la variante ${version.nombre}? Su SKU quedará libre.`)) return;
+      if (version.sku && !confirm(`¿Querés eliminar definitivamente la variante ${version.nombre}? Esta acción no se puede deshacer y su SKU quedará reservado.`)) return;
       eliminar.disabled = true;
       try {
         if (version.sku) await eliminarVariante(version);
@@ -134,7 +135,7 @@ export function crearEditorVariantes(formulario, registro = {}, crearGaleria, el
         });
       } else if (tipo === 'fisico') {
         titulo.textContent = 'Variantes del producto';
-        ayuda.textContent = 'Hasta 10 variantes activas, con precio, stock y hasta 3 fotos propias. Desmarcar archiva; Eliminar variante borra sus datos y libera su SKU.';
+        ayuda.textContent = 'Hasta 10 variantes activas, con precio, stock y hasta 3 fotos propias. Desmarcar archiva; Eliminar variante borra sus datos y conserva su SKU como utilizado.';
         (registro.variantes || []).forEach(v => crearFila(v, false));
       }
     }

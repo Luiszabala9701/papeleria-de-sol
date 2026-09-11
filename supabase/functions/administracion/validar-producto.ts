@@ -44,9 +44,14 @@ export function validarProductoConVariantes(datos: Record<string, unknown>) {
   if (usar && datos.estado === 'publicado' && !variantes.some(v => v.estado === 'publicado')) {
     throw new Error('El producto publicado necesita una variante visible.');
   }
+  const ordenCarrusel = datos.orden_carrusel == null || datos.orden_carrusel === ''
+    ? 0
+    : numero(datos.orden_carrusel, 'orden del carrusel', true);
   return {
     ...datos, usa_variantes: usar, controla_stock: tipo === 'fisico', variantes,
     tipo_producto: tipo, nombre: String(datos.nombre).trim(), categoria_id: datos.categoria_id,
+    en_carrusel_inicio: datos.en_carrusel_inicio === true,
+    orden_carrusel: ordenCarrusel,
     precio: usar ? 0 : numero(datos.precio, 'precio'),
     stock: tipo === 'fisico' ? (usar ? 0 : numero(datos.stock, 'stock', true)) : null,
   };

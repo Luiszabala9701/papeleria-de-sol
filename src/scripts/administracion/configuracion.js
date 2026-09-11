@@ -28,6 +28,8 @@ export const ESQUEMAS_RECURSOS = {
     },
     { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0 },
     { nombre: 'destacado', etiqueta: 'Mostrar como destacado', tipo: 'checkbox' },
+    { nombre: 'en_carrusel_inicio', etiqueta: 'Mostrar en carrusel de inicio', tipo: 'checkbox' },
+    { nombre: 'orden_carrusel', etiqueta: 'Orden en el carrusel', tipo: 'number', minimo: 0, ayuda: 'Los números menores aparecen primero.' },
     { nombre: 'imagenes_nuevas', etiqueta: 'Agregar nuevas imágenes (máximo 5 en total)', tipo: 'file', multiple: true, completo: true, ayuda: 'Podés seleccionar varias imágenes a la vez. Cada archivo puede pesar hasta 5 MB.' },
     { nombre: 'meta_titulo', etiqueta: 'Título para buscadores', tipo: 'text', completo: true, avanzado: true, ayuda: 'Es el título que podría mostrarse en Google. Si se deja vacío, se usa el nombre del producto.' },
     { nombre: 'meta_descripcion', etiqueta: 'Descripción para buscadores', tipo: 'textarea', completo: true, avanzado: true, ayuda: 'Es el texto breve que podría mostrarse debajo del título en Google. Si se deja vacío, se usa la descripción del producto.' },

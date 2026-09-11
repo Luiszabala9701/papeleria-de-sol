@@ -419,6 +419,64 @@ h3 {
   transform: rotate(3deg);
 }
 
+.hero-carrusel {
+  display: grid;
+  width: min(100%, 390px);
+  min-height: 390px;
+  justify-self: center;
+  align-content: center;
+  gap: 0.75rem;
+  touch-action: pan-y;
+}
+
+.hero-carrusel-ventana {
+  min-width: 0;
+}
+
+.hero-carrusel-diapo[hidden] {
+  display: none;
+}
+
+.hero-carrusel .tarjeta-producto {
+  width: min(100%, 330px);
+  margin-inline: auto;
+  box-shadow: var(--sombra);
+}
+
+.hero-carrusel .imagen-producto {
+  aspect-ratio: 4 / 3;
+}
+
+.hero-carrusel-controles {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.hero-carrusel-controles button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  color: var(--azul-profundo);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--sombra-suave);
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 850;
+  place-items: center;
+}
+
+.hero-carrusel-controles span {
+  min-width: 3.5rem;
+  color: var(--tinta-suave);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
+}
+
 /* En pantallas de poca altura se prioriza que el CTA de portada entre sin scroll. */
 @media (min-width: 1025px) and (max-height: 850px) {
   .hero {
@@ -1669,6 +1727,13 @@ h3 {
     display: none;
   }
 
+  .hero-carrusel {
+    width: min(100%, 360px);
+    min-height: 0;
+    margin: 2rem auto 0;
+    text-align: left;
+  }
+
   .hero::before {
     top: 18%;
     right: -30%;
@@ -1891,6 +1956,13 @@ h3 {
 
 :root.vista-movil-forzada .hero-collage {
   display: none;
+}
+
+:root.vista-movil-forzada .hero-carrusel {
+  width: min(100%, 360px);
+  min-height: 0;
+  margin: 2rem auto 0;
+  text-align: left;
 }
 
 :root.vista-movil-forzada .hero::before {
