@@ -8,6 +8,7 @@ const base = await readFile(new URL('../supabase/migrations/20260901000000_esque
 const migracion = await readFile(new URL('../supabase/migrations/20260903000000_variantes_y_stock_por_tipo.sql', import.meta.url), 'utf8');
 const eliminacion = await readFile(new URL('../supabase/migrations/20260909000000_eliminacion_y_reutilizacion_sku.sql', import.meta.url), 'utf8');
 const reporte09 = await readFile(new URL('../supabase/migrations/20260911000000_reporte_09.sql', import.meta.url), 'utf8');
+const reporte10 = await readFile(new URL('../supabase/migrations/20260911120000_reporte_10.sql', import.meta.url), 'utf8');
 
 test('migración de variantes en PostgreSQL: preservación, límites, seguridad y guardado atómico', async t => {
   const db = new PGlite();
@@ -39,10 +40,16 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   await db.exec(eliminacion); // También debe poder reejecutarse sin alterar datos.
   await db.exec(reporte09);
   await db.exec(reporte09); // La corrección de SKU y carrusel también es idempotente.
+  await db.query("insert into variantes(producto_id,clave,nombre,precio,estado,orden) values ($1,'holografico','Holográfico',875,'borrador',1)", [originales[0].id]);
+  await db.exec(reporte10);
+  await db.exec(reporte10); // Formatos y descripciones tampoco deben duplicarse.
   assert.deepEqual((await db.query('select id,slug,sku,precio from productos order by id')).rows, originales);
   assert.deepEqual((await db.query('select id,url_publica from imagenes order by id')).rows, fotos);
   assert.equal((await db.query("select count(*)::int n from variantes where clave='comun'")).rows[0].n, 1000);
-  assert.equal((await db.query('select count(*)::int n from codigos_sku')).rows[0].n, 2000);
+  assert.equal((await db.query('select count(*)::int n from codigos_sku')).rows[0].n, 4000);
+  assert.deepEqual((await db.query("select precio,estado from variantes where producto_id=$1 and clave='holografico'", [originales[0].id])).rows[0], { precio: '875.00', estado: 'publicado' });
+  assert.equal((await db.query("select count(*)::int n from productos p where p.tipo_producto='sticker' and (select count(*) from variantes v where v.producto_id=p.id and v.estado='publicado' and v.clave in ('comun','holografico','resistente_agua')) <> 3")).rows[0].n, 0);
+  assert.equal((await db.query("select count(*)::int n from productos where tipo_producto='sticker' and descripcion not like '%Papel autoadhesivo%Tamaño: 5 cm%Impresión: Full color%'")).rows[0].n, 0);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes_v2(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   const guardar = async (datos, variantes = [], id = null) => (await db.query(

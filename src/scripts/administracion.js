@@ -280,7 +280,7 @@ function renderizarListado(recurso, registros) {
       grupo.append(crearBotonAccion(recurso === 'productos' ? 'Archivar' : 'Eliminar', 'eliminar', registro.id));
     }
     if (recurso === 'productos') {
-      grupo.append(crearBotonAccion('Eliminar definitivamente', 'eliminarDefinitivamente', registro.id));
+      grupo.append(crearBotonAccion('Eliminar', 'eliminarDefinitivamente', registro.id));
     }
     celdaAcciones.append(grupo);
     fila.append(celdaAcciones);
@@ -686,15 +686,18 @@ function crearGestorImagenesProducto(registro, varianteId = null) {
     const eliminar = document.createElement('button');
     eliminar.type = 'button';
     eliminar.className = 'boton-eliminar-imagen-admin';
-    eliminar.textContent = 'Eliminar';
+    eliminar.textContent = '×';
     if (item.tipo === 'nueva') {
-      eliminar.textContent = 'Quitar';
       eliminar.dataset.quitarImagenNueva = item.clave;
       eliminar.dataset.claveGaleria = estadoGaleria.clave;
+      eliminar.setAttribute('aria-label', `Quitar imagen nueva ${indice + 1}`);
+      eliminar.title = 'Quitar imagen';
     } else {
       eliminar.dataset.eliminarImagen = imagen.id;
       eliminar.dataset.productoImagen = registro.id;
       if (varianteId) eliminar.dataset.varianteImagen = varianteId;
+      eliminar.setAttribute('aria-label', `Eliminar imagen ${indice + 1}`);
+      eliminar.title = 'Eliminar imagen';
     }
     pie.append(estado, controlesOrden, eliminar);
     tarjeta.append(ampliar, pie);

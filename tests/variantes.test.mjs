@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { normalizarProductoVenta, crearLineaSeleccion, revisarSeleccion, necesitaElegirVariante, productoSinStock } from '../src/servicios/variantes.js';
 import { validarProductoConVariantes } from '../supabase/functions/administracion/validar-producto.ts';
 
-const version = (id, clave, precio, stock = null) => ({ id, clave, nombre: clave, precio, stock, estado: 'publicado' });
-const sticker = normalizarProductoVenta({ id: 's', nombre: 'Sticker', tipo_producto: 'sticker', usa_variantes: true, precio: 500,
+const version = (id, clave, precio, stock = null) => ({ id, clave, nombre: clave, sku: `VAR-${id}`, precio, stock, estado: 'publicado' });
+const sticker = normalizarProductoVenta({ id: 's', nombre: 'Sticker', sku: 'ST-0001', tipo_producto: 'sticker', usa_variantes: true, precio: 500,
   variantes: [version('a','comun',500), version('b','holografico',800), {...version('c','resistente_agua',1000),estado:'archivado'}] });
-const fisico = normalizarProductoVenta({id:'f',nombre:'Llavero',tipo_producto:'fisico',usa_variantes:true,
+const fisico = normalizarProductoVenta({id:'f',nombre:'Llavero',sku:'PF-0001',tipo_producto:'fisico',usa_variantes:true,
   imagenes:[{url_publica:'/padre.webp'}, {url_publica:'/rojo.webp',variante_id:'r'}],
   variantes:[version('r','rojo',4000,2),version('z','azul',3000,0)]});
 
@@ -17,7 +17,9 @@ test('las versiones disponibles y sus precios se normalizan sin stock para stick
   assert.equal(sticker.precio, 500);
   assert.equal(necesitaElegirVariante(sticker), true);
   assert.equal(crearLineaSeleccion(sticker), null);
-  assert.equal(crearLineaSeleccion(sticker,sticker.variantes[1]).nombre, 'Sticker — holografico');
+  const lineaHolografica = crearLineaSeleccion(sticker, sticker.variantes[1]);
+  assert.equal(lineaHolografica.nombre, 'Sticker — holografico');
+  assert.equal(lineaHolografica.sku, 'ST-0001');
 });
 test('físicos: stock por variante y fotos propias, precios desde la variante comprable', () => {
   assert.equal(fisico.stock, 2);
@@ -40,6 +42,7 @@ test('carrito: dos versiones distintas, agrupar duplicados, limitar stock y actu
   ];
   const resultado = revisarSeleccion(lineas,[sticker,fisico]);
   assert.deepEqual(resultado.lineas.map(l=>[l.variante_id,l.cantidad,l.precio]),[['a',2,500],['b',3,800],['r',2,4000]]);
+  assert.deepEqual(resultado.lineas.map(l=>l.sku), ['ST-0001', 'ST-0001', 'PF-0001']);
   assert.ok(resultado.avisos.some(a=>a.includes('precio')));
   assert.ok(resultado.avisos.some(a=>a.includes('stock')));
   assert.ok(resultado.avisos.some(a=>a.includes('nuevamente')));

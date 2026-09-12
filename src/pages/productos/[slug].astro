@@ -144,7 +144,7 @@ const datosEstructurados = {
       <p class="descripcion-detalle" data-descripcion-variante hidden={!varianteInicial?.descripcion}>{varianteInicial?.descripcion}</p>
 
       <ul class="lista-detalle">
-        {producto.sku && <li><strong>{obtenerTextoPublico(configuracion, 'producto_sku')}:</strong> <span data-sku-variante>{varianteInicial?.sku || producto.sku}</span></li>}
+        {producto.sku && <li><strong>{obtenerTextoPublico(configuracion, 'producto_sku')}:</strong> <span data-sku-variante>{producto.sku || varianteInicial?.sku}</span></li>}
         {producto.categoria?.nombre && <li><strong>{obtenerTextoPublico(configuracion, 'producto_categoria')}:</strong> {producto.categoria.nombre}</li>}
         {producto.controla_stock && <li><strong>{obtenerTextoPublico(configuracion, 'producto_disponibilidad')}:</strong> <span data-stock-variante>{elegir ? 'Elegí una variante' : sinStock ? 'Sin stock' : 'En stock'}</span></li>}
       </ul>

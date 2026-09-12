@@ -455,11 +455,13 @@ body.dialogo-abierto {
 
 .cuadricula-imagenes-admin {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.55rem;
 }
 
 .tarjeta-imagen-admin {
+  position: relative;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--borde);
   border-radius: 0.7rem;
@@ -496,28 +498,42 @@ body.dialogo-abierto {
 }
 
 .acciones-imagen-admin {
-  display: flex;
+  display: grid;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.55rem;
-  gap: 0.5rem;
+  justify-items: center;
+  padding: 0.4rem 0.3rem;
+  gap: 0.3rem;
 }
 
 .acciones-imagen-admin span {
+  max-width: 100%;
+  overflow: hidden;
   color: var(--tinta-suave);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .boton-eliminar-imagen-admin {
-  padding: 0.3rem 0.5rem;
+  position: absolute;
+  z-index: 2;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
   border: 1px solid color-mix(in srgb, var(--peligro) 28%, var(--borde));
-  border-radius: 0.45rem;
+  border-radius: 999px;
   color: var(--peligro);
-  background: var(--blanco);
+  background: color-mix(in srgb, var(--blanco) 92%, transparent);
+  box-shadow: 0 2px 8px rgba(28, 25, 42, 0.16);
   cursor: pointer;
-  font-size: 0.7rem;
-  font-weight: 750;
+  font-size: 1.05rem;
+  font-weight: 850;
+  line-height: 1;
+  place-items: center;
 }
 
 .visor-imagen-admin {
@@ -567,6 +583,7 @@ body.dialogo-abierto {
 
 .acciones-tabla {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
@@ -590,8 +607,8 @@ body.dialogo-abierto {
 }
 
 .controles-orden-imagen button {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.6rem;
+  height: 1.6rem;
   padding: 0;
   border: 1px solid var(--borde);
   border-radius: 0.4rem;

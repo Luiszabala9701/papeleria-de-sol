@@ -15,16 +15,25 @@ function informarFallo(contexto, error) {
 function crearStickersDemostracion() {
   return Array.from({ length: 1000 }, (_, indice) => {
     const numero = indice + 1;
+    const sku = `ST-${String(numero).padStart(4, '0')}`;
+    const descripcion = [
+      `Diseño de sticker número ${numero} disponible para consultar por WhatsApp.`,
+      '',
+      'Papel autoadhesivo',
+      'Tamaño: 5 cm',
+      'Impresión: Full color',
+    ].join('\n');
 
     return {
       id: `sticker-demostracion-${numero}`,
       nombre: `Sticker #${numero}`,
       slug: `sticker-${numero}`,
-      sku: `ST-${String(numero).padStart(4, '0')}`,
-      descripcion: `Diseño de sticker número ${numero} disponible para consultar por WhatsApp.`,
+      sku,
+      descripcion,
       tipo_producto: 'sticker',
       precio: 500,
       moneda: 'ARS',
+      usa_variantes: true,
       controla_stock: false,
       stock: null,
       destacado: numero <= 8,
@@ -33,6 +42,11 @@ function crearStickersDemostracion() {
       estado: 'publicado',
       orden: numero,
       categoria: null,
+      variantes: [
+        { id: `variante-comun-${numero}`, clave: 'comun', nombre: 'Común', sku, precio: 500, stock: null, estado: 'publicado', orden: 0 },
+        { id: `variante-holografico-${numero}`, clave: 'holografico', nombre: 'Holográfico', sku, precio: 500, stock: null, estado: 'publicado', orden: 1 },
+        { id: `variante-resistente-agua-${numero}`, clave: 'resistente_agua', nombre: 'Resistente al agua', sku, precio: 500, stock: null, estado: 'publicado', orden: 2 },
+      ],
       imagenes: [
         {
           id: `imagen-sticker-${numero}`,

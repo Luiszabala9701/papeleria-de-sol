@@ -18,7 +18,7 @@ if (detalle) {
     cantidad.dataset.maximo = String(linea?.stock ?? 9999);
     cantidad.dispatchEvent(new Event('reiniciar-cantidad'));
     detalle.querySelector('[data-precio-variante]').textContent = variante ? dinero.format(variante.precio) : `Desde ${dinero.format(producto.precio)}`;
-    detalle.querySelector('[data-sku-variante]').textContent = variante?.sku || producto.sku || '';
+    detalle.querySelector('[data-sku-variante]').textContent = producto.sku || variante?.sku || '';
     const descripcion = detalle.querySelector('[data-descripcion-variante]');
     descripcion.textContent = variante?.descripcion || '';
     descripcion.hidden = !descripcion.textContent;

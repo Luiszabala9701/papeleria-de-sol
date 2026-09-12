@@ -48,6 +48,12 @@ que aplica la regla vigente: los SKU eliminados permanecen reservados y nunca vu
 a asignarse. La misma migración incorpora el carrusel de inicio y el orden persistente
 de imágenes.
 
+Finalmente,
+[`20260911120000_reporte_10.sql`](supabase/migrations/20260911120000_reporte_10.sql)
+completa en cada sticker los acabados Común, Holográfico y Resistente al agua.
+Conserva los precios de variantes existentes, usa el precio Común para las nuevas
+y agrega la ficha de material, tamaño e impresión sin duplicarla al reejecutar el SQL.
+
 Orden de publicación: respaldo de la base, probar el SQL en el proyecto de pruebas,
 aplicar la migración al destino, desplegar la función `administracion` de ese mismo
 proyecto y publicar la web. Durante la actualización no editar el catálogo con el

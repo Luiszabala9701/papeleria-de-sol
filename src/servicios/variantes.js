@@ -68,7 +68,9 @@ export function crearLineaSeleccion(producto, variante = null, cantidad = 1) {
     nombre_producto: producto.nombre,
     nombre_variante: variante?.nombre || '',
     nombre: variante ? `${producto.nombre} — ${variante.nombre}` : producto.nombre,
-    sku: variante?.sku || producto.sku || '',
+    // El código que ve el cliente y recibe WhatsApp es el SKU principal del
+    // producto. variante_id conserva de forma inequívoca el acabado elegido.
+    sku: producto.sku || variante?.sku || '',
     slug: producto.slug,
     tipo_producto: producto.tipo_producto,
     precio: variante ? Number(variante.precio) : Number(producto.precio),
