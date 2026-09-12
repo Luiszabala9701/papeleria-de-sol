@@ -9,6 +9,7 @@ const migracion = await readFile(new URL('../supabase/migrations/20260903000000_
 const eliminacion = await readFile(new URL('../supabase/migrations/20260909000000_eliminacion_y_reutilizacion_sku.sql', import.meta.url), 'utf8');
 const reporte09 = await readFile(new URL('../supabase/migrations/20260911000000_reporte_09.sql', import.meta.url), 'utf8');
 const reporte10 = await readFile(new URL('../supabase/migrations/20260911120000_reporte_10.sql', import.meta.url), 'utf8');
+const preciosStickers = await readFile(new URL('../supabase/migrations/20260912000000_precios_stickers.sql', import.meta.url), 'utf8');
 
 test('migración de variantes en PostgreSQL: preservación, límites, seguridad y guardado atómico', async t => {
   const db = new PGlite();
@@ -50,6 +51,11 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   assert.deepEqual((await db.query("select precio,estado from variantes where producto_id=$1 and clave='holografico'", [originales[0].id])).rows[0], { precio: '875.00', estado: 'publicado' });
   assert.equal((await db.query("select count(*)::int n from productos p where p.tipo_producto='sticker' and (select count(*) from variantes v where v.producto_id=p.id and v.estado='publicado' and v.clave in ('comun','holografico','resistente_agua')) <> 3")).rows[0].n, 0);
   assert.equal((await db.query("select count(*)::int n from productos where tipo_producto='sticker' and descripcion not like '%Papel autoadhesivo%Tamaño: 5 cm%Impresión: Full color%'")).rows[0].n, 0);
+  await db.exec(preciosStickers);
+  await db.exec(preciosStickers); // El cambio de precios también es idempotente.
+  assert.equal((await db.query("select count(*)::int n from variantes v join productos p on p.id=v.producto_id where p.tipo_producto='sticker' and v.clave='comun' and v.precio<>199")).rows[0].n, 0);
+  assert.equal((await db.query("select count(*)::int n from variantes v join productos p on p.id=v.producto_id where p.tipo_producto='sticker' and v.clave<>'comun' and v.precio<>2499")).rows[0].n, 0);
+  assert.equal((await db.query("select count(*)::int n from productos where tipo_producto='sticker' and precio<>199")).rows[0].n, 0);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes_v2(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   const guardar = async (datos, variantes = [], id = null) => (await db.query(
