@@ -10,6 +10,7 @@ const eliminacion = await readFile(new URL('../supabase/migrations/2026090900000
 const reporte09 = await readFile(new URL('../supabase/migrations/20260911000000_reporte_09.sql', import.meta.url), 'utf8');
 const reporte10 = await readFile(new URL('../supabase/migrations/20260911120000_reporte_10.sql', import.meta.url), 'utf8');
 const preciosStickers = await readFile(new URL('../supabase/migrations/20260912000000_precios_stickers.sql', import.meta.url), 'utf8');
+const descripcionesStickers = await readFile(new URL('../supabase/migrations/20260912010000_descripciones_stickers.sql', import.meta.url), 'utf8');
 
 test('migración de variantes en PostgreSQL: preservación, límites, seguridad y guardado atómico', async t => {
   const db = new PGlite();
@@ -56,6 +57,9 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   assert.equal((await db.query("select count(*)::int n from variantes v join productos p on p.id=v.producto_id where p.tipo_producto='sticker' and v.clave='comun' and v.precio<>199")).rows[0].n, 0);
   assert.equal((await db.query("select count(*)::int n from variantes v join productos p on p.id=v.producto_id where p.tipo_producto='sticker' and v.clave<>'comun' and v.precio<>2499")).rows[0].n, 0);
   assert.equal((await db.query("select count(*)::int n from productos where tipo_producto='sticker' and precio<>199")).rows[0].n, 0);
+  await db.exec(descripcionesStickers);
+  await db.exec(descripcionesStickers); // La descripción uniforme también es idempotente.
+  assert.equal((await db.query("select count(*)::int n from productos where tipo_producto='sticker' and (descripcion is distinct from E'Papel autoadhesivo\\nTamaño: 5 cm\\nImpresión: Full color' or descripcion_corta is distinct from E'Papel autoadhesivo\\nTamaño: 5 cm\\nImpresión: Full color')")).rows[0].n, 0);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   assert.equal((await db.query("select has_function_privilege('anon','guardar_producto_con_variantes_v2(uuid,jsonb,jsonb,uuid)','execute') permiso")).rows[0].permiso, false);
   const guardar = async (datos, variantes = [], id = null) => (await db.query(

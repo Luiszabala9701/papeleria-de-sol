@@ -17,8 +17,6 @@ function crearStickersDemostracion() {
     const numero = indice + 1;
     const sku = `ST-${String(numero).padStart(4, '0')}`;
     const descripcion = [
-      `Diseño de sticker número ${numero} disponible para consultar por WhatsApp.`,
-      '',
       'Papel autoadhesivo',
       'Tamaño: 5 cm',
       'Impresión: Full color',
