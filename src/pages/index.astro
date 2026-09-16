@@ -10,6 +10,7 @@ import {
   obtenerSeccionesPublicadas,
 } from '../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
+import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagenes';
 import { crearUrlAbsoluta, escaparJsonLd, NOMBRE_SITIO, NOMBRES_ALTERNATIVOS_SITIO } from '../servicios/seo';
 
 const [configuracion, secciones, productos] = await Promise.all([
@@ -121,16 +122,24 @@ const datosEstructurados = {
       <div class="hero-collage" aria-label="Selección de stickers de Papelería de Sol">
         {[1, 2, 3].map((numero, indice) => (
           <div class="hero-imagen" data-proteccion-imagen="sticker" data-sin-marca-agua>
-            <img
-              src={`/stickers/${numero}.webp`}
-              alt={`Sticker creativo ${numero}`}
-              width="709"
-              height="709"
-              loading={indice === 0 ? 'eager' : 'lazy'}
-              fetchpriority={indice === 0 ? 'high' : 'auto'}
-              decoding="async"
-              draggable="false"
-            />
+            <picture>
+              <source
+                media="(max-width: 860px)"
+                srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+              />
+              <img
+                src={crearUrlImagenOptimizada(`/stickers/${numero}.webp`, 500, 82)}
+                srcset={crearSrcsetImagen(`/stickers/${numero}.webp`, [250, 500, 709], 82)}
+                sizes={indice === 2 ? '170px' : '250px'}
+                alt={`Sticker creativo ${numero}`}
+                width="709"
+                height="709"
+                loading={indice === 0 ? 'eager' : 'lazy'}
+                fetchpriority={indice === 0 ? 'high' : 'auto'}
+                decoding="async"
+                draggable="false"
+              />
+            </picture>
           </div>
         ))}
       </div>

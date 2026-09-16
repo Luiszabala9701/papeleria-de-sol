@@ -37,7 +37,9 @@ La primera imagen del carrusel/listado y la imagen principal del detalle tienen 
 
 No se borraron ni sobrescribieron imágenes existentes. Las futuras subidas desde administración se reducen, cuando es posible y beneficioso, a WebP con máximo de 1600 px. Se conserva el archivo original si la conversión falla o genera un archivo mayor. Las subidas usan nombres únicos y caché de un año.
 
-El CDN de Netlify solo se comprueba completamente después del despliegue; el servidor de desarrollo muestra los originales. No se afirma haber conseguido todavía el ahorro de 2,5 MiB estimado por PageSpeed.
+En pruebas se comprobó el CDN publicado: una tarjeta solicitada a 480 px respondió HTTP 200, WebP de 16.444 bytes y caché pública de un año. Su original pesa 28.922 bytes; esta muestra no representa el ahorro del sitio completo. No se afirma haber conseguido todavía el ahorro de 2,5 MiB estimado por PageSpeed.
+
+Las tres imágenes decorativas alternativas de la portada también usan tamaños responsivos en escritorio. Cuando el collage está oculto en móvil (hasta 860 px), `picture` selecciona una imagen mínima embebida para evitar descargar esos recursos ocultos.
 
 ## Base de datos / Supabase
 
@@ -48,7 +50,7 @@ create index if not exists productos_catalogo_publico_idx
   on public.productos (tipo_producto, estado, orden, creado_en desc, id);
 ```
 
-Es un índice para el listado paginado. No cambia precios, descripciones, registros, permisos ni funciones administrativas. El código funciona sin aplicarlo, aunque su aplicación puede mejorar la consulta. Ejecutarlo primero en pruebas; producción queda para el pase posterior aprobado.
+Es un índice para el listado paginado. No cambia precios, descripciones, registros, permisos ni funciones administrativas. El código funciona sin aplicarlo, aunque su aplicación puede mejorar la consulta. El usuario confirmó su ejecución en pruebas el 16/09/2026; no se verificó directamente el catálogo de índices remoto. Producción queda para el pase posterior aprobado.
 
 La búsqueda conserva la comparación sin acentos: solo cuando se envía una búsqueda, el servidor consulta candidatos con cinco campos y recupera las relaciones completas para los 48 resultados de esa página. No se consulta cada vez que se escribe una letra. Este camino todavía recorre candidatos y podría trasladarse a una búsqueda SQL normalizada si el catálogo crece mucho; no se presenta como una consulta de coste constante.
 
@@ -88,11 +90,12 @@ No hay puntuación PageSpeed posterior al cambio: queda pendiente medir el despl
 - Revisión funcional en navegador con datos de demostración: búsqueda de 1000, 48 tarjetas por página, segunda página desde Sticker #49, Común a $199, Holográfico a $499, agregado y total del carrito, apertura/cierre y devolución de foco, imagen ampliada, carrusel y menú móvil.
 - Revisión visual a 390 × 844: inicio y ficha conservan el diseño. Se restauró el tamaño del navegador y se retiró únicamente la línea de carrito creada para la prueba, preservando la selección anterior.
 - No se enviaron mensajes de WhatsApp ni se realizaron pagos o subidas reales.
+- Revisión del despliegue público de pruebas con datos reales: inicio y tarjetas cargan mediante CDN, listado de 48 productos, segunda página desde #49, categoría Gatos con 12 resultados y búsqueda de 1000 con un resultado. La ficha conserva descripción y precios Común $199/Holográfico $499. La consola revisada de inicio no mostró errores ni advertencias.
 
 La comprobación inicial de consultas reales se hizo con acceso de red autorizado. En la revisión final, el entorno restringido devolvió EACCES al consultar Supabase; se usaron variables temporales del proceso para las pruebas de interfaz con demostración. No se editó `.env` ni se cambió la configuración publicada.
 
 ## Pendiente
 
-1. Verificar el despliegue de la rama `pruebas`. El permiso de Git se bloqueó inicialmente por el límite de uso; se reintentó solo después de recibir autorización explícita del usuario.
-2. Aplicar el índice en la base de pruebas, comprobar allí el CDN y una subida administrativa autorizada, y repetir PageSpeed móvil/escritorio.
+1. Completar la verificación del pequeño ajuste publicado del collage en escritorio/móvil y medir PageSpeed móvil/escritorio.
+2. Comprobar una subida administrativa autorizada. El índice de pruebas fue aplicado por el usuario y el CDN ya respondió correctamente.
 3. Con pruebas aprobadas, pasar a producción y medir de nuevo. No ejecutar otra vez las migraciones anteriores de precios/descripciones ni copiar la base de pruebas sobre producción.
