@@ -3,16 +3,19 @@ import type { Producto } from '../tipos/contenidos';
 import type { ConfiguracionSitio } from '../tipos/contenidos';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
 import { crearLineaSeleccion, necesitaElegirVariante, productoSinStock } from '../servicios/variantes.js';
+import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagenes';
 
 interface Props {
   producto: Producto;
   compacta?: boolean;
   sinMarcaAgua?: boolean;
   configuracion?: ConfiguracionSitio;
+  prioritaria?: boolean;
 }
 
-const { producto, compacta = false, sinMarcaAgua = false, configuracion } = Astro.props;
+const { producto, compacta = false, sinMarcaAgua = false, configuracion, prioritaria = false } = Astro.props;
 const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
+const urlImagen = imagen?.url_publica || '/stickers/1.webp';
 const esSticker = producto.tipo_producto === 'sticker';
 const precio = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -27,17 +30,20 @@ const elegir = necesitaElegirVariante(producto);
   <a
     class="imagen-producto"
     href={`/productos/${producto.slug}`}
-    tabindex="-1"
-    aria-hidden="true"
+    aria-label={`Ver ${producto.nombre}`}
+    data-astro-prefetch="hover"
     data-proteccion-imagen={esSticker ? 'sticker' : undefined}
     data-sin-marca-agua={esSticker && sinMarcaAgua ? '' : undefined}
   >
     <img
-      src={imagen?.url_publica || '/stickers/1.webp'}
+      src={crearUrlImagenOptimizada(urlImagen, 640)}
+      srcset={crearSrcsetImagen(urlImagen, [320, 480, 640])}
+      sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) 45vw, 280px"
       alt={imagen?.texto_alternativo || producto.nombre}
       width="709"
       height="709"
-      loading="lazy"
+      loading={prioritaria ? 'eager' : 'lazy'}
+      fetchpriority={prioritaria ? 'high' : 'auto'}
       decoding="async"
       draggable={esSticker ? 'false' : undefined}
     />
@@ -45,11 +51,11 @@ const elegir = necesitaElegirVariante(producto);
   </a>
   <div class="contenido-producto">
     <p class="tipo-producto">{producto.tipo_producto === 'fisico' ? obtenerTextoPublico(configuracion, 'producto_tipo_fisico') : producto.tipo_producto}</p>
-    <h3><a href={`/productos/${producto.slug}`}>{producto.nombre}</a></h3>
+    <h3><a href={`/productos/${producto.slug}`} data-astro-prefetch="hover">{producto.nombre}</a></h3>
     {!compacta && <p class="descripcion-producto">{producto.descripcion}</p>}
     <div class="pie-producto">
       <strong class="precio-producto">{elegir ? 'Desde ' : ''}{precio}</strong>
-      {elegir ? <a class="boton-agregar-producto" href={`/productos/${producto.slug}`}>Elegir versión</a> : (
+      {elegir ? <a class="boton-agregar-producto" href={`/productos/${producto.slug}`} data-astro-prefetch="hover">Elegir versión</a> : (
       <button
         class="boton-agregar-producto"
         type="button"

@@ -6,7 +6,7 @@ import CarruselInicio from '../componentes/CarruselInicio.astro';
 import type { ConfiguracionSitio, Producto, SeccionSitio } from '../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
-  obtenerProductosPublicados,
+  obtenerProductosInicio,
   obtenerSeccionesPublicadas,
 } from '../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
@@ -15,7 +15,7 @@ import { crearUrlAbsoluta, escaparJsonLd, NOMBRE_SITIO, NOMBRES_ALTERNATIVOS_SIT
 const [configuracion, secciones, productos] = await Promise.all([
   obtenerConfiguracionSitio(),
   obtenerSeccionesPublicadas(),
-  obtenerProductosPublicados(),
+  obtenerProductosInicio(),
 ]) as [ConfiguracionSitio, SeccionSitio[], Producto[]];
 
 const principal: SeccionSitio = secciones.find((seccion) => seccion.clave === 'inicio_principal') || {
@@ -109,7 +109,7 @@ const datosEstructurados = {
         {principal.contenido || configuracion.descripcion_corta}
       </p>
       <div class="grupo-botones">
-        <a class="boton boton-principal" href={principal.enlace_boton || '/stickers'}>
+        <a class="boton boton-principal" href={principal.enlace_boton || '/stickers'} data-astro-prefetch="hover">
           {principal.texto_boton || 'Explorar stickers'}
         </a>
       </div>
@@ -119,9 +119,18 @@ const datosEstructurados = {
       <CarruselInicio productos={productosCarrusel} configuracion={configuracion} />
     ) : (
       <div class="hero-collage" aria-label="Selección de stickers de Papelería de Sol">
-        {[1, 2, 3].map((numero) => (
+        {[1, 2, 3].map((numero, indice) => (
           <div class="hero-imagen" data-proteccion-imagen="sticker" data-sin-marca-agua>
-            <img src={`/stickers/${numero}.webp`} alt={`Sticker creativo ${numero}`} width="709" height="709" draggable="false" />
+            <img
+              src={`/stickers/${numero}.webp`}
+              alt={`Sticker creativo ${numero}`}
+              width="709"
+              height="709"
+              loading={indice === 0 ? 'eager' : 'lazy'}
+              fetchpriority={indice === 0 ? 'high' : 'auto'}
+              decoding="async"
+              draggable="false"
+            />
           </div>
         ))}
       </div>

@@ -1,6 +1,7 @@
 ---
 import type { ConfiguracionSitio } from '../tipos/contenidos';
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
+import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagenes';
 
 interface Props {
   configuracion?: ConfiguracionSitio;
@@ -30,7 +31,15 @@ const enlaceActivo = (href: string) =>
   <nav class="navegacion-principal" aria-label="Navegación principal">
     <a class="marca" href="/" aria-label="Papelería de Sol, ir al inicio">
       <span class="logo-papeleria">
-        <img src="/marca/logo-papeleria-de-sol-transparente.png" alt="Papelería de Sol" width="1774" height="887" />
+        <img
+          src={crearUrlImagenOptimizada('/marca/logo-papeleria-de-sol-transparente.png', 296, 88)}
+          srcset={crearSrcsetImagen('/marca/logo-papeleria-de-sol-transparente.png', [148, 296], 88)}
+          sizes="148px"
+          alt="Papelería de Sol"
+          width="296"
+          height="148"
+          decoding="async"
+        />
       </span>
     </a>
 
@@ -53,6 +62,7 @@ const enlaceActivo = (href: string) =>
           <li>
             <a
               href={enlace.href}
+              data-astro-prefetch="hover"
               class:list={{ activo: enlaceActivo(enlace.href) }}
               aria-current={enlaceActivo(enlace.href) ? 'page' : undefined}
             >
@@ -63,7 +73,7 @@ const enlaceActivo = (href: string) =>
       }
     </ul>
 
-    <button id="boton-carrito" class="boton-carrito" type="button" aria-controls="panel-carrito">
+    <button id="boton-carrito" class="boton-carrito" type="button" aria-controls="panel-carrito" aria-label="Abrir mi selección">
       <span aria-hidden="true">♡</span>
       <span class="texto-carrito">{obtenerTextoPublico(configuracion, 'carrito_boton')}</span>
       <span id="contador-carrito" class="contador-carrito">0</span>

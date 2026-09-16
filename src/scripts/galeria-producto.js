@@ -1,3 +1,5 @@
+import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagenes.ts';
+
 document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
   const imagenPrincipal = galeria.querySelector('[data-imagen-principal-galeria]');
   const botonPrincipal = galeria.querySelector('[data-galeria-principal]');
@@ -6,10 +8,14 @@ document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
 
   function seleccionarImagen(boton) {
     if (!imagenPrincipal || !boton) return;
-    imagenPrincipal.src = boton.dataset.imagenSrc || imagenPrincipal.src;
+    const original = boton.dataset.imagenSrc || imagenPrincipal.src;
+    const srcset = crearSrcsetImagen(original, [480, 709, 960, 1200], 82);
+    if (srcset) imagenPrincipal.setAttribute('srcset', srcset);
+    else imagenPrincipal.removeAttribute('srcset');
+    imagenPrincipal.src = crearUrlImagenOptimizada(original, 960, 82);
     imagenPrincipal.alt = boton.dataset.imagenAlt || imagenPrincipal.alt;
     if (imagenVisor) {
-      imagenVisor.src = imagenPrincipal.src;
+      imagenVisor.src = crearUrlImagenOptimizada(original, 1200, 84);
       imagenVisor.alt = imagenPrincipal.alt;
     }
 
@@ -40,9 +46,11 @@ document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
       boton.dataset.imagenAlt = imagen.texto_alternativo || nombre;
       boton.setAttribute('aria-label', `Ver imagen ${indice + 1} de ${lista.length}`);
       const foto = document.createElement('img');
-      foto.src = imagen.url_publica;
+      foto.src = crearUrlImagenOptimizada(imagen.url_publica, 192, 76);
       foto.alt = '';
       foto.width = foto.height = 96;
+      foto.loading = 'lazy';
+      foto.decoding = 'async';
       boton.append(foto);
       miniaturas.append(boton);
     });

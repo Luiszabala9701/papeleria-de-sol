@@ -108,16 +108,19 @@ function abrirPanelCarrito() {
 
   panelCarrito.classList.add('abierto');
   panelCarrito.setAttribute('aria-hidden', 'false');
+  panelCarrito.removeAttribute('inert');
   fondoCarrito.hidden = false;
   document.body.classList.add('carrito-abierto');
   cerrarCarrito?.focus();
 }
 
 function cerrarPanelCarrito() {
-  if (!panelCarrito || !fondoCarrito) return;
+  if (!panelCarrito || !fondoCarrito || !panelCarrito.classList.contains('abierto')) return;
 
+  botonCarrito?.focus();
   panelCarrito.classList.remove('abierto');
   panelCarrito.setAttribute('aria-hidden', 'true');
+  panelCarrito.setAttribute('inert', '');
   fondoCarrito.hidden = true;
   document.body.classList.remove('carrito-abierto');
 }

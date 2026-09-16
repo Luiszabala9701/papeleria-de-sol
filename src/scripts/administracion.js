@@ -530,20 +530,59 @@ function validarCargasAntesDeGuardar() {
   }
 }
 
+async function optimizarImagenParaWeb(archivo) {
+  const dimensionMaxima = 1600;
+
+  try {
+    const mapa = await createImageBitmap(archivo, { imageOrientation: 'from-image' });
+    const escala = Math.min(1, dimensionMaxima / Math.max(mapa.width, mapa.height));
+    if (escala === 1 && archivo.type === 'image/webp' && archivo.size <= 450 * 1024) {
+      mapa.close();
+      return archivo;
+    }
+
+    const lienzo = document.createElement('canvas');
+    lienzo.width = Math.max(1, Math.round(mapa.width * escala));
+    lienzo.height = Math.max(1, Math.round(mapa.height * escala));
+    const contexto = lienzo.getContext('2d', { alpha: true });
+    if (!contexto) {
+      mapa.close();
+      return archivo;
+    }
+    contexto.drawImage(mapa, 0, 0, lienzo.width, lienzo.height);
+    mapa.close();
+
+    const optimizada = await new Promise((resolver) => lienzo.toBlob(resolver, 'image/webp', 0.82));
+    if (!optimizada || optimizada.size >= archivo.size) return archivo;
+
+    const nombre = archivo.name.replace(/\.[^.]+$/, '') || 'imagen-producto';
+    return new File([optimizada], `${nombre}.webp`, {
+      type: 'image/webp',
+      lastModified: archivo.lastModified,
+    });
+  } catch {
+    return archivo;
+  }
+}
+
 async function guardarGaleria(producto, { varianteId, campo, maximo }) {
   const estado = obtenerEstadoGaleria(registroEdicion || producto, varianteId, maximo);
   if (estado.items.length > maximo) throw new Error(`La galería admite un máximo de ${maximo} imágenes.`);
 
   for (const [indice, item] of estado.items.entries()) {
     if (item.tipo !== 'nueva') continue;
-    const { archivo } = item;
-    if (archivo.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivo.name} supera el máximo de 5 MB.`);
+    const archivoOriginal = item.archivo;
+    if (archivoOriginal.size > 5 * 1024 * 1024) throw new Error(`La imagen ${archivoOriginal.name} supera el máximo de 5 MB.`);
+    const archivo = await optimizarImagenParaWeb(archivoOriginal);
     const preparacion = await invocar('preparar_subida', {
       datos: { producto_id: producto.id, variante_id: varianteId, tipo: archivo.type },
     });
     const { error } = await cliente.storage
       .from('productos')
-      .uploadToSignedUrl(preparacion.ruta, preparacion.token, archivo, { contentType: archivo.type });
+      .uploadToSignedUrl(preparacion.ruta, preparacion.token, archivo, {
+        contentType: archivo.type,
+        cacheControl: '31536000',
+      });
     if (error) throw error;
 
     const imagen = await invocar('registrar_imagen', {
@@ -556,7 +595,7 @@ async function guardarGaleria(producto, { varianteId, campo, maximo }) {
         orden: indice + 1,
       },
     });
-    archivosSubidos.add(archivo);
+    archivosSubidos.add(archivoOriginal);
     registroEdicion.imagenes.push(imagen);
     if (item.urlTemporal) URL.revokeObjectURL(item.urlTemporal);
     Object.assign(item, { tipo: 'existente', imagen, urlTemporal: null, archivo: null });

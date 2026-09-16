@@ -1,5 +1,6 @@
 ---
 import type { ImagenProducto } from '../tipos/contenidos';
+import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagenes';
 
 interface Props {
   imagenes: ImagenProducto[];
@@ -28,10 +29,15 @@ const imagenPrincipal = imagenesVisibles[0];
   >
     <img
       data-imagen-principal-galeria
-      src={imagenPrincipal.url_publica}
+      src={crearUrlImagenOptimizada(imagenPrincipal.url_publica, 960, 82)}
+      srcset={crearSrcsetImagen(imagenPrincipal.url_publica, [480, 709, 960, 1200], 82)}
+      sizes="(max-width: 860px) calc(100vw - 2rem), 50vw"
       alt={imagenPrincipal.texto_alternativo || nombreProducto}
       width="709"
       height="709"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
       draggable={proteger ? 'false' : undefined}
     />
     <span class="indicador-ampliar-galeria" aria-hidden="true">Ampliar</span>
@@ -48,7 +54,7 @@ const imagenPrincipal = imagenesVisibles[0];
           aria-pressed={indice === 0 ? 'true' : 'false'}
           aria-label={`Ver imagen ${indice + 1} de ${imagenesVisibles.length}`}
         >
-          <img src={imagen.url_publica} alt="" width="96" height="96" loading="lazy" draggable={proteger ? 'false' : undefined} />
+          <img src={crearUrlImagenOptimizada(imagen.url_publica, 192, 76)} alt="" width="96" height="96" loading="lazy" decoding="async" draggable={proteger ? 'false' : undefined} />
         </button>
       ))}
     </div>
@@ -56,7 +62,7 @@ const imagenPrincipal = imagenesVisibles[0];
   <dialog class="visor-galeria" data-visor-galeria aria-label={`Imagen ampliada de ${nombreProducto}`}>
     <div class="contenido-visor-galeria">
       <button class="boton-icono cerrar-visor-galeria" type="button" data-cerrar-visor-galeria aria-label="Cerrar imagen ampliada">×</button>
-      <img data-imagen-visor-galeria src={imagenPrincipal.url_publica} alt={imagenPrincipal.texto_alternativo || nombreProducto} width="1200" height="1200" draggable={proteger ? 'false' : undefined} />
+      <img data-imagen-visor-galeria src={crearUrlImagenOptimizada(imagenPrincipal.url_publica, 1200, 84)} alt={imagenPrincipal.texto_alternativo || nombreProducto} width="1200" height="1200" loading="lazy" decoding="async" draggable={proteger ? 'false' : undefined} />
     </div>
   </dialog>
 </div>

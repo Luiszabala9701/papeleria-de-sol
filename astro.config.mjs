@@ -8,6 +8,7 @@ export default defineConfig({
   site: urlSitio,
   trailingSlash: 'never',
   output: 'server',
+  prefetch: true,
   adapter: netlify(),
   integrations: [sitemap({
     filter: (pagina) => {
@@ -21,6 +22,8 @@ export default defineConfig({
   },
   vite: {
     build: {
+      // Mantener los scripts externos para respetar script-src 'self'.
+      assetsInlineLimit: 0,
       sourcemap: false,
     },
   },

@@ -9,7 +9,7 @@ export function tituloPaginaCatalogo(tipo, pagina = 1) {
   return `${titulo}${pagina > 1 ? ` · Página ${pagina}` : ''}`;
 }
 
-function textoNormalizado(texto) {
+export function normalizarTextoBusqueda(texto) {
   return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
@@ -21,10 +21,10 @@ function textoNormalizado(texto) {
 export function obtenerPaginaCatalogo(productos, parametros) {
   const buscar = parametros.get('buscar')?.trim() || '';
   const categoria = parametros.get('categoria') || '';
-  const termino = textoNormalizado(buscar);
+  const termino = normalizarTextoBusqueda(buscar);
   const filtrados = productos.filter((producto) => {
     const coincideCategoria = !categoria || producto.categoria?.id === categoria;
-    const texto = textoNormalizado([producto.nombre, producto.sku, producto.descripcion].join(' '));
+    const texto = normalizarTextoBusqueda([producto.nombre, producto.sku, producto.descripcion].join(' '));
     return coincideCategoria && (!termino || texto.includes(termino));
   });
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PRODUCTOS_POR_PAGINA));

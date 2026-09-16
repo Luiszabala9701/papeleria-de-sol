@@ -2,21 +2,20 @@
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import ListadoProductosFiltrable from '../../componentes/ListadoProductosFiltrable.astro';
 import GuiaColeccion from '../../componentes/GuiaColeccion.astro';
-import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
-import type { ConfiguracionSitio, Producto, TipoProducto } from '../../tipos/contenidos';
+import { crearUrlCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
+import type { ConfiguracionSitio, TipoProducto } from '../../tipos/contenidos';
 import {
   obtenerCategoriasPublicadas,
   obtenerConfiguracionSitio,
-  obtenerProductosPublicados,
+  obtenerPaginaProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
-const [configuracion, productos, categorias] = await Promise.all([
+const [configuracion, paginaCatalogo, categorias] = await Promise.all([
   obtenerConfiguracionSitio(),
-  obtenerProductosPublicados({ tipo: 'sticker' }),
+  obtenerPaginaProductosPublicados({ tipo: 'sticker', parametros: Astro.url.searchParams }),
   obtenerCategoriasPublicadas(),
-]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: TipoProducto }[]];
-const paginaCatalogo = obtenerPaginaCatalogo(productos, Astro.url.searchParams);
+]) as [ConfiguracionSitio, Awaited<ReturnType<typeof obtenerPaginaProductosPublicados>>, { id: string; nombre: string; tipo_producto?: TipoProducto }[]];
 ---
 
 <DisenoPrincipal
@@ -35,7 +34,7 @@ const paginaCatalogo = obtenerPaginaCatalogo(productos, Astro.url.searchParams);
   </header>
 
   <ListadoProductosFiltrable
-    productos={productos}
+    estado={paginaCatalogo}
     categorias={categorias}
     configuracion={configuracion}
     tipo="sticker"

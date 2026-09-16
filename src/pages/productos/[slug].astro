@@ -12,8 +12,6 @@ import {
   crearUrlAbsoluta,
   escaparJsonLd,
 } from '../../servicios/seo';
-import rutaScriptGaleria from '../../scripts/galeria-producto.js?url&no-inline';
-import rutaScriptCantidad from '../../scripts/cantidad-producto.js?url&no-inline';
 import { crearLineaSeleccion, necesitaElegirVariante, productoSinStock } from '../../servicios/variantes.js';
 
 export const prerender = false;
@@ -185,9 +183,11 @@ const datosEstructurados = {
     <a href={coleccion.ruta}>Ver más {coleccion.nombre.toLocaleLowerCase('es-AR')} de Papelería de Sol</a>
     <a href="/ayuda">Cómo comprar por WhatsApp</a>
   </nav>
-  <script is:inline src={rutaScriptGaleria}></script>
-  <script is:inline src={rutaScriptCantidad}></script>
-  <script>import '../../scripts/variantes-producto.js';</script>
+  <script>
+    import '../../scripts/galeria-producto.js';
+    import '../../scripts/cantidad-producto.js';
+    import '../../scripts/variantes-producto.js';
+  </script>
 </DisenoPrincipal>
 
 <style>

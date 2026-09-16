@@ -2,21 +2,20 @@
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import ListadoProductosFiltrable from '../../componentes/ListadoProductosFiltrable.astro';
 import GuiaColeccion from '../../componentes/GuiaColeccion.astro';
-import { crearUrlCatalogo, obtenerPaginaCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
-import type { ConfiguracionSitio, Producto } from '../../tipos/contenidos';
+import { crearUrlCatalogo, tituloPaginaCatalogo } from '../../servicios/catalogo.js';
+import type { ConfiguracionSitio } from '../../tipos/contenidos';
 import {
   obtenerConfiguracionSitio,
   obtenerCategoriasPublicadas,
-  obtenerProductosPublicados,
+  obtenerPaginaProductosPublicados,
 } from '../../servicios/repositorio-contenidos.js';
 import { obtenerTextoPublico } from '../../servicios/textos-publicos';
 
-const [configuracion, plantillas, categorias] = await Promise.all([
+const [configuracion, paginaCatalogo, categorias] = await Promise.all([
   obtenerConfiguracionSitio(),
-  obtenerProductosPublicados({ tipo: 'plantilla' }),
+  obtenerPaginaProductosPublicados({ tipo: 'plantilla', parametros: Astro.url.searchParams }),
   obtenerCategoriasPublicadas(),
-]) as [ConfiguracionSitio, Producto[], { id: string; nombre: string; tipo_producto?: 'plantilla' }[]];
-const paginaCatalogo = obtenerPaginaCatalogo(plantillas, Astro.url.searchParams);
+]) as [ConfiguracionSitio, Awaited<ReturnType<typeof obtenerPaginaProductosPublicados>>, { id: string; nombre: string; tipo_producto?: 'plantilla' }[]];
 ---
 
 <DisenoPrincipal
@@ -34,9 +33,9 @@ const paginaCatalogo = obtenerPaginaCatalogo(plantillas, Astro.url.searchParams)
     <p>{obtenerTextoPublico(configuracion, 'plantillas_descripcion')}</p>
   </header>
 
-  {plantillas.length > 0 ? (
+  {paginaCatalogo.totalProductos > 0 || paginaCatalogo.tieneFiltros ? (
     <ListadoProductosFiltrable
-      productos={plantillas}
+      estado={paginaCatalogo}
       categorias={categorias}
       configuracion={configuracion}
       tipo="plantilla"

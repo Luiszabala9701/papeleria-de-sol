@@ -3,6 +3,7 @@ const { configuracion } = Astro.props;
 const anio = new Date().getFullYear();
 
 import { obtenerTextoPublico } from '../servicios/textos-publicos';
+import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagenes';
 ---
 
 <footer class="pie-sitio">
@@ -10,7 +11,16 @@ import { obtenerTextoPublico } from '../servicios/textos-publicos';
       <div class="pie-marca">
       <div class="marca marca-pie">
         <span class="logo-papeleria">
-          <img src="/marca/logo-papeleria-de-sol-transparente.png" alt="Papelería de Sol" width="1774" height="887" />
+          <img
+            src={crearUrlImagenOptimizada('/marca/logo-papeleria-de-sol-transparente.png', 360, 88)}
+            srcset={crearSrcsetImagen('/marca/logo-papeleria-de-sol-transparente.png', [180, 360], 88)}
+            sizes="180px"
+            alt="Papelería de Sol"
+            width="360"
+            height="180"
+            loading="lazy"
+            decoding="async"
+          />
         </span>
       </div>
       <p class="pie-descripcion">

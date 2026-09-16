@@ -11,10 +11,11 @@ const { productos, configuracion } = Astro.props;
 ---
 
 <div class="hero-carrusel" data-carrusel-inicio aria-label="Productos elegidos para el inicio">
+  <h2 class="solo-lectores">Productos elegidos para el inicio</h2>
   <div class="hero-carrusel-ventana" aria-live="polite">
     {productos.map((producto, indice) => (
       <div class="hero-carrusel-diapo" data-diapo-carrusel hidden={indice !== 0}>
-        <TarjetaProducto producto={producto} configuracion={configuracion} compacta />
+        <TarjetaProducto producto={producto} configuracion={configuracion} compacta prioritaria={indice === 0} />
       </div>
     ))}
   </div>
