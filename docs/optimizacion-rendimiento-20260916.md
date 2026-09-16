@@ -1,6 +1,6 @@
 # Optimización de rendimiento — 16/09/2026
 
-Estado: implementado y revisado en la rama `pruebas`. El usuario autorizó guardar y subir los cambios únicamente a esa rama el 16/09/2026; el resultado del despliegue se comprueba por separado. Producción y los datos de Supabase no se modificaron durante esta optimización.
+Estado: implementado, publicado y revisado en [Netlify de pruebas](https://papeleria-de-sol-pruebas.netlify.app/). El usuario autorizó guardar y subir los cambios únicamente a la rama `pruebas` el 16/09/2026. Producción y los datos de Supabase no se modificaron por el agente durante esta optimización.
 
 ## Problemas encontrados
 
@@ -78,7 +78,7 @@ Comparación verificable en código:
 
 En la revisión previa con acceso a Supabase, las rutas reales de inicio, stickers, segunda/última página, detalle y productos físicos respondieron HTTP 200. Ejemplos de TTFB local en caliente: stickers 0,374 s y página 21 0,322 s. Estos tiempos de desarrollo no son LCP ni resultados de Lighthouse y no son comparables directamente con las capturas de producción.
 
-No hay puntuación PageSpeed posterior al cambio: queda pendiente medir el despliegue de pruebas en condiciones equivalentes y, después del pase, producción. No se promete una puntuación ni se atribuye una mejora numérica no medida.
+Se inició [PageSpeed del despliegue de pruebas](https://pagespeed.web.dev/analysis/https-papeleria-de-sol-pruebas-netlify-app/mknqrws05x?form_factor=mobile) el 16/09/2026 a las 8:50. La interfaz permaneció cargando sin entregar puntuaciones ni métricas, tanto en móvil como en escritorio. No hay puntuación posterior al cambio disponible en esta revisión. Queda pendiente medir pruebas en condiciones equivalentes y, después del pase, producción. No se promete una puntuación ni se atribuye una mejora numérica no medida; además, pruebas no tiene los mismos productos seleccionados para el carrusel que producción.
 
 ## Verificaciones
 
@@ -91,11 +91,13 @@ No hay puntuación PageSpeed posterior al cambio: queda pendiente medir el despl
 - Revisión visual a 390 × 844: inicio y ficha conservan el diseño. Se restauró el tamaño del navegador y se retiró únicamente la línea de carrito creada para la prueba, preservando la selección anterior.
 - No se enviaron mensajes de WhatsApp ni se realizaron pagos o subidas reales.
 - Revisión del despliegue público de pruebas con datos reales: inicio y tarjetas cargan mediante CDN, listado de 48 productos, segunda página desde #49, categoría Gatos con 12 resultados y búsqueda de 1000 con un resultado. La ficha conserva descripción y precios Común $199/Holográfico $499. La consola revisada de inicio no mostró errores ni advertencias.
+- Resistente al agua cuesta $499. Agregarlo al carrito muestra total $499; se retiró únicamente esa línea de prueba. Cerrar el carrito devuelve el foco y lo deja inerte. El visor ampliado funciona y no se registraron errores/advertencias en ficha ni en productos físicos.
+- El último ajuste del collage está desplegado: a 390 × 844 sus tres imágenes seleccionan el recurso embebido de 1 px, y en escritorio seleccionan URLs del CDN. Inicio/ficha conservan la presentación móvil y se restauró el tamaño normal del navegador.
 
 La comprobación inicial de consultas reales se hizo con acceso de red autorizado. En la revisión final, el entorno restringido devolvió EACCES al consultar Supabase; se usaron variables temporales del proceso para las pruebas de interfaz con demostración. No se editó `.env` ni se cambió la configuración publicada.
 
 ## Pendiente
 
-1. Completar la verificación del pequeño ajuste publicado del collage en escritorio/móvil y medir PageSpeed móvil/escritorio.
+1. Obtener un informe PageSpeed completo en móvil/escritorio. El collage ya se comprobó en ambas vistas publicadas.
 2. Comprobar una subida administrativa autorizada. El índice de pruebas fue aplicado por el usuario y el CDN ya respondió correctamente.
 3. Con pruebas aprobadas, pasar a producción y medir de nuevo. No ejecutar otra vez las migraciones anteriores de precios/descripciones ni copiar la base de pruebas sobre producción.
