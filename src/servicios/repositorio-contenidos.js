@@ -29,7 +29,7 @@ function crearStickersDemostracion() {
       sku,
       descripcion,
       tipo_producto: 'sticker',
-      precio: 500,
+      precio: 199,
       moneda: 'ARS',
       usa_variantes: true,
       controla_stock: false,
@@ -41,9 +41,9 @@ function crearStickersDemostracion() {
       orden: numero,
       categoria: null,
       variantes: [
-        { id: `variante-comun-${numero}`, clave: 'comun', nombre: 'Común', sku, precio: 500, stock: null, estado: 'publicado', orden: 0 },
-        { id: `variante-holografico-${numero}`, clave: 'holografico', nombre: 'Holográfico', sku, precio: 500, stock: null, estado: 'publicado', orden: 1 },
-        { id: `variante-resistente-agua-${numero}`, clave: 'resistente_agua', nombre: 'Resistente al agua', sku, precio: 500, stock: null, estado: 'publicado', orden: 2 },
+        { id: `variante-comun-${numero}`, clave: 'comun', nombre: 'Común', sku, precio: 199, stock: null, estado: 'publicado', orden: 0 },
+        { id: `variante-holografico-${numero}`, clave: 'holografico', nombre: 'Holográfico', sku, precio: 499, stock: null, estado: 'publicado', orden: 1 },
+        { id: `variante-resistente-agua-${numero}`, clave: 'resistente_agua', nombre: 'Resistente al agua', sku, precio: 499, stock: null, estado: 'publicado', orden: 2 },
       ],
       imagenes: [
         {
