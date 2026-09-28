@@ -12,6 +12,7 @@ const reporte10 = await readFile(new URL('../supabase/migrations/20260911120000_
 const preciosStickers = await readFile(new URL('../supabase/migrations/20260912000000_precios_stickers.sql', import.meta.url), 'utf8');
 const descripcionesStickers = await readFile(new URL('../supabase/migrations/20260912010000_descripciones_stickers.sql', import.meta.url), 'utf8');
 const preciosStickers499 = await readFile(new URL('../supabase/migrations/20260912020000_precios_stickers_499.sql', import.meta.url), 'utf8');
+const sistemaPedidos = await readFile(new URL('../supabase/migrations/20260928000000_sistema_pedidos_etapa_1.sql', import.meta.url), 'utf8');
 
 test('migración de variantes en PostgreSQL: preservación, límites, seguridad y guardado atómico', async t => {
   const db = new PGlite();
@@ -149,4 +150,9 @@ test('migración de variantes en PostgreSQL: preservación, límites, seguridad 
   assert.equal((await db.query('select count(*)::int n from codigos_sku where codigo=$1', [skuPlantilla])).rows[0].n, 1);
   const plantillaNueva = await guardar({ nombre: 'Plantilla nueva', slug: 'plantilla-nueva', descripcion: 'Plantilla nueva', tipo_producto: 'plantilla', estado: 'borrador', precio: 950, stock: null });
   assert.notEqual((await db.query('select sku from productos where id=$1', [plantillaNueva])).rows[0].sku, skuPlantilla);
+
+  // La etapa de pedidos debe poder aplicarse sobre el historial completo ya migrado.
+  await db.exec(sistemaPedidos);
+  assert.equal((await db.query("select count(*)::int n from information_schema.tables where table_schema='public' and table_name in ('pedidos','pagos','cupones')")).rows[0].n, 3);
+  assert.equal((await db.query('select count(*)::int n from productos where compra_automatica_habilitada')).rows[0].n, 0);
 });
