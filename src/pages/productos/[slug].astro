@@ -28,6 +28,7 @@ if (!producto) {
 
 const imagen = producto.imagenes?.find((elemento) => elemento.es_principal) || producto.imagenes?.[0];
 const esSticker = producto.tipo_producto === 'sticker';
+const esDigital = producto.tipo_producto === 'plantilla';
 const precio = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: producto.moneda || 'ARS',
@@ -151,15 +152,18 @@ const datosEstructurados = {
         class="selector-cantidad-producto"
         data-selector-cantidad
         data-controla-stock={producto.controla_stock ? 'true' : 'false'}
-        data-maximo={producto.controla_stock ? stockDisponible : undefined}
+        data-maximo={esDigital ? 1 : producto.controla_stock ? stockDisponible : undefined}
         data-pendiente-variante={elegir ? 'true' : 'false'}
       >
         <span class="etiqueta-cantidad-producto">Cantidad</span>
         <div class="controles-cantidad" aria-label={`Cantidad de ${producto.nombre}`}>
           <button type="button" data-selector-cantidad-restar aria-label="Reducir cantidad" disabled>−</button>
           <output data-selector-cantidad-valor aria-live="polite">1</output>
-          <button type="button" data-selector-cantidad-sumar aria-label="Aumentar cantidad" disabled={sinStock || elegir}>+</button>
+          <button type="button" data-selector-cantidad-sumar aria-label="Aumentar cantidad" disabled={esDigital || sinStock || elegir}>+</button>
         </div>
+        {esDigital && (
+          <small class="disponibilidad-cantidad-producto">Los productos digitales se agregan de a una unidad.</small>
+        )}
         {producto.controla_stock && (
           <small class="disponibilidad-cantidad-producto" data-unidades-variante>
             {elegir ? 'El stock corresponde a la variante elegida.' : sinStock ? 'Sin unidades disponibles por ahora.' : `${stockDisponible} ${stockDisponible === 1 ? 'unidad disponible' : 'unidades disponibles'}.`}

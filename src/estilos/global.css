@@ -1465,6 +1465,11 @@ h3 {
   width: min(100%, 460px);
 }
 
+.marco-galeria {
+  position: relative;
+  min-width: 0;
+}
+
 .imagen-principal-galeria {
   position: relative;
   display: block;
@@ -1477,6 +1482,7 @@ h3 {
   background: linear-gradient(145deg, color-mix(in srgb, var(--azul-sol) 12%, transparent), color-mix(in srgb, var(--lila-sol) 13%, transparent));
   box-shadow: var(--sombra-suave);
   cursor: zoom-in;
+  touch-action: pan-y;
 }
 
 .imagen-principal-galeria img {
@@ -1507,13 +1513,57 @@ h3 {
   transform: translateY(0);
 }
 
+.flecha-galeria {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--azul-profundo) 18%, transparent);
+  border-radius: 999px;
+  color: var(--azul-profundo);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 22px rgba(44, 54, 96, 0.18);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.flecha-galeria:hover,
+.flecha-galeria:focus-visible {
+  background: var(--blanco);
+  outline: 3px solid color-mix(in srgb, var(--azul-sol) 28%, transparent);
+}
+
+.flecha-galeria[hidden] { display: none; }
+.flecha-galeria-anterior { left: 0.65rem; }
+.flecha-galeria-siguiente { right: 0.65rem; }
+
+.flecha-galeria svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .miniaturas-galeria {
   display: flex;
-  flex-wrap: wrap;
+  max-width: 100%;
+  padding: 0.15rem 0.1rem 0.35rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: thin;
   gap: 0.65rem;
 }
 
 .miniatura-galeria {
+  flex: 0 0 auto;
   width: 62px;
   height: 62px;
   padding: 0;
@@ -1522,6 +1572,7 @@ h3 {
   border-radius: 0.75rem;
   background: var(--blanco);
   cursor: pointer;
+  scroll-snap-align: center;
 }
 
 .miniatura-galeria.activa,
@@ -1873,6 +1924,10 @@ h3 {
     overflow-wrap: anywhere;
   }
 
+  .lista-contacto-pie {
+    grid-template-columns: 1fr;
+  }
+
   .pie-inferior {
     display: grid;
     justify-content: center;
@@ -2082,13 +2137,12 @@ h3 {
 }
 
 :root.vista-movil-forzada .pie-cuadricula {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 1.25rem;
-  row-gap: 2rem;
+  grid-template-columns: 1fr;
+  row-gap: 1.5rem;
 }
 
 :root.vista-movil-forzada .pie-marca {
-  grid-column: 1 / -1;
+  grid-column: auto;
 }
 
 :root.vista-movil-forzada .pie-explora,
@@ -2102,6 +2156,10 @@ h3 {
 
 :root.vista-movil-forzada .lista-contacto-pie {
   grid-template-columns: 1fr;
+}
+
+:root.vista-movil-forzada .pie-contacto h2 {
+  text-align: left;
 }
 
 :root.vista-movil-forzada .pie-inferior {
@@ -2164,6 +2222,10 @@ h3 {
 @media (max-width: 640px) {
   /* Deja libre el lateral ocupado por los accesos flotantes. */
   .selector-version { padding-inline-end: 3.5rem; }
+  .pie-cuadricula { grid-template-columns: 1fr; padding-block: 2.5rem; gap: 1.5rem; }
+  .pie-marca { grid-column: auto; }
+  .pie-contacto h2 { text-align: left; }
+  .lista-contacto-pie { grid-template-columns: 1fr; }
 }
 .miniaturas-galeria[hidden], [data-descripcion-variante][hidden] { display: none; }
 a.boton-agregar-producto { display: inline-flex; justify-content: center; text-align: center; }

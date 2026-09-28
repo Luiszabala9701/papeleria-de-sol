@@ -60,6 +60,7 @@ export function crearLineaSeleccion(producto, variante = null, cantidad = 1) {
   }
   const imagenes = variante?.imagenes?.length ? variante.imagenes : producto.imagenes;
   const fisico = producto.tipo_producto === 'fisico';
+  const digital = producto.tipo_producto === 'plantilla';
   return {
     id: producto.id,
     clave_linea: `${producto.id}:${variante?.id || 'simple'}`,
@@ -78,6 +79,7 @@ export function crearLineaSeleccion(producto, variante = null, cantidad = 1) {
     imagen: imagenes?.[0]?.url_publica || '/stickers/1.webp',
     controla_stock: fisico,
     stock: fisico ? Math.max(0, Number(variante ? variante.stock : producto.stock) || 0) : null,
+    cantidad_maxima: digital ? 1 : null,
     cantidad,
   };
 }
@@ -106,7 +108,10 @@ export function revisarSeleccion(lineas, productos) {
     }
     const existente = agrupadas.get(linea.clave_linea);
     linea.cantidad += existente?.cantidad || 0;
-    if (linea.cantidad > 9999) {
+    if (linea.cantidad_maxima === 1 && linea.cantidad > 1) {
+      linea.cantidad = 1;
+      avisos.push(`${linea.nombre} es un producto digital y admite una sola unidad.`);
+    } else if (linea.cantidad > 9999) {
       linea.cantidad = 9999;
       avisos.push(`Se ajustó la cantidad de ${linea.nombre} al máximo por consulta.`);
     }

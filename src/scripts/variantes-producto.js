@@ -15,7 +15,7 @@ if (detalle) {
     boton.dataset.producto = JSON.stringify(linea);
     boton.textContent = !linea ? 'Elegí una versión' : sinStock ? 'Sin stock' : boton.dataset.textoAgregar;
     cantidad.dataset.pendienteVariante = linea ? 'false' : 'true';
-    cantidad.dataset.maximo = String(linea?.stock ?? 9999);
+    cantidad.dataset.maximo = String(linea?.cantidad_maxima ?? linea?.stock ?? 9999);
     cantidad.dispatchEvent(new Event('reiniciar-cantidad'));
     detalle.querySelector('[data-precio-variante]').textContent = variante ? dinero.format(variante.precio) : `Desde ${dinero.format(producto.precio)}`;
     detalle.querySelector('[data-sku-variante]').textContent = producto.sku || variante?.sku || '';

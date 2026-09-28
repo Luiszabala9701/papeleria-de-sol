@@ -3,8 +3,18 @@ import { crearSrcsetImagen, crearUrlImagenOptimizada } from '../servicios/imagen
 document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
   const imagenPrincipal = galeria.querySelector('[data-imagen-principal-galeria]');
   const botonPrincipal = galeria.querySelector('[data-galeria-principal]');
+  const botonAnterior = galeria.querySelector('[data-galeria-anterior]');
+  const botonSiguiente = galeria.querySelector('[data-galeria-siguiente]');
   const visor = galeria.querySelector('[data-visor-galeria]');
   const imagenVisor = galeria.querySelector('[data-imagen-visor-galeria]');
+
+  const obtenerMiniaturas = () => [...galeria.querySelectorAll('[data-miniatura-galeria]')];
+
+  function actualizarNavegacion() {
+    const hayVarias = obtenerMiniaturas().length > 1;
+    if (botonAnterior) botonAnterior.hidden = !hayVarias;
+    if (botonSiguiente) botonSiguiente.hidden = !hayVarias;
+  }
 
   function seleccionarImagen(boton) {
     if (!imagenPrincipal || !boton) return;
@@ -24,6 +34,15 @@ document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
       miniatura.classList.toggle('activa', activa);
       miniatura.setAttribute('aria-pressed', String(activa));
     });
+    boton.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  function moverImagen(direccion) {
+    const miniaturas = obtenerMiniaturas();
+    if (miniaturas.length < 2) return;
+    const actual = miniaturas.findIndex((miniatura) => miniatura.classList.contains('activa'));
+    const siguiente = (Math.max(0, actual) + direccion + miniaturas.length) % miniaturas.length;
+    seleccionarImagen(miniaturas[siguiente]);
   }
 
   galeria.addEventListener('click', (evento) => {
@@ -45,6 +64,7 @@ document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
       boton.dataset.imagenSrc = imagen.url_publica;
       boton.dataset.imagenAlt = imagen.texto_alternativo || nombre;
       boton.setAttribute('aria-label', `Ver imagen ${indice + 1} de ${lista.length}`);
+      boton.setAttribute('aria-pressed', 'false');
       const foto = document.createElement('img');
       foto.src = crearUrlImagenOptimizada(imagen.url_publica, 192, 76);
       foto.alt = '';
@@ -55,13 +75,46 @@ document.querySelectorAll('[data-galeria-producto]').forEach((galeria) => {
       miniaturas.append(boton);
     });
     seleccionarImagen(miniaturas.firstElementChild);
+    actualizarNavegacion();
   });
 
-  botonPrincipal?.addEventListener('click', () => {
+  botonAnterior?.addEventListener('click', () => moverImagen(-1));
+  botonSiguiente?.addEventListener('click', () => moverImagen(1));
+
+  let inicioDeslizamiento = null;
+  let omitirAmpliacion = false;
+  botonPrincipal?.addEventListener('pointerdown', (evento) => {
+    if (evento.pointerType === 'mouse' && evento.button !== 0) return;
+    inicioDeslizamiento = { x: evento.clientX, y: evento.clientY };
+  });
+  botonPrincipal?.addEventListener('pointerup', (evento) => {
+    if (!inicioDeslizamiento) return;
+    const diferenciaX = evento.clientX - inicioDeslizamiento.x;
+    const diferenciaY = evento.clientY - inicioDeslizamiento.y;
+    inicioDeslizamiento = null;
+    if (Math.abs(diferenciaX) < 42 || Math.abs(diferenciaX) <= Math.abs(diferenciaY)) return;
+    omitirAmpliacion = true;
+    moverImagen(diferenciaX < 0 ? 1 : -1);
+    evento.preventDefault();
+  });
+  botonPrincipal?.addEventListener('pointercancel', () => { inicioDeslizamiento = null; });
+  botonPrincipal?.addEventListener('keydown', (evento) => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(evento.key)) return;
+    evento.preventDefault();
+    moverImagen(evento.key === 'ArrowRight' ? 1 : -1);
+  });
+
+  botonPrincipal?.addEventListener('click', (evento) => {
+    if (omitirAmpliacion) {
+      omitirAmpliacion = false;
+      evento.preventDefault();
+      return;
+    }
     if (!visor?.open) visor?.showModal();
   });
   galeria.querySelector('[data-cerrar-visor-galeria]')?.addEventListener('click', () => visor?.close());
   visor?.addEventListener('click', (evento) => {
     if (evento.target === visor) visor.close();
   });
+  actualizarNavegacion();
 });

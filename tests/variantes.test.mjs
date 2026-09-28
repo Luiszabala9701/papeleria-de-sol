@@ -9,6 +9,7 @@ const sticker = normalizarProductoVenta({ id: 's', nombre: 'Sticker', sku: 'ST-0
 const fisico = normalizarProductoVenta({id:'f',nombre:'Llavero',sku:'PF-0001',tipo_producto:'fisico',usa_variantes:true,
   imagenes:[{url_publica:'/padre.webp'}, {url_publica:'/rojo.webp',variante_id:'r'}],
   variantes:[version('r','rojo',4000,2),version('z','azul',3000,0)]});
+const plantilla = normalizarProductoVenta({id:'p',nombre:'Pack digital',sku:'PL-0001',tipo_producto:'plantilla',precio:1500,imagenes:[]});
 
 test('las versiones disponibles y sus precios se normalizan sin stock para stickers', () => {
   assert.equal(sticker.variantes.length, 2);
@@ -46,6 +47,16 @@ test('carrito: dos versiones distintas, agrupar duplicados, limitar stock y actu
   assert.ok(resultado.avisos.some(a=>a.includes('precio')));
   assert.ok(resultado.avisos.some(a=>a.includes('stock')));
   assert.ok(resultado.avisos.some(a=>a.includes('nuevamente')));
+});
+test('productos digitales: la cantidad máxima se mantiene en una unidad', () => {
+  const linea = crearLineaSeleccion(plantilla, null, 8);
+  assert.equal(linea.cantidad_maxima, 1);
+  const resultado = revisarSeleccion([
+    {id:'p',cantidad:3,precio:1500},
+    {id:'p',cantidad:2,precio:1500},
+  ], [plantilla]);
+  assert.equal(resultado.lineas[0].cantidad, 1);
+  assert.ok(resultado.avisos.some((aviso) => aviso.includes('producto digital')));
 });
 test('selecciones antiguas pasan a Común; cantidades inválidas no se aceptan', () => {
   assert.equal(revisarSeleccion([{id:'s',cantidad:2,precio:500}],[sticker]).lineas[0].variante_id,'a');

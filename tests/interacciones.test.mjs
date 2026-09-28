@@ -91,3 +91,16 @@ test('el carrito oculto es inerte y devuelve el foco al activador al cerrarse', 
   assert.equal(panel.getAttribute('inert'), '');
   assert.equal(boton.enfoques, 1);
 });
+
+test('la galería ofrece flechas accesibles y navegación táctil', () => {
+  const componente = readFileSync(new URL('../src/componentes/GaleriaProducto.astro', import.meta.url), 'utf8');
+  const script = readFileSync(new URL('../src/scripts/galeria-producto.js', import.meta.url), 'utf8');
+  assert.match(componente, /data-galeria-anterior/);
+  assert.match(componente, /data-galeria-siguiente/);
+  assert.match(componente, /Ver imagen anterior/);
+  assert.match(componente, /Ver imagen siguiente/);
+  assert.match(script, /pointerdown/);
+  assert.match(script, /pointerup/);
+  assert.match(script, /ArrowLeft/);
+  assert.match(script, /ArrowRight/);
+});

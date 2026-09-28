@@ -54,12 +54,17 @@ function limiteDeStock(producto) {
   return Number.isFinite(stock) ? Math.max(0, stock) : 0;
 }
 
+function limiteDeCantidad(producto) {
+  if (producto?.tipo_producto === 'plantilla') return 1;
+  return limiteDeStock(producto);
+}
+
 function normalizarProductoCarrito(producto) {
   if (!producto?.id || !producto?.nombre) return null;
   producto = { ...producto, controla_stock: producto.tipo_producto === 'fisico' };
   if (!producto.controla_stock) producto.stock = null;
 
-  const limite = limiteDeStock(producto);
+  const limite = limiteDeCantidad(producto);
   const cantidad = limitarCantidad(producto.cantidad);
   return {
     ...producto,
@@ -165,7 +170,7 @@ function crearControlesCantidad(producto) {
   sumar.dataset.accionCarrito = 'sumar';
   sumar.dataset.idProducto = producto.clave_linea;
   sumar.setAttribute('aria-label', `Agregar otra unidad de ${producto.nombre}`);
-  const limite = limiteDeStock(producto);
+  const limite = limiteDeCantidad(producto);
   sumar.disabled = limite !== null && producto.cantidad >= limite;
   sumar.textContent = '+';
 
@@ -242,13 +247,15 @@ function agregarProducto(producto, cantidadSolicitada = 1) {
   const existente = carrito.find((elemento) => elemento.clave_linea === producto.clave_linea);
   if (!existente && carrito.length >= 100) { mostrarNotificacion('Podés seleccionar hasta 100 versiones distintas por consulta.'); return; }
   const cantidad = limitarCantidad(cantidadSolicitada);
-  const limite = limiteDeStock(producto);
+  const limite = limiteDeCantidad(producto);
   const cantidadActual = existente?.cantidad || 0;
   const disponible = Math.max(0, (limite ?? 9999) - cantidadActual);
   const cantidadAAgregar = Math.min(cantidad, disponible);
 
   if (cantidadAAgregar <= 0) {
-    mostrarNotificacion(`${producto.nombre} ya alcanzó el stock disponible.`);
+    mostrarNotificacion(producto.tipo_producto === 'plantilla'
+      ? `${producto.nombre} es digital y solo se puede agregar una unidad.`
+      : `${producto.nombre} ya alcanzó el stock disponible.`);
     return;
   }
 
@@ -273,9 +280,11 @@ function modificarCantidad(idProducto, cambio) {
   const producto = carrito.find((elemento) => elemento.clave_linea === idProducto);
   if (!producto) return;
 
-  const limite = limiteDeStock(producto);
+  const limite = limiteDeCantidad(producto);
   if (cambio > 0 && producto.cantidad >= (limite ?? 9999)) {
-    mostrarNotificacion(`${producto.nombre} ya alcanzó el stock disponible.`);
+    mostrarNotificacion(producto.tipo_producto === 'plantilla'
+      ? `${producto.nombre} es digital y solo se puede agregar una unidad.`
+      : `${producto.nombre} ya alcanzó el stock disponible.`);
     return;
   }
 
