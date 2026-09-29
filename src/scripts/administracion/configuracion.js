@@ -27,6 +27,8 @@ export const ESQUEMAS_RECURSOS = {
       ],
     },
     { nombre: 'stock', etiqueta: 'Stock disponible', tipo: 'number', minimo: 0 },
+    { nombre: 'requiere_personalizacion', etiqueta: 'Requiere coordinación o personalización', tipo: 'checkbox', ayuda: 'Este producto siempre se gestionará por WhatsApp y no pasará al pago automático.' },
+    { nombre: 'compra_automatica_habilitada', etiqueta: 'Habilitar compra automática', tipo: 'checkbox', ayuda: 'Activá esta opción solo si el precio, la publicación y el stock están listos. Mercado Pago continúa desactivado por ahora.' },
     { nombre: 'destacado', etiqueta: 'Mostrar como destacado', tipo: 'checkbox' },
     { nombre: 'en_carrusel_inicio', etiqueta: 'Mostrar en carrusel de inicio', tipo: 'checkbox' },
     { nombre: 'orden_carrusel', etiqueta: 'Orden en el carrusel', tipo: 'number', minimo: 0, ayuda: 'Los números menores aparecen primero.' },

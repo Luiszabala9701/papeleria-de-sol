@@ -939,3 +939,83 @@ body.dialogo-abierto {
 .variante-admin fieldset { border: 0; padding: .75rem 0 0; margin: 0; min-width: 0; }
 .variante-admin fieldset:disabled { display: none; }
 .variante-admin input[type=file] { max-width: 100%; }
+
+.filtros-comerciales {
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
+}
+
+.texto-estado-listado {
+  margin: 0.75rem 0;
+  color: var(--tinta-suave);
+}
+
+.tabla-admin td small,
+.tabla-admin td strong {
+  display: block;
+}
+
+.tabla-admin td small {
+  margin-top: 0.2rem;
+  color: var(--tinta-suave);
+}
+
+.dialogo-comercial {
+  width: min(1040px, calc(100% - 2rem));
+}
+
+.dialogo-comercial [data-detalle-pedido] {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.grilla-datos-pedido {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.dato-pedido {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.75rem;
+  background: var(--blanco);
+}
+
+.dato-pedido span,
+.dato-pedido strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.dato-pedido span { color: var(--tinta-suave); font-size: 0.8rem; }
+.lista-items-pedido { display: grid; gap: 0.45rem; padding-left: 1.25rem; }
+.nota-pedido { padding: 0.8rem; border-radius: 0.75rem; background: var(--fondo); }
+
+.controles-pedido {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.control-estado-pedido,
+.formulario-transferencia {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.75rem;
+}
+
+.control-estado-pedido label { display: grid; gap: 0.35rem; font-weight: 700; }
+.formulario-transferencia { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+.acciones-pedido-comercial { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.enlace-seguimiento-generado { max-width: 100%; overflow-wrap: anywhere; }
+.selector-multiple { min-height: 8rem; }
+
+@media (max-width: 820px) {
+  .filtros-comerciales,
+  .grilla-datos-pedido,
+  .controles-pedido,
+  .formulario-transferencia { grid-template-columns: 1fr; }
+}

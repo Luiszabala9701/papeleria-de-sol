@@ -1,0 +1,43 @@
+---
+import DisenoPrincipal from '../disenos/DisenoPrincipal.astro';
+import { obtenerConfiguracionSitio } from '../servicios/repositorio-contenidos.js';
+import type { ConfiguracionSitio } from '../tipos/contenidos';
+
+const configuracion = await obtenerConfiguracionSitio() as ConfiguracionSitio;
+const urlSupabase = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const endpointPedidos = urlSupabase ? `${urlSupabase.replace(/\/$/, '')}/functions/v1/pedidos` : '';
+const clavePublica = import.meta.env.PUBLIC_SUPABASE_CLAVE_PUBLICA || '';
+---
+
+<DisenoPrincipal
+  titulo="Seguimiento privado del pedido"
+  descripcion="Consulta privada del estado de un pedido de Papelería de Sol."
+  configuracion={configuracion}
+  rutaCanonica="/seguimiento"
+  noIndexar
+>
+  <section
+    class="seccion seguimiento-pedido"
+    data-seguimiento-pedido
+    data-endpoint-pedidos={endpointPedidos}
+    data-clave-publica={clavePublica}
+  >
+    <div class="contenedor contenedor-seguimiento">
+      <p class="etiqueta">Consulta privada</p>
+      <h1>Seguimiento del pedido</h1>
+      <p>El enlace contiene una clave privada. No lo publiques ni lo compartas con personas ajenas al pedido.</p>
+      <form class="formulario-token-seguimiento" data-formulario-seguimiento>
+        <label class="grupo-campo">
+          <span>Clave del enlace</span>
+          <input class="campo" name="token" maxlength="43" autocomplete="off" required />
+        </label>
+        <button class="boton boton-principal" type="submit">Consultar</button>
+      </form>
+      <p class="mensaje-error" data-error-seguimiento role="alert" hidden></p>
+      <div class="resultado-seguimiento" data-resultado-seguimiento hidden></div>
+    </div>
+  </section>
+  <script>
+    import '../scripts/seguimiento-pedido.js';
+  </script>
+</DisenoPrincipal>

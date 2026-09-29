@@ -66,6 +66,8 @@ const configuracionDisponible = Boolean(
         </div>
         <nav id="navegacion-admin" aria-label="Secciones de administración">
           <button class="enlace-admin activo" type="button" data-seccion-admin="resumen">Resumen</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="pedidos">Pedidos</button>
+          <button class="enlace-admin" type="button" data-seccion-admin="cupones">Cupones</button>
           <button class="enlace-admin" type="button" data-seccion-admin="productos">Productos</button>
           <button class="enlace-admin" type="button" data-seccion-admin="categorias">Categorías</button>
           <button class="enlace-admin" type="button" data-seccion-admin="secciones">Contenido del sitio</button>
@@ -319,6 +321,72 @@ const configuracionDisponible = Boolean(
           </section>
         ))}
 
+        <section class="seccion-admin" data-panel-admin="pedidos">
+          <header class="cabecera-admin">
+            <div>
+              <p class="etiqueta">Gestión comercial</p>
+              <h1>Pedidos</h1>
+              <p>Solicitudes automáticas, coordinadas y mixtas. En esta etapa no se cobra dinero real.</p>
+            </div>
+            <button class="boton boton-secundario" type="button" data-recargar-pedidos>Actualizar</button>
+          </header>
+          <form class="barra-listado filtros-comerciales" data-filtros-pedidos>
+            <input class="campo" name="busqueda" type="search" placeholder="Número, nombre, correo o WhatsApp" />
+            <select class="selector" name="tipo" aria-label="Tipo de pedido">
+              <option value="">Todos los tipos</option><option value="automatico">Automáticos</option><option value="coordinado">Coordinados</option>
+            </select>
+            <select class="selector" name="estado_financiero" aria-label="Estado de pago">
+              <option value="">Todos los pagos</option><option value="sin_cobro">Sin cobro</option><option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagado">Pago aprobado</option><option value="reembolsado_parcial">Reembolso parcial</option><option value="reembolsado_total">Reembolso total</option>
+            </select>
+            <select class="selector" name="estado_preparacion" aria-label="Estado de preparación">
+              <option value="">Toda preparación</option><option value="no_iniciada">No iniciada</option><option value="espera_anticipo">Espera anticipo</option><option value="en_diseno">En diseño</option><option value="espera_aprobacion">Espera aprobación</option><option value="en_preparacion">En preparación</option><option value="listo">Listo</option>
+            </select>
+            <button class="boton boton-secundario" type="submit">Buscar</button>
+          </form>
+          <p class="texto-estado-listado" data-estado-pedidos aria-live="polite">Cargando…</p>
+          <div class="tabla-contenedor">
+            <table class="tabla-admin">
+              <thead><tr><th>Pedido</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Preparación</th><th>Fecha</th><th>Acciones</th></tr></thead>
+              <tbody data-lista-pedidos></tbody>
+            </table>
+          </div>
+          <nav class="paginacion-admin" aria-label="Paginación de pedidos">
+            <button class="boton-paginacion-admin" type="button" data-pedidos-anterior>Anterior</button>
+            <span data-pedidos-pagina>Página 1</span>
+            <button class="boton-paginacion-admin" type="button" data-pedidos-siguiente>Siguiente</button>
+          </nav>
+        </section>
+
+        <section class="seccion-admin" data-panel-admin="cupones">
+          <header class="cabecera-admin">
+            <div>
+              <p class="etiqueta">Promociones</p>
+              <h1>Cupones</h1>
+              <p>Creá reglas con límites, vigencia y alcance. Los importes se vuelven a calcular siempre en el servidor.</p>
+            </div>
+            <button class="boton boton-principal" type="button" data-nuevo-cupon>Crear cupón</button>
+          </header>
+          <form class="barra-listado filtros-comerciales" data-filtros-cupones>
+            <input class="campo" name="busqueda" type="search" placeholder="Buscar por código" />
+            <select class="selector" name="estado" aria-label="Estado del cupón">
+              <option value="">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option>
+            </select>
+            <button class="boton boton-secundario" type="submit">Buscar</button>
+          </form>
+          <p class="texto-estado-listado" data-estado-cupones aria-live="polite">Cargando…</p>
+          <div class="tabla-contenedor">
+            <table class="tabla-admin">
+              <thead><tr><th>Código</th><th>Descuento</th><th>Alcance</th><th>Vigencia</th><th>Usos</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody data-lista-cupones></tbody>
+            </table>
+          </div>
+          <nav class="paginacion-admin" aria-label="Paginación de cupones">
+            <button class="boton-paginacion-admin" type="button" data-cupones-anterior>Anterior</button>
+            <span data-cupones-pagina>Página 1</span>
+            <button class="boton-paginacion-admin" type="button" data-cupones-siguiente>Siguiente</button>
+          </nav>
+        </section>
+
         <section class="seccion-admin" data-panel-admin="ayuda">
           <header class="cabecera-admin">
             <div>
@@ -378,6 +446,48 @@ const configuracionDisponible = Boolean(
         <button id="cancelar-dialogo" class="boton boton-secundario" type="button">Cancelar</button>
         <button class="boton boton-principal" type="submit">Guardar</button>
       </div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogo-pedido" class="dialogo-recurso dialogo-comercial" aria-labelledby="titulo-dialogo-pedido">
+    <div class="formulario-dialogo">
+      <div class="cabecera-dialogo">
+        <div><p class="etiqueta">Detalle privado</p><h2 id="titulo-dialogo-pedido">Pedido</h2></div>
+        <button class="boton-icono" type="button" data-cerrar-pedido aria-label="Cerrar">×</button>
+      </div>
+      <div data-detalle-pedido></div>
+      <div class="acciones-dialogo"><button class="boton boton-secundario" type="button" data-cerrar-pedido>Cerrar</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="dialogo-cupon" class="dialogo-recurso dialogo-comercial" aria-labelledby="titulo-dialogo-cupon">
+    <form class="formulario-dialogo" data-formulario-cupon>
+      <div class="cabecera-dialogo">
+        <div><p class="etiqueta">Promoción</p><h2 id="titulo-dialogo-cupon">Nuevo cupón</h2></div>
+        <button class="boton-icono" type="button" data-cerrar-cupon aria-label="Cerrar">×</button>
+      </div>
+      <input type="hidden" name="id" />
+      <div class="formulario-admin formulario-dos-columnas">
+        <label class="grupo-campo"><span>Código</span><input class="campo" name="codigo" maxlength="40" pattern="[A-Za-z0-9_-]{3,40}" required /></label>
+        <label class="grupo-campo"><span>Aplica a</span><select class="selector" name="aplica_tipo_pedido"><option value="automatico">Pedidos automáticos</option><option value="coordinado">Pedidos coordinados</option><option value="ambos">Ambos</option></select></label>
+        <label class="grupo-campo"><span>Tipo de descuento</span><select class="selector" name="tipo_descuento"><option value="porcentaje">Porcentaje</option><option value="fijo">Importe fijo</option></select></label>
+        <label class="grupo-campo" data-campo-porcentaje><span>Porcentaje</span><input class="campo" name="porcentaje" type="number" min="0.01" max="100" step="0.01" /></label>
+        <label class="grupo-campo" data-campo-importe hidden><span>Importe en pesos</span><input class="campo" name="importe_fijo" type="number" min="0.01" step="0.01" /></label>
+        <label class="grupo-campo"><span>Compra mínima en pesos</span><input class="campo" name="compra_minima" type="number" min="0" step="0.01" value="0" /></label>
+        <label class="grupo-campo"><span>Tope de descuento en pesos</span><input class="campo" name="descuento_maximo" type="number" min="0" step="0.01" /></label>
+        <label class="grupo-campo"><span>Límite total de usos</span><input class="campo" name="limite_usos_total" type="number" min="1" step="1" /></label>
+        <label class="grupo-campo"><span>Límite por comprador</span><input class="campo" name="limite_usos_comprador" type="number" min="1" step="1" /></label>
+        <label class="grupo-campo"><span>Inicio</span><input class="campo" name="inicia_en" type="datetime-local" /></label>
+        <label class="grupo-campo"><span>Vencimiento</span><input class="campo" name="vence_en" type="datetime-local" /></label>
+        <label class="grupo-campo"><span>Alcance</span><select class="selector" name="alcance"><option value="todos">Todos los productos</option><option value="categorias">Categorías seleccionadas</option><option value="productos">Productos seleccionados</option></select></label>
+        <label class="grupo-checkbox"><input name="activo" type="checkbox" checked /><span>Cupón activo</span></label>
+        <label class="grupo-campo campo-completo"><span>Nota interna</span><textarea class="area-texto" name="descripcion_interna" maxlength="500" rows="2"></textarea></label>
+        <label class="grupo-campo campo-completo" data-campo-categorias hidden><span>Categorías</span><select class="selector selector-multiple" name="categorias" multiple size="6"></select></label>
+        <label class="grupo-campo campo-completo" data-campo-productos hidden><span>Productos incluidos</span><select class="selector selector-multiple" name="productos" multiple size="8"></select></label>
+        <label class="grupo-campo campo-completo"><span>Productos excluidos (opcional)</span><select class="selector selector-multiple" name="excluidos" multiple size="6"></select></label>
+      </div>
+      <p class="mensaje-error" data-error-cupon role="alert" hidden></p>
+      <div class="acciones-dialogo"><button class="boton boton-secundario" type="button" data-cerrar-cupon>Cancelar</button><button class="boton boton-principal" type="submit">Guardar cupón</button></div>
     </form>
   </dialog>
 

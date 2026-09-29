@@ -1,9 +1,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { validarProductoConVariantes } from './validar-producto.ts';
+import { gestionarAccionComercial } from './operaciones-pedidos.ts';
 
 const URL_SUPABASE = Deno.env.get('SUPABASE_URL') || '';
 const CLAVE_SERVICIO = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const URL_SITIO = Deno.env.get('URL_SITIO') || 'https://papeleria-de-sol.netlify.app';
+const URL_SITIO = (Deno.env.get('URL_SITIO') || 'https://papeleria-de-sol.netlify.app').replace(/\/$/, '');
 
 const clienteServicio = createClient(URL_SUPABASE, CLAVE_SERVICIO, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -98,16 +99,25 @@ const CLAVES_TEXTO_PUBLICO = [
 ];
 const EXPRESION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TAMANO_LOTE_LISTADO = 1000;
+const ORIGENES_PERMITIDOS = new Set([
+  URL_SITIO,
+  'https://papeleriadesol.com.ar',
+  'https://www.papeleriadesol.com.ar',
+  'https://papeleria-de-sol-pruebas.netlify.app',
+  'http://localhost:4321',
+  'http://127.0.0.1:4321',
+]);
+
+function origenPermitido(solicitud: Request) {
+  const origen = solicitud.headers.get('origin');
+  return !origen || ORIGENES_PERMITIDOS.has(origen);
+}
 
 function cabecerasCors(solicitud: Request) {
   const origen = solicitud.headers.get('origin') || '';
-  const origenPermitido =
-    origen === URL_SITIO ||
-    origen === 'http://localhost:4321' ||
-    origen === 'http://127.0.0.1:4321';
 
   return {
-    'Access-Control-Allow-Origin': origenPermitido ? origen : URL_SITIO,
+    'Access-Control-Allow-Origin': ORIGENES_PERMITIDOS.has(origen) ? origen : URL_SITIO,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json; charset=utf-8',
@@ -205,7 +215,7 @@ function mensajeSeguroError(error: unknown) {
   }
 
   const mensaje = error instanceof Error ? error.message : '';
-  const esMensajeControlado = /^(El |La |Los |Una |Uno |Elegí |Faltan |Solo |No se pudo |Ya existe )/.test(mensaje);
+  const esMensajeControlado = /^(El |La |Los |Un |Una |Uno |Elegí |Faltan |Solo |Publicá |No se pudo |Ya existe )/.test(mensaje);
   return esMensajeControlado
     ? mensaje
     : 'No se pudo completar la operación. Revisá los datos e intentá nuevamente.';
@@ -518,6 +528,19 @@ async function guardarProducto(originales: Record<string, unknown>, id: string |
     entrada = { ...originales, tipo_producto: data.tipo_producto };
   }
   const datos = validarProductoConVariantes(entrada);
+  const requierePersonalizacion = originales.requiere_personalizacion === true;
+  const compraAutomatica = originales.compra_automatica_habilitada === true;
+  if (compraAutomatica) {
+    if (requierePersonalizacion) throw new Error('Un producto personalizado no puede usar compra automática.');
+    if (datos.estado !== 'publicado') throw new Error('Publicá el producto antes de habilitar la compra automática.');
+    if (Number(datos.precio) <= 0 && !datos.usa_variantes) throw new Error('La compra automática necesita un precio mayor a cero.');
+    if (datos.tipo_producto === 'fisico') {
+      const tieneStock = datos.usa_variantes
+        ? datos.variantes.some(variante => variante.estado === 'publicado' && Number(variante.stock) > 0)
+        : Number(datos.stock) > 0;
+      if (!tieneStock) throw new Error('La compra automática necesita stock disponible.');
+    }
+  }
   for (const variante of datos.variantes) if (variante.id) validarIdentificador(variante.id, 'La variante');
   await validarCategoriaDeProducto(datos.categoria_id, datos.tipo_producto);
   const campos = {
@@ -529,10 +552,21 @@ async function guardarProducto(originales: Record<string, unknown>, id: string |
     p_id: id || null, p_datos: campos, p_variantes: datos.variantes, p_usuario: usuarioId,
   });
   if (error) throw error;
+  const { error: errorModoCompra } = await clienteServicio.rpc('configurar_modo_compra_producto_administracion', {
+    p_producto_id: productoId,
+    p_compra_automatica: compraAutomatica,
+    p_requiere_personalizacion: requierePersonalizacion,
+    p_usuario: usuarioId,
+  });
+  if (errorModoCompra) throw errorModoCompra;
   const { data, error: errorLectura } = await clienteServicio.from('productos')
     .select(RECURSOS.productos.seleccion).eq('id', productoId).single();
   if (errorLectura) throw errorLectura;
-  await registrarAuditoria(usuarioId, id ? 'actualizar' : 'crear', 'productos', productoId, { variantes: datos.variantes.length });
+  await registrarAuditoria(usuarioId, id ? 'actualizar' : 'crear', 'productos', productoId, {
+    variantes: datos.variantes.length,
+    compra_automatica_habilitada: compraAutomatica,
+    requiere_personalizacion: requierePersonalizacion,
+  });
   return data;
 }
 
@@ -951,6 +985,10 @@ Deno.serve(async (solicitud) => {
     return responder(solicitud, { error: 'Método no permitido.' }, 405);
   }
 
+  if (!origenPermitido(solicitud)) {
+    return responder(solicitud, { error: 'Origen no permitido.' }, 403);
+  }
+
   try {
     const autorizacion = solicitud.headers.get('authorization') || '';
     const token = autorizacion.replace(/^Bearer\s+/i, '');
@@ -965,7 +1003,17 @@ Deno.serve(async (solicitud) => {
     const sesionId = obtenerIdentificadorSesion(token);
     if (!sesionId) return responder(solicitud, { error: 'No se pudo identificar la sesión.' }, 401);
 
-    const cuerpo = await solicitud.json();
+    const cuerpoTexto = await solicitud.text();
+    if (new TextEncoder().encode(cuerpoTexto).byteLength > 262_144) {
+      return responder(solicitud, { error: 'La solicitud es demasiado grande.' }, 413);
+    }
+    let cuerpo: Record<string, any>;
+    try {
+      cuerpo = JSON.parse(cuerpoTexto);
+    } catch {
+      return responder(solicitud, { error: 'La solicitud no contiene JSON válido.' }, 400);
+    }
+    if (!esObjetoPlano(cuerpo)) return responder(solicitud, { error: 'La solicitud no es válida.' }, 400);
     const accion = String(cuerpo.accion || '');
 
     if (accion === 'iniciar_sesion') {
@@ -991,6 +1039,17 @@ Deno.serve(async (solicitud) => {
 
     if (accion === 'resumen') {
       return responder(solicitud, { datos: await obtenerResumen() });
+    }
+
+    const operacionComercial = await gestionarAccionComercial({
+      accion,
+      cuerpo,
+      cliente: clienteServicio,
+      usuarioId: autenticacion.user.id,
+      urlSitio: URL_SITIO,
+    });
+    if (operacionComercial?.manejada) {
+      return responder(solicitud, { datos: operacionComercial.datos });
     }
 
     if (accion === 'obtener_textos_inicio') {
@@ -1078,7 +1137,10 @@ Deno.serve(async (solicitud) => {
 
     return responder(solicitud, { error: 'La acción solicitada no existe.' }, 400);
   } catch (error) {
-    console.error(error);
+    const errorRegistrable = error && typeof error === 'object'
+      ? { nombre: error.constructor?.name || 'Error', codigo: 'code' in error ? error.code : undefined }
+      : { nombre: 'Error' };
+    console.error('Fallo seguro en administración', errorRegistrable);
     const mensaje = mensajeSeguroError(error);
     const estado = mensaje.toLowerCase().includes('sesión') || mensaje.includes('permisos') ? 401 : 400;
     return responder(solicitud, { error: mensaje }, estado);

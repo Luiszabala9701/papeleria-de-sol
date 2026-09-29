@@ -10,9 +10,14 @@ const totalElementos = document.querySelector('#total-elementos-carrito');
 const totalDineroCarrito = document.querySelector('#total-dinero-carrito');
 const botonEnviar = document.querySelector('#enviar-carrito-whatsapp');
 const botonVaciar = document.querySelector('#vaciar-carrito');
+const dialogoDatosPedido = document.querySelector('#dialogo-datos-pedido');
+const formularioDatosPedido = document.querySelector('#formulario-datos-pedido');
+const errorDatosPedido = document.querySelector('#error-datos-pedido');
+const confirmacionPedido = document.querySelector('#confirmacion-pedido');
 const textos = obtenerTextosCarrito();
 
 let carrito = cargarCarrito();
+let claveSolicitud = null;
 
 function obtenerTextosCarrito() {
   try {
@@ -75,6 +80,7 @@ function normalizarProductoCarrito(producto) {
 
 function guardarCarrito() {
   localStorage.setItem(CLAVE_CARRITO, JSON.stringify(carrito));
+  claveSolicitud = null;
 }
 
 function cantidadTotal() {
@@ -324,6 +330,42 @@ function crearMensajeWhatsApp() {
   return lineas.join('\n');
 }
 
+function endpointPedidosDisponible() {
+  return Boolean(dialogoDatosPedido?.dataset.endpointPedidos && dialogoDatosPedido?.dataset.clavePublica);
+}
+
+function abrirFormularioPedido() {
+  if (!dialogoDatosPedido || !formularioDatosPedido) return;
+  errorDatosPedido.hidden = true;
+  confirmacionPedido.hidden = true;
+  confirmacionPedido.replaceChildren();
+  formularioDatosPedido.querySelector('button[type="submit"]').hidden = false;
+  if (!claveSolicitud) claveSolicitud = `pedido:${crypto.randomUUID()}`;
+  cerrarPanelCarrito();
+  dialogoDatosPedido.showModal();
+}
+
+function abrirWhatsAppSeleccion() {
+  const numero = panelCarrito.dataset.whatsapp;
+  const enlace = `https://wa.me/${numero}?text=${encodeURIComponent(crearMensajeWhatsApp())}`;
+  if (typeof window.abrirAvisoWhatsApp === 'function') {
+    window.abrirAvisoWhatsApp(enlace, { tipo: 'seleccion', activador: botonEnviar });
+    return;
+  }
+  window.open(enlace, '_blank', 'noopener,noreferrer');
+}
+
+function agregarEnlaceConfirmacion(contenedor, textoEnlace, url) {
+  if (!url) return;
+  const enlace = document.createElement('a');
+  enlace.className = 'boton boton-secundario';
+  enlace.href = url;
+  enlace.target = '_blank';
+  enlace.rel = 'noopener noreferrer';
+  enlace.textContent = textoEnlace;
+  contenedor.append(enlace);
+}
+
 document.addEventListener('click', (evento) => {
   const botonAgregar = evento.target.closest('[data-agregar-producto]');
   if (botonAgregar) {
@@ -390,14 +432,78 @@ botonEnviar?.addEventListener('click', async () => {
     return;
   } finally { botonEnviar.disabled = carrito.length === 0; }
 
-  const numero = panelCarrito.dataset.whatsapp;
-  const enlace = `https://wa.me/${numero}?text=${encodeURIComponent(crearMensajeWhatsApp())}`;
-  if (typeof window.abrirAvisoWhatsApp === 'function') {
-    window.abrirAvisoWhatsApp(enlace, { tipo: 'seleccion', activador: botonEnviar });
-    return;
-  }
+  if (endpointPedidosDisponible()) abrirFormularioPedido();
+  else abrirWhatsAppSeleccion();
+});
 
-  window.open(enlace, '_blank', 'noopener,noreferrer');
+document.querySelectorAll?.('[data-cerrar-pedido-publico]').forEach((boton) => {
+  boton.addEventListener('click', () => dialogoDatosPedido?.close());
+});
+
+formularioDatosPedido?.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  if (!carrito.length || !endpointPedidosDisponible()) return;
+  errorDatosPedido.hidden = true;
+  const boton = formularioDatosPedido.querySelector('button[type="submit"]');
+  boton.disabled = true;
+  boton.textContent = 'Registrando…';
+  const datos = new FormData(formularioDatosPedido);
+  try {
+    const respuesta = await fetch(dialogoDatosPedido.dataset.endpointPedidos, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: dialogoDatosPedido.dataset.clavePublica,
+        Authorization: `Bearer ${dialogoDatosPedido.dataset.clavePublica}`,
+      },
+      body: JSON.stringify({
+        accion: 'crear_solicitud',
+        clave_idempotencia: claveSolicitud,
+        cliente: {
+          nombre: String(datos.get('nombre') || '').trim(),
+          correo: String(datos.get('correo') || '').trim(),
+          whatsapp: String(datos.get('whatsapp') || '').trim(),
+        },
+        observaciones: String(datos.get('observaciones') || '').trim(),
+        cupon: String(datos.get('cupon') || '').trim(),
+        lineas: carrito.map(producto => ({
+          producto_id: producto.id,
+          variante_id: producto.variante_id || null,
+          cantidad: producto.cantidad,
+          opciones: {},
+        })),
+      }),
+    });
+    const resultado = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok || resultado.error) throw new Error(resultado.error || 'No pudimos registrar el pedido.');
+    carrito = [];
+    guardarCarrito();
+    renderizarCarrito();
+    const pedido = resultado.datos;
+    confirmacionPedido.replaceChildren();
+    confirmacionPedido.append(
+      Object.assign(document.createElement('h3'), { textContent: `Pedido #${pedido.numero} registrado` }),
+      Object.assign(document.createElement('p'), {
+        textContent: pedido.tipo === 'automatico'
+          ? `Total confirmado: ${formatearDinero(Number(pedido.total_centavos || 0) / 100)}. El pago todavía no está habilitado.`
+          : 'La solicitud se coordinará por WhatsApp. No se realizó ningún cobro.',
+      }),
+    );
+    const enlaces = document.createElement('div');
+    enlaces.className = 'acciones-confirmacion-pedido';
+    agregarEnlaceConfirmacion(enlaces, 'Ver seguimiento privado', pedido.seguimiento_url);
+    agregarEnlaceConfirmacion(enlaces, 'Continuar por WhatsApp', pedido.whatsapp_url);
+    confirmacionPedido.append(enlaces);
+    confirmacionPedido.hidden = false;
+    boton.hidden = true;
+    claveSolicitud = null;
+  } catch (error) {
+    errorDatosPedido.textContent = error.message || 'No pudimos registrar el pedido.';
+    errorDatosPedido.hidden = false;
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Registrar pedido';
+  }
 });
 
 document.addEventListener('keydown', (evento) => {

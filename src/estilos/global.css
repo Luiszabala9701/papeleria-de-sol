@@ -1207,6 +1207,49 @@ h3 {
   color: var(--azul-profundo);
 }
 
+.modal-pedido {
+  width: min(calc(100% - 2rem), 680px);
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-grande);
+  color: var(--tinta);
+  background: var(--blanco);
+  box-shadow: var(--sombra);
+}
+
+.modal-pedido::backdrop { background: rgba(26, 24, 39, 0.52); backdrop-filter: blur(4px); }
+.contenido-modal-pedido { max-height: calc(100dvh - 2rem); padding: clamp(1.25rem, 4vw, 2rem); overflow-y: auto; }
+.cabecera-modal-pedido { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.cabecera-modal-pedido h2 { margin-bottom: 0.6rem; }
+.formulario-pedido-publico { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.formulario-pedido-publico label { display: grid; gap: 0.35rem; font-weight: 700; }
+.formulario-pedido-publico .campo-completo { grid-column: 1 / -1; }
+.acciones-modal-pedido,
+.acciones-confirmacion-pedido { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+.confirmacion-pedido { padding: 1rem; margin-top: 1rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--azul-sol) 13%, var(--blanco)); }
+.confirmacion-pedido h3 { margin-bottom: 0.45rem; }
+
+.seguimiento-pedido { min-height: 65vh; }
+.contenedor-seguimiento { max-width: 860px; }
+.formulario-token-seguimiento { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 0.75rem; margin-block: 1.5rem; }
+.resultado-seguimiento { padding: clamp(1rem, 4vw, 2rem); margin-top: 1.25rem; border: 1px solid var(--borde); border-radius: var(--radio-grande); background: var(--blanco); }
+.grilla-seguimiento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+.dato-seguimiento { min-width: 0; padding: 0.8rem; border-radius: 0.8rem; background: var(--fondo); }
+.dato-seguimiento span,
+.dato-seguimiento strong { display: block; overflow-wrap: anywhere; }
+.dato-seguimiento span { color: var(--tinta-suave); font-size: 0.8rem; }
+.lista-seguimiento { display: grid; gap: 0.5rem; padding-left: 1.25rem; }
+
+@media (max-width: 640px) {
+  .formulario-pedido-publico,
+  .formulario-token-seguimiento,
+  .grilla-seguimiento { grid-template-columns: 1fr; }
+  .modal-pedido { width: 100%; max-height: 100dvh; border-radius: 0; }
+  .contenido-modal-pedido { max-height: 100dvh; }
+}
+
 .modal-documento-legal {
   width: min(calc(100% - 2rem), 760px);
   max-height: calc(100dvh - 2rem);

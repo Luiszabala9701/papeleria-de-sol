@@ -1,5 +1,6 @@
 import { obtenerClienteSupabase } from '../servicios/cliente-supabase.js';
 import { crearEditorVariantes } from './administracion/variantes.js';
+import { inicializarModuloComercial } from './administracion/pedidos-cupones.js';
 import {
   COLUMNAS_RECURSOS,
   DESCRIPCIONES_RECURSOS,
@@ -113,6 +114,8 @@ async function invocar(accion, contenido = {}) {
   ultimaActividadConfirmada = Date.now();
   return data?.datos;
 }
+
+const moduloComercial = inicializarModuloComercial({ invocar, notificar });
 
 async function abrirAdministracion() {
   const datos = await invocar('iniciar_sesion');
@@ -805,6 +808,7 @@ async function cambiarSeccion(recurso) {
   );
 
   if (recurso === 'resumen') await cargarResumen();
+  else if (['pedidos', 'cupones'].includes(recurso)) await moduloComercial.cargar(recurso);
   else if (recurso === 'secciones') {
     await Promise.all([cargarSeccionesInicio(), cargarConfiguraciones()]);
   } else if (['productos', 'categorias'].includes(recurso)) {

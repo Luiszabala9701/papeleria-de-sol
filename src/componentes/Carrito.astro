@@ -12,6 +12,9 @@ const textosCarrito = {
   mensajeTotal: obtenerTextoPublico(configuracion, 'mensaje_whatsapp_total'),
   mensajeCierre: obtenerTextoPublico(configuracion, 'mensaje_whatsapp_cierre'),
 };
+const urlSupabase = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const clavePublica = import.meta.env.PUBLIC_SUPABASE_CLAVE_PUBLICA || '';
+const endpointPedidos = urlSupabase ? `${urlSupabase.replace(/\/$/, '')}/functions/v1/pedidos` : '';
 ---
 
 <div id="fondo-carrito" class="fondo-carrito" hidden></div>
@@ -50,9 +53,37 @@ const textosCarrito = {
       <strong id="total-dinero-carrito">$0</strong>
     </div>
     <button id="enviar-carrito-whatsapp" class="boton boton-principal boton-ancho" type="button" disabled>
-      {obtenerTextoPublico(configuracion, 'carrito_continuar_whatsapp')}
+      Continuar pedido
     </button>
     <button id="vaciar-carrito" class="boton-texto" type="button">{obtenerTextoPublico(configuracion, 'carrito_vaciar')}</button>
     <p class="aclaracion-carrito">{obtenerTextoPublico(configuracion, 'carrito_aclaracion')}</p>
   </div>
 </aside>
+
+<dialog
+  id="dialogo-datos-pedido"
+  class="modal-pedido"
+  data-endpoint-pedidos={endpointPedidos}
+  data-clave-publica={clavePublica}
+>
+  <form id="formulario-datos-pedido" class="contenido-modal-pedido">
+    <div class="cabecera-modal-pedido">
+      <div><p class="etiqueta">Datos de contacto</p><h2>Registrar pedido</h2></div>
+      <button class="boton-icono" type="button" data-cerrar-pedido-publico aria-label="Cerrar">×</button>
+    </div>
+    <p>Confirmaremos los precios y el stock nuevamente en el servidor. En esta etapa no se realiza ningún cobro.</p>
+    <div class="formulario-pedido-publico">
+      <label><span>Nombre y apellido</span><input class="campo" name="nombre" autocomplete="name" maxlength="120" required /></label>
+      <label><span>Correo</span><input class="campo" name="correo" type="email" autocomplete="email" maxlength="254" required /></label>
+      <label><span>WhatsApp</span><input class="campo" name="whatsapp" type="tel" autocomplete="tel" maxlength="30" required /></label>
+      <label><span>Cupón (opcional)</span><input class="campo" name="cupon" maxlength="40" pattern="[A-Za-z0-9_-]{3,40}" /></label>
+      <label class="campo-completo"><span>Observaciones (opcional)</span><textarea class="area-texto" name="observaciones" maxlength="1000" rows="3"></textarea></label>
+    </div>
+    <p id="error-datos-pedido" class="mensaje-error" role="alert" hidden></p>
+    <div id="confirmacion-pedido" class="confirmacion-pedido" hidden></div>
+    <div class="acciones-modal-pedido">
+      <button class="boton boton-secundario" type="button" data-cerrar-pedido-publico>Cancelar</button>
+      <button class="boton boton-principal" type="submit">Registrar pedido</button>
+    </div>
+  </form>
+</dialog>

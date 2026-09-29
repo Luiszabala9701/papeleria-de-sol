@@ -6,6 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 const administrador = '00000000-0000-4000-8000-000000000001';
 const base = await readFile(new URL('../supabase/migrations/20260901000000_esquema_base_completo.sql', import.meta.url), 'utf8');
 const migracion = await readFile(new URL('../supabase/migrations/20260928000000_sistema_pedidos_etapa_1.sql', import.meta.url), 'utf8');
+const etapa2 = await readFile(new URL('../supabase/migrations/20260928120000_sistema_pedidos_etapa_2.sql', import.meta.url), 'utf8');
 
 const clave = sufijo => `idempotencia-prueba-${sufijo}`;
 
@@ -24,8 +25,12 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
     create table storage.objects(id uuid primary key, bucket_id text);
   `);
   await db.exec(base.replace('create extension if not exists pgcrypto;', ''));
+  // Columna incorporada por la migración de variantes; basta para aislar estas pruebas del dominio de pedidos.
+  await db.exec('alter table public.productos add column usa_variantes boolean not null default false;');
   await db.exec(migracion);
   await db.exec(migracion); // La estructura puede validarse de nuevo sin duplicar objetos ni flags.
+  await db.exec(etapa2);
+  await db.exec(etapa2); // También es repetible sobre una Etapa 1 ya aplicada.
 
   const tablas = [
     'pedidos', 'pedido_items', 'reservas_stock', 'pagos', 'transferencias_pago', 'eventos_pago',
@@ -57,6 +62,111 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
     insert into productos(categoria_id,tipo_producto,nombre,slug,precio,controla_stock,stock,estado,compra_automatica_habilitada)
     values ($1,'fisico','Producto con última unidad','producto-ultima-unidad',10000,true,1,'publicado',true) returning id
   `, [categoria])).rows[0].id;
+
+  const productoAutomaticoEtapa2 = (await db.query(`
+    insert into productos(categoria_id,tipo_producto,nombre,slug,precio,controla_stock,stock,estado,compra_automatica_habilitada)
+    values ($1,'fisico','Automático etapa 2','automatico-etapa-2',123.45,true,5,'publicado',true) returning id
+  `, [categoria])).rows[0].id;
+  const productoCoordinadoEtapa2 = (await db.query(`
+    insert into productos(categoria_id,tipo_producto,nombre,slug,precio,controla_stock,stock,estado)
+    values ($1,'fisico','Coordinado etapa 2','coordinado-etapa-2',200,true,10,'publicado') returning id
+  `, [categoria])).rows[0].id;
+  await db.query('select configurar_modo_compra_producto_administracion($1,true,false,$2)', [productoCoordinadoEtapa2, administrador]);
+  assert.equal((await db.query('select compra_automatica_habilitada from productos where id=$1', [productoCoordinadoEtapa2])).rows[0].compra_automatica_habilitada, true);
+  await assert.rejects(
+    db.query('select configurar_modo_compra_producto_administracion($1,true,true,$2)', [productoCoordinadoEtapa2, administrador]),
+    /personalizado no puede usar compra automática/,
+  );
+  await db.query('select configurar_modo_compra_producto_administracion($1,false,false,$2)', [productoCoordinadoEtapa2, administrador]);
+  const crearSolicitud = async ({ sufijo, lineas, cupon = null, hash = 0x10 }) => (await db.query(`
+    select crear_solicitud_pedido($1::jsonb,'Cliente Etapa 2','cliente-etapa2@example.test','+5491155555555',
+      'Prueba sin dinero real',$2,$3,$4,$5,$6) pedido
+  `, [
+    JSON.stringify(lineas), cupon, clave(`solicitud-${sufijo}`), Buffer.alloc(32, hash),
+    Buffer.alloc(32, 0x20), Buffer.alloc(32, hash + 1),
+  ])).rows[0].pedido;
+
+  const solicitudCoordinada = await crearSolicitud({
+    sufijo: 'coordinada', lineas: [{ producto_id: productoCoordinadoEtapa2, cantidad: 2 }],
+  });
+  assert.equal(solicitudCoordinada.tipo, 'coordinado');
+  assert.equal(solicitudCoordinada.total_centavos, 40000);
+  const snapshotCoordinado = (await db.query('select producto_nombre,precio_unitario_centavos,cantidad from pedido_items where pedido_id=$1', [solicitudCoordinada.id])).rows[0];
+  assert.deepEqual(snapshotCoordinado, { producto_nombre: 'Coordinado etapa 2', precio_unitario_centavos: 20000, cantidad: 2 });
+
+  const solicitudAutomatica = await crearSolicitud({
+    sufijo: 'automatica', lineas: [{ producto_id: productoAutomaticoEtapa2, cantidad: 2 }], hash: 0x30,
+  });
+  assert.equal(solicitudAutomatica.tipo, 'automatico');
+  assert.equal(solicitudAutomatica.total_centavos, 24690);
+  assert.equal((await db.query('select count(*)::int n from reservas_stock where pedido_id=$1 and estado=\'activa\'', [solicitudAutomatica.id])).rows[0].n, 1);
+  const repetida = await crearSolicitud({
+    sufijo: 'automatica', lineas: [{ producto_id: productoAutomaticoEtapa2, cantidad: 2 }], hash: 0x30,
+  });
+  assert.equal(repetida.id, solicitudAutomatica.id);
+  await assert.rejects(
+    crearSolicitud({ sufijo: 'automatica', lineas: [{ producto_id: productoAutomaticoEtapa2, cantidad: 1 }], hash: 0x31 }),
+    /idempotencia ya fue usada/,
+  );
+
+  const solicitudMixta = await crearSolicitud({
+    sufijo: 'mixta',
+    lineas: [
+      { producto_id: productoAutomaticoEtapa2, cantidad: 1 },
+      { producto_id: productoCoordinadoEtapa2, cantidad: 1 },
+    ],
+    hash: 0x40,
+  });
+  assert.equal(solicitudMixta.tipo, 'coordinado');
+  assert.equal((await db.query('select count(*)::int n from reservas_stock where pedido_id=$1', [solicitudMixta.id])).rows[0].n, 0);
+
+  const cuponEtapa2 = (await db.query(`select guardar_cupon_administracion(null,$1::jsonb,'{}'::uuid[],'{}'::uuid[],'{}'::uuid[],$2) id`, [
+    JSON.stringify({
+      codigo: 'etapa2-10', descripcion_interna: 'Creado por RPC', activo: true,
+      tipo_descuento: 'porcentaje', porcentaje_puntos_base: 1000,
+      compra_minima_centavos: 0, alcance: 'todos', aplica_tipo_pedido: 'automatico',
+    }), administrador,
+  ])).rows[0].id;
+  assert.equal((await db.query('select codigo_normalizado from cupones where id=$1', [cuponEtapa2])).rows[0].codigo_normalizado, 'ETAPA2-10');
+  const solicitudConCupon = await crearSolicitud({
+    sufijo: 'con-cupon', lineas: [{ producto_id: productoAutomaticoEtapa2, cantidad: 1 }], cupon: 'eTaPa2-10', hash: 0x50,
+  });
+  assert.equal(solicitudConCupon.descuento_centavos, 1234);
+  assert.equal(solicitudConCupon.total_centavos, 11111);
+  assert.equal((await db.query('select count(*)::int n from historial_cupones where cupon_id=$1', [cuponEtapa2])).rows[0].n, 1);
+
+  const estadoActualizado = (await db.query(
+    "select actualizar_estado_pedido_administracion($1,'estado_preparacion','en_preparacion',$2,'Prueba administrativa') estado",
+    [solicitudCoordinada.id, administrador],
+  )).rows[0].estado;
+  assert.equal(estadoActualizado.estado_preparacion, 'en_preparacion');
+  assert.equal((await db.query(
+    "select count(*)::int n from historial_pedidos where pedido_id=$1 and evento='estado_actualizado'",
+    [solicitudCoordinada.id],
+  )).rows[0].n, 1);
+
+  const tokenAnterior = (await db.query(
+    'select id from tokens_consulta_pedido where pedido_id=$1 and revocado_en is null',
+    [solicitudCoordinada.id],
+  )).rows[0].id;
+  const tokenNuevo = (await db.query(
+    'select rotar_token_consulta_pedido_administracion($1,$2,$3,30) id',
+    [solicitudCoordinada.id, Buffer.alloc(32, 0xab), administrador],
+  )).rows[0].id;
+  assert.notEqual(tokenNuevo, tokenAnterior);
+  assert.equal((await db.query('select revocado_en is not null valor from tokens_consulta_pedido where id=$1', [tokenAnterior])).rows[0].valor, true);
+  assert.equal((await db.query('select revocado_en is null valor from tokens_consulta_pedido where id=$1', [tokenNuevo])).rows[0].valor, true);
+
+  assert.equal((await db.query(
+    'select alternar_cupon_administracion($1,false,$2) activo',
+    [cuponEtapa2, administrador],
+  )).rows[0].activo, false);
+  assert.equal((await db.query('select activo from cupones where id=$1', [cuponEtapa2])).rows[0].activo, false);
+
+  const limiteHash = Buffer.alloc(32, 0xee);
+  assert.equal((await db.query("select consumir_limite_solicitudes($1,'crear_pedido',2,60) permitido", [limiteHash])).rows[0].permitido, true);
+  assert.equal((await db.query("select consumir_limite_solicitudes($1,'crear_pedido',2,60) permitido", [limiteHash])).rows[0].permitido, true);
+  assert.equal((await db.query("select consumir_limite_solicitudes($1,'crear_pedido',2,60) permitido", [limiteHash])).rows[0].permitido, false);
 
   const crearPedidoAutomatico = async (sufijo, subtotal = 10000) => {
     const pedido = (await db.query(`
