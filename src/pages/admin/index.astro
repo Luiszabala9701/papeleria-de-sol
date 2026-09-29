@@ -482,9 +482,9 @@ const configuracionDisponible = Boolean(
         <label class="grupo-campo"><span>Alcance</span><select class="selector" name="alcance"><option value="todos">Todos los productos</option><option value="categorias">Categorías seleccionadas</option><option value="productos">Productos seleccionados</option></select></label>
         <label class="grupo-checkbox"><input name="activo" type="checkbox" checked /><span>Cupón activo</span></label>
         <label class="grupo-campo campo-completo"><span>Nota interna</span><textarea class="area-texto" name="descripcion_interna" maxlength="500" rows="2"></textarea></label>
-        <label class="grupo-campo campo-completo" data-campo-categorias hidden><span>Categorías</span><select class="selector selector-multiple" name="categorias" multiple size="6"></select></label>
+        <fieldset class="grupo-seleccion-cupon campo-completo" data-campo-categorias hidden><legend>Categorías</legend><div class="lista-seleccion-cupon" data-lista-categorias></div></fieldset>
         <label class="grupo-campo campo-completo" data-campo-categoria-productos hidden><span>Categoría de los productos</span><select class="selector" name="categoria_productos"><option value="">Elegí una categoría</option></select></label>
-        <label class="grupo-campo campo-completo" data-campo-productos hidden><span>Productos incluidos</span><select class="selector selector-multiple" name="productos" multiple size="8"></select></label>
+        <fieldset class="grupo-seleccion-cupon campo-completo" data-campo-productos hidden><legend>Productos incluidos</legend><div class="lista-seleccion-cupon" data-lista-productos></div></fieldset>
       </div>
       <p class="mensaje-error" data-error-cupon role="alert" hidden></p>
       <div class="acciones-dialogo"><button class="boton boton-secundario" type="button" data-cerrar-cupon>Cancelar</button><button class="boton boton-principal" type="submit">Guardar cupón</button></div>

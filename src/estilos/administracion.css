@@ -722,6 +722,60 @@ body.dialogo-abierto {
   background: #f0eef5;
 }
 
+.dialogo-recurso [hidden] {
+  display: none !important;
+}
+
+.grupo-seleccion-cupon {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo-seleccion-cupon legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  color: var(--tinta);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.lista-seleccion-cupon {
+  display: grid;
+  max-height: 14rem;
+  padding: 0.5rem;
+  overflow-y: auto;
+  border: 1px solid var(--borde);
+  border-radius: 0.8rem;
+  background: var(--blanco);
+  gap: 0.15rem;
+}
+
+.opcion-seleccion-cupon {
+  display: flex;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  gap: 0.55rem;
+}
+
+.opcion-seleccion-cupon:hover {
+  background: #f3f0fa;
+}
+
+.opcion-seleccion-cupon input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--azul-profundo);
+}
+
+.ayuda-seleccion-cupon {
+  padding: 0.55rem;
+  color: var(--tinta-suave);
+  font-size: 0.84rem;
+}
+
 .selector-color input[type='color'] {
   width: 100%;
   min-height: 46px;

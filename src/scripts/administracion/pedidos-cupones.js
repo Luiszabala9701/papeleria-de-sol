@@ -40,6 +40,17 @@ function opcion(valor, etiqueta, seleccionada = false) {
   return nodo;
 }
 
+function opcionMarcable(nombre, valor, etiqueta, seleccionada = false) {
+  const contenedor = elemento('label', null, 'opcion-seleccion-cupon');
+  const control = document.createElement('input');
+  control.type = 'checkbox';
+  control.name = nombre;
+  control.value = valor;
+  control.checked = seleccionada;
+  contenedor.append(control, elemento('span', etiqueta));
+  return contenedor;
+}
+
 function centavos(valor) {
   const numero = Number(valor || 0);
   return Number.isFinite(numero) ? Math.round(numero * 100) : 0;
@@ -280,19 +291,17 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     return estado.catalogo;
   }
 
-  function seleccionarValores(selector, valores) {
-    const conjunto = new Set(valores || []);
-    [...selector.options].forEach(item => { item.selected = conjunto.has(item.value); });
-  }
-
   async function abrirCupon(cupon = null) {
     errorCupon.hidden = true;
     const catalogo = await asegurarCatalogo();
     formularioCupon.reset();
     formularioCupon.elements.activo.checked = cupon?.activo ?? true;
-    const categorias = formularioCupon.elements.categorias;
+    const listaCategorias = document.querySelector('[data-lista-categorias]');
     const categoriaProductos = formularioCupon.elements.categoria_productos;
-    categorias.replaceChildren(...catalogo.categorias.map(item => opcion(item.id, `${item.nombre} (${item.tipo_producto})`)));
+    const categoriasElegidas = cupon?.cupon_categorias?.map(item => item.categoria_id) || [];
+    listaCategorias.replaceChildren(...catalogo.categorias.map(item => opcionMarcable(
+      'categorias', item.id, `${item.nombre} (${item.tipo_producto})`, categoriasElegidas.includes(item.id),
+    )));
     categoriaProductos.replaceChildren(
       opcion('', 'Elegí una categoría'),
       ...catalogo.categorias.map(item => opcion(item.id, `${item.nombre} (${item.tipo_producto})`)),
@@ -309,7 +318,6 @@ export function inicializarModuloComercial({ invocar, notificar }) {
       };
       Object.entries(valores).forEach(([nombre, valor]) => { if (formularioCupon.elements[nombre]) formularioCupon.elements[nombre].value = valor ?? ''; });
       formularioCupon.elements.activo.checked = cupon.activo;
-      seleccionarValores(categorias, cupon.cupon_categorias?.map(item => item.categoria_id));
       const productosElegidos = cupon.cupon_productos?.map(item => item.producto_id) || [];
       const primerProducto = catalogo.productos.find(item => productosElegidos.includes(item.id));
       categoriaProductos.value = primerProducto?.categoria_id || '';
@@ -324,14 +332,19 @@ export function inicializarModuloComercial({ invocar, notificar }) {
 
   function actualizarProductosPorCategoria(seleccionados = []) {
     const categoriaId = formularioCupon.elements.categoria_productos.value;
-    const productos = formularioCupon.elements.productos;
+    const listaProductos = document.querySelector('[data-lista-productos]');
     const disponibles = (estado.catalogo?.productos || []).filter(item => item.categoria_id === categoriaId);
-    productos.replaceChildren(...disponibles.map(item => opcion(
-      item.id,
-      `${item.nombre}${item.sku ? ` · ${item.sku}` : ''}`,
-      seleccionados.includes(item.id),
+    if (!categoriaId) {
+      listaProductos.replaceChildren(elemento('p', 'Elegí una categoría para ver sus productos.', 'ayuda-seleccion-cupon'));
+      return;
+    }
+    if (!disponibles.length) {
+      listaProductos.replaceChildren(elemento('p', 'No hay productos disponibles en esta categoría.', 'ayuda-seleccion-cupon'));
+      return;
+    }
+    listaProductos.replaceChildren(...disponibles.map(item => opcionMarcable(
+      'productos', item.id, `${item.nombre}${item.sku ? ` · ${item.sku}` : ''}`, seleccionados.includes(item.id),
     )));
-    if (categoriaId && !disponibles.length) productos.append(opcion('', 'No hay productos en esta categoría'));
   }
 
   function actualizarCamposCupon() {
@@ -344,17 +357,19 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     const alcance = formularioCupon.elements.alcance.value;
     const porCategorias = alcance === 'categorias';
     const porProductos = alcance === 'productos';
-    document.querySelector('[data-campo-categorias]').hidden = !porCategorias;
+    const campoCategorias = document.querySelector('[data-campo-categorias]');
+    const campoProductos = document.querySelector('[data-campo-productos]');
+    campoCategorias.hidden = !porCategorias;
+    campoCategorias.disabled = !porCategorias;
     document.querySelector('[data-campo-categoria-productos]').hidden = !porProductos;
-    document.querySelector('[data-campo-productos]').hidden = !porProductos;
-    formularioCupon.elements.categorias.disabled = !porCategorias;
+    campoProductos.hidden = !porProductos;
+    campoProductos.disabled = !porProductos;
     formularioCupon.elements.categoria_productos.disabled = !porProductos;
     formularioCupon.elements.categoria_productos.required = porProductos;
-    formularioCupon.elements.productos.disabled = !porProductos;
   }
 
-  function valoresSeleccionados(selector) {
-    return [...selector.selectedOptions].map(item => item.value);
+  function valoresSeleccionados(nombre) {
+    return [...formularioCupon.querySelectorAll(`input[name="${nombre}"]:checked`)].map(item => item.value);
   }
 
   function actualizarPaginacion(recurso) {
@@ -388,8 +403,8 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     const porcentaje = Number(campos.porcentaje.value || 0);
     const importeFijo = centavos(campos.importe_fijo.value);
     const compraMinima = centavos(campos.compra_minima.value);
-    const categorias = campos.alcance.value === 'categorias' ? valoresSeleccionados(campos.categorias) : [];
-    const productos = campos.alcance.value === 'productos' ? valoresSeleccionados(campos.productos) : [];
+    const categorias = campos.alcance.value === 'categorias' ? valoresSeleccionados('categorias') : [];
+    const productos = campos.alcance.value === 'productos' ? valoresSeleccionados('productos') : [];
     let mensajeValidacion = '';
     if (campos.tipo_descuento.value === 'porcentaje' && (porcentaje <= 0 || porcentaje > 100)) mensajeValidacion = 'El porcentaje debe ser mayor que 0 y no puede superar 100.';
     if (campos.tipo_descuento.value === 'fijo' && importeFijo <= 0) mensajeValidacion = 'Ingresá un importe de descuento mayor que 0.';
