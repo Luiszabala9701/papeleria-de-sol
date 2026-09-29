@@ -291,12 +291,12 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     formularioCupon.reset();
     formularioCupon.elements.activo.checked = cupon?.activo ?? true;
     const categorias = formularioCupon.elements.categorias;
-    const productos = formularioCupon.elements.productos;
-    const excluidos = formularioCupon.elements.excluidos;
+    const categoriaProductos = formularioCupon.elements.categoria_productos;
     categorias.replaceChildren(...catalogo.categorias.map(item => opcion(item.id, `${item.nombre} (${item.tipo_producto})`)));
-    const opcionesProductos = catalogo.productos.map(item => ({ id: item.id, texto: `${item.nombre}${item.sku ? ` · ${item.sku}` : ''}` }));
-    productos.replaceChildren(...opcionesProductos.map(item => opcion(item.id, item.texto)));
-    excluidos.replaceChildren(...opcionesProductos.map(item => opcion(item.id, item.texto)));
+    categoriaProductos.replaceChildren(
+      opcion('', 'Elegí una categoría'),
+      ...catalogo.categorias.map(item => opcion(item.id, `${item.nombre} (${item.tipo_producto})`)),
+    );
     if (cupon) {
       const valores = {
         id: cupon.id || '', codigo: cupon.codigo_normalizado || cupon.codigo, descripcion_interna: cupon.descripcion_interna,
@@ -310,21 +310,47 @@ export function inicializarModuloComercial({ invocar, notificar }) {
       Object.entries(valores).forEach(([nombre, valor]) => { if (formularioCupon.elements[nombre]) formularioCupon.elements[nombre].value = valor ?? ''; });
       formularioCupon.elements.activo.checked = cupon.activo;
       seleccionarValores(categorias, cupon.cupon_categorias?.map(item => item.categoria_id));
-      seleccionarValores(productos, cupon.cupon_productos?.map(item => item.producto_id));
-      seleccionarValores(excluidos, cupon.cupon_productos_excluidos?.map(item => item.producto_id));
+      const productosElegidos = cupon.cupon_productos?.map(item => item.producto_id) || [];
+      const primerProducto = catalogo.productos.find(item => productosElegidos.includes(item.id));
+      categoriaProductos.value = primerProducto?.categoria_id || '';
+      actualizarProductosPorCategoria(productosElegidos);
+    } else {
+      actualizarProductosPorCategoria();
     }
     actualizarCamposCupon();
     document.querySelector('#titulo-dialogo-cupon').textContent = cupon?.id ? `Editar ${cupon.codigo_normalizado}` : 'Nuevo cupón';
     dialogoCupon.showModal();
   }
 
+  function actualizarProductosPorCategoria(seleccionados = []) {
+    const categoriaId = formularioCupon.elements.categoria_productos.value;
+    const productos = formularioCupon.elements.productos;
+    const disponibles = (estado.catalogo?.productos || []).filter(item => item.categoria_id === categoriaId);
+    productos.replaceChildren(...disponibles.map(item => opcion(
+      item.id,
+      `${item.nombre}${item.sku ? ` · ${item.sku}` : ''}`,
+      seleccionados.includes(item.id),
+    )));
+    if (categoriaId && !disponibles.length) productos.append(opcion('', 'No hay productos en esta categoría'));
+  }
+
   function actualizarCamposCupon() {
     const esPorcentaje = formularioCupon.elements.tipo_descuento.value === 'porcentaje';
-    document.querySelector('[data-campo-porcentaje]').hidden = !esPorcentaje;
-    document.querySelector('[data-campo-importe]').hidden = esPorcentaje;
+    formularioCupon.elements.porcentaje.disabled = !esPorcentaje;
+    formularioCupon.elements.porcentaje.required = esPorcentaje;
+    formularioCupon.elements.importe_fijo.disabled = esPorcentaje;
+    formularioCupon.elements.importe_fijo.required = !esPorcentaje;
+    formularioCupon.elements.descuento_maximo.disabled = !esPorcentaje;
     const alcance = formularioCupon.elements.alcance.value;
-    document.querySelector('[data-campo-categorias]').hidden = alcance !== 'categorias';
-    document.querySelector('[data-campo-productos]').hidden = alcance !== 'productos';
+    const porCategorias = alcance === 'categorias';
+    const porProductos = alcance === 'productos';
+    document.querySelector('[data-campo-categorias]').hidden = !porCategorias;
+    document.querySelector('[data-campo-categoria-productos]').hidden = !porProductos;
+    document.querySelector('[data-campo-productos]').hidden = !porProductos;
+    formularioCupon.elements.categorias.disabled = !porCategorias;
+    formularioCupon.elements.categoria_productos.disabled = !porProductos;
+    formularioCupon.elements.categoria_productos.required = porProductos;
+    formularioCupon.elements.productos.disabled = !porProductos;
   }
 
   function valoresSeleccionados(selector) {
@@ -347,6 +373,10 @@ export function inicializarModuloComercial({ invocar, notificar }) {
   document.querySelectorAll('[data-cerrar-cupon]').forEach(item => item.addEventListener('click', () => dialogoCupon.close()));
   formularioCupon?.elements.tipo_descuento.addEventListener('change', actualizarCamposCupon);
   formularioCupon?.elements.alcance.addEventListener('change', actualizarCamposCupon);
+  formularioCupon?.elements.categoria_productos.addEventListener('change', () => actualizarProductosPorCategoria());
+  formularioCupon?.elements.codigo.addEventListener('input', (evento) => {
+    evento.currentTarget.value = evento.currentTarget.value.toUpperCase();
+  });
   ['pedidos', 'cupones'].forEach(recurso => {
     document.querySelector(`[data-${recurso}-anterior]`)?.addEventListener('click', () => { if (estado[recurso].pagina > 1) { estado[recurso].pagina -= 1; recurso === 'pedidos' ? cargarPedidos() : cargarCupones(); } });
     document.querySelector(`[data-${recurso}-siguiente]`)?.addEventListener('click', () => { estado[recurso].pagina += 1; recurso === 'pedidos' ? cargarPedidos() : cargarCupones(); });
@@ -354,12 +384,29 @@ export function inicializarModuloComercial({ invocar, notificar }) {
 
   formularioCupon?.addEventListener('submit', async (evento) => {
     evento.preventDefault(); errorCupon.hidden = true;
-    const botonGuardar = formularioCupon.querySelector('button[type="submit"]'); botonGuardar.disabled = true;
     const campos = formularioCupon.elements;
+    const porcentaje = Number(campos.porcentaje.value || 0);
+    const importeFijo = centavos(campos.importe_fijo.value);
+    const compraMinima = centavos(campos.compra_minima.value);
+    const categorias = campos.alcance.value === 'categorias' ? valoresSeleccionados(campos.categorias) : [];
+    const productos = campos.alcance.value === 'productos' ? valoresSeleccionados(campos.productos) : [];
+    let mensajeValidacion = '';
+    if (campos.tipo_descuento.value === 'porcentaje' && (porcentaje <= 0 || porcentaje > 100)) mensajeValidacion = 'El porcentaje debe ser mayor que 0 y no puede superar 100.';
+    if (campos.tipo_descuento.value === 'fijo' && importeFijo <= 0) mensajeValidacion = 'Ingresá un importe de descuento mayor que 0.';
+    if (campos.tipo_descuento.value === 'fijo' && compraMinima < importeFijo) mensajeValidacion = 'La compra mínima debe ser igual o mayor que el importe del descuento.';
+    if (campos.alcance.value === 'categorias' && !categorias.length) mensajeValidacion = 'Elegí al menos una categoría.';
+    if (campos.alcance.value === 'productos' && !campos.categoria_productos.value) mensajeValidacion = 'Elegí primero una categoría de productos.';
+    if (campos.alcance.value === 'productos' && !productos.length) mensajeValidacion = 'Elegí al menos un producto.';
+    if (mensajeValidacion) {
+      errorCupon.textContent = mensajeValidacion;
+      errorCupon.hidden = false;
+      return;
+    }
+    const botonGuardar = formularioCupon.querySelector('button[type="submit"]'); botonGuardar.disabled = true;
     const datos = {
       codigo: campos.codigo.value.trim().toUpperCase(), descripcion_interna: campos.descripcion_interna.value.trim(), activo: campos.activo.checked,
-      tipo_descuento: campos.tipo_descuento.value, porcentaje_puntos_base: Math.round(Number(campos.porcentaje.value || 0) * 100),
-      importe_fijo_centavos: centavos(campos.importe_fijo.value), compra_minima_centavos: centavos(campos.compra_minima.value),
+      tipo_descuento: campos.tipo_descuento.value, porcentaje_puntos_base: Math.round(porcentaje * 100),
+      importe_fijo_centavos: importeFijo, compra_minima_centavos: compraMinima,
       descuento_maximo_centavos: campos.descuento_maximo.value ? centavos(campos.descuento_maximo.value) : null,
       limite_usos_total: campos.limite_usos_total.value || null, limite_usos_comprador: campos.limite_usos_comprador.value || null,
       inicia_en: campos.inicia_en.value || null, vence_en: campos.vence_en.value || null, alcance: campos.alcance.value,
@@ -367,8 +414,7 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     };
     try {
       await invocar('guardar_cupon', {
-        id: campos.id.value || null, datos, categorias: valoresSeleccionados(campos.categorias),
-        productos: valoresSeleccionados(campos.productos), excluidos: valoresSeleccionados(campos.excluidos),
+        id: campos.id.value || null, datos, categorias, productos, excluidos: [],
       });
       dialogoCupon.close(); notificar('Cupón guardado.'); await cargarCupones();
     } catch (error) { errorCupon.textContent = error.message; errorCupon.hidden = false; } finally { botonGuardar.disabled = false; }

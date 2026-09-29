@@ -468,11 +468,11 @@ const configuracionDisponible = Boolean(
       </div>
       <input type="hidden" name="id" />
       <div class="formulario-admin formulario-dos-columnas">
-        <label class="grupo-campo"><span>Código</span><input class="campo" name="codigo" maxlength="40" pattern="[A-Za-z0-9_-]{3,40}" required /></label>
+        <label class="grupo-campo"><span>Código</span><input class="campo" name="codigo" maxlength="40" pattern="[A-Z0-9_-]{3,40}" autocapitalize="characters" spellcheck="false" required /></label>
         <label class="grupo-campo"><span>Aplica a</span><select class="selector" name="aplica_tipo_pedido"><option value="automatico">Pedidos automáticos</option><option value="coordinado">Pedidos coordinados</option><option value="ambos">Ambos</option></select></label>
         <label class="grupo-campo"><span>Tipo de descuento</span><select class="selector" name="tipo_descuento"><option value="porcentaje">Porcentaje</option><option value="fijo">Importe fijo</option></select></label>
         <label class="grupo-campo" data-campo-porcentaje><span>Porcentaje</span><input class="campo" name="porcentaje" type="number" min="0.01" max="100" step="0.01" /></label>
-        <label class="grupo-campo" data-campo-importe hidden><span>Importe en pesos</span><input class="campo" name="importe_fijo" type="number" min="0.01" step="0.01" /></label>
+        <label class="grupo-campo" data-campo-importe><span>Importe en pesos</span><input class="campo" name="importe_fijo" type="number" min="0.01" step="0.01" /></label>
         <label class="grupo-campo"><span>Compra mínima en pesos</span><input class="campo" name="compra_minima" type="number" min="0" step="0.01" value="0" /></label>
         <label class="grupo-campo"><span>Tope de descuento en pesos</span><input class="campo" name="descuento_maximo" type="number" min="0" step="0.01" /></label>
         <label class="grupo-campo"><span>Límite total de usos</span><input class="campo" name="limite_usos_total" type="number" min="1" step="1" /></label>
@@ -483,8 +483,8 @@ const configuracionDisponible = Boolean(
         <label class="grupo-checkbox"><input name="activo" type="checkbox" checked /><span>Cupón activo</span></label>
         <label class="grupo-campo campo-completo"><span>Nota interna</span><textarea class="area-texto" name="descripcion_interna" maxlength="500" rows="2"></textarea></label>
         <label class="grupo-campo campo-completo" data-campo-categorias hidden><span>Categorías</span><select class="selector selector-multiple" name="categorias" multiple size="6"></select></label>
+        <label class="grupo-campo campo-completo" data-campo-categoria-productos hidden><span>Categoría de los productos</span><select class="selector" name="categoria_productos"><option value="">Elegí una categoría</option></select></label>
         <label class="grupo-campo campo-completo" data-campo-productos hidden><span>Productos incluidos</span><select class="selector selector-multiple" name="productos" multiple size="8"></select></label>
-        <label class="grupo-campo campo-completo"><span>Productos excluidos (opcional)</span><select class="selector selector-multiple" name="excluidos" multiple size="6"></select></label>
       </div>
       <p class="mensaje-error" data-error-cupon role="alert" hidden></p>
       <div class="acciones-dialogo"><button class="boton boton-secundario" type="button" data-cerrar-cupon>Cancelar</button><button class="boton boton-principal" type="submit">Guardar cupón</button></div>

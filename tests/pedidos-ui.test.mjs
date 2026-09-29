@@ -43,6 +43,12 @@ test('el dashboard incluye pedidos, cupones y la etiqueta aprobada para transfer
   assert.match(servidor, /marcar_transferencia_pago_aprobado/);
   assert.match(servidor, /actualizar_estado_pedido_administracion/);
   assert.match(servidor, /guardar_cupon_administracion/);
+  assert.match(pagina, /name="categoria_productos"/);
+  assert.doesNotMatch(pagina, /name="excluidos"/);
+  assert.match(modulo, /toUpperCase\(\)/);
+  assert.match(modulo, /porcentaje > 100/);
+  assert.match(modulo, /compraMinima < importeFijo/);
+  assert.match(servidor, /compra_minima_centavos < Number\(datos\.importe_fijo_centavos\)/);
   assert.doesNotMatch(modulo, /innerHTML/);
 });
 

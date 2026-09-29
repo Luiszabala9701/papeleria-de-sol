@@ -220,7 +220,7 @@ async function guardarCupon(cuerpo: Record<string, any>, cliente: ClienteServici
   const aplica = texto(datosEntrada.aplica_tipo_pedido, 20) || 'automatico';
   if (!['automatico', 'coordinado', 'ambos'].includes(aplica)) throw new Error('Elegí a qué pedidos aplica el cupón.');
   const datos = {
-    codigo: texto(datosEntrada.codigo, 40), descripcion_interna: texto(datosEntrada.descripcion_interna, 500),
+    codigo: texto(datosEntrada.codigo, 40).toUpperCase(), descripcion_interna: texto(datosEntrada.descripcion_interna, 500),
     activo: datosEntrada.activo !== false, inicia_en: fechaIso(datosEntrada.inicia_en), vence_en: fechaIso(datosEntrada.vence_en),
     tipo_descuento: tipo,
     porcentaje_puntos_base: tipo === 'porcentaje' ? entero(datosEntrada.porcentaje_puntos_base, 1, 10000, 0) : null,
@@ -232,10 +232,13 @@ async function guardarCupon(cuerpo: Record<string, any>, cliente: ClienteServici
     limite_usos_comprador: datosEntrada.limite_usos_comprador ? entero(datosEntrada.limite_usos_comprador, 1, 1000, 0) : null,
     alcance, aplica_tipo_pedido: aplica,
   };
-  if (!/^[A-Z0-9_-]{3,40}$/.test(datos.codigo.toUpperCase())) throw new Error('El código debe usar letras, números, guion o guion bajo.');
+  if (!/^[A-Z0-9_-]{3,40}$/.test(datos.codigo)) throw new Error('El código debe usar letras, números, guion o guion bajo.');
+  if (tipo === 'fijo' && datos.compra_minima_centavos < Number(datos.importe_fijo_centavos)) {
+    throw new Error('La compra mínima debe ser igual o mayor que el importe del descuento.');
+  }
   const categorias = listaUuid(cuerpo.categorias);
   const productos = listaUuid(cuerpo.productos);
-  const excluidos = listaUuid(cuerpo.excluidos);
+  const excluidos: string[] = [];
   if (alcance === 'categorias' && !categorias.length) throw new Error('Elegí al menos una categoría para el cupón.');
   if (alcance === 'productos' && !productos.length) throw new Error('Elegí al menos un producto para el cupón.');
   return sinError(await cliente.rpc('guardar_cupon_administracion', {

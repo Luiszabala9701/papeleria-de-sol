@@ -715,6 +715,13 @@ body.dialogo-abierto {
   min-height: 110px;
 }
 
+.formulario-dialogo .campo:disabled,
+.formulario-dialogo .selector:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: #f0eef5;
+}
+
 .selector-color input[type='color'] {
   width: 100%;
   min-height: 46px;
