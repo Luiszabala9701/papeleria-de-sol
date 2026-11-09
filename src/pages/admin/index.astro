@@ -1,6 +1,7 @@
 ---
 import DisenoPrincipal from '../../disenos/DisenoPrincipal.astro';
 import '../../estilos/administracion.css';
+import '../../estilos/impresion-pedido.css';
 
 const configuracionDisponible = Boolean(
   import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_CLAVE_PUBLICA,
@@ -336,10 +337,13 @@ const configuracionDisponible = Boolean(
               <option value="">Todos los tipos</option><option value="automatico">Automáticos</option><option value="coordinado">Coordinados</option>
             </select>
             <select class="selector" name="estado_financiero" aria-label="Estado de pago">
-              <option value="">Todos los pagos</option><option value="sin_cobro">Sin cobro</option><option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagado">Pago aprobado</option><option value="reembolsado_parcial">Reembolso parcial</option><option value="reembolsado_total">Reembolso total</option>
+              <option value="">Todos los pagos</option><option value="sin_cobro">Sin cobro</option><option value="pendiente">Pendiente</option><option value="anticipo_pagado">Anticipo / pago parcial</option><option value="pagado">Pago aprobado</option><option value="parcialmente_reembolsado">Reembolso parcial</option><option value="reembolsado">Reembolsado</option><option value="incidencia">Incidencia</option>
             </select>
             <select class="selector" name="estado_preparacion" aria-label="Estado de preparación">
-              <option value="">Toda preparación</option><option value="no_iniciada">No iniciada</option><option value="espera_anticipo">Espera anticipo</option><option value="en_diseno">En diseño</option><option value="espera_aprobacion">Espera aprobación</option><option value="en_preparacion">En preparación</option><option value="listo">Listo</option>
+              <option value="">Toda preparación</option><option value="no_iniciada">Pendiente de preparación</option><option value="espera_anticipo">Esperando anticipo</option><option value="en_diseno">En diseño</option><option value="espera_aprobacion">Esperando aprobación</option><option value="en_preparacion">En preparación</option><option value="listo">Empaquetado y listo</option>
+            </select>
+            <select class="selector" name="archivo" aria-label="Archivo de pedidos">
+              <option value="activos">Pedidos activos</option><option value="archivados">Pedidos archivados</option>
             </select>
             <button class="boton boton-secundario" type="submit">Buscar</button>
           </form>

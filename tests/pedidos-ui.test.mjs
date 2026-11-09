@@ -11,6 +11,9 @@ test('el carrito registra pedidos sin confiar en precios del navegador', async (
   ]);
   assert.match(componente, /Continuar pedido/);
   assert.match(componente, /En esta etapa no se realiza ningún cobro/);
+  assert.match(componente, /data-formulario-cupon-carrito/);
+  assert.match(componente, /pasos-checkout/);
+  assert.match(carrito, /accion: 'cotizar_solicitud'/);
   assert.match(carrito, /accion: 'crear_solicitud'/);
   assert.match(carrito, /producto_id: producto\.id/);
   assert.match(carrito, /opciones: \{\}/);
@@ -24,6 +27,7 @@ test('el seguimiento es privado, no indexable y no muestra datos del comprador',
     leer('../supabase/functions/pedidos/index.ts'),
   ]);
   assert.match(pagina, /noIndexar/);
+  assert.doesNotMatch(pagina, /name="token"|Clave del enlace/);
   assert.match(cliente, /consultar_seguimiento/);
   assert.match(funcion, /numero,tipo,moneda,subtotal_centavos/);
   const seleccionSeguimiento = funcion.match(/from\('pedidos'\)\.select\(`([^]*?)`\)/)?.[1] || '';
@@ -43,11 +47,13 @@ test('el dashboard incluye pedidos, cupones y la etiqueta aprobada para transfer
   assert.match(servidor, /marcar_transferencia_pago_aprobado/);
   assert.match(servidor, /actualizar_estado_pedido_administracion/);
   assert.match(servidor, /guardar_cupon_administracion/);
+  assert.match(servidor, /archivar_pedido_administracion/);
   assert.match(pagina, /name="categoria_productos"/);
   assert.doesNotMatch(pagina, /name="excluidos"/);
   assert.match(modulo, /toUpperCase\(\)/);
   assert.match(modulo, /porcentaje > 100/);
   assert.match(modulo, /compraMinima < importeFijo/);
+  assert.match(modulo, /El vencimiento debe ser posterior al inicio del cupón/);
   assert.match(servidor, /compra_minima_centavos < Number\(datos\.importe_fijo_centavos\)/);
   assert.doesNotMatch(modulo, /innerHTML/);
 });

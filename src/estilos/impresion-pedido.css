@@ -1,0 +1,40 @@
+#impresion-pedido { display: none; }
+
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+  html, body { background: #fff !important; color: #111 !important; overflow: visible !important; min-width: 0 !important; height: auto !important; position: static !important; }
+  body:has(> #impresion-pedido) > :not(#impresion-pedido) { display: none !important; }
+  #impresion-pedido { display: block !important; width: 100%; margin: 0; padding: 0; color: #111; background: #fff; font: 10pt/1.4 Arial, sans-serif; }
+  #impresion-pedido * { box-shadow: none !important; text-shadow: none !important; }
+  .cabecera-impresion-pedido { display: flex; justify-content: space-between; gap: 8mm; padding-bottom: 4mm; border-bottom: 1pt solid #222; }
+  .cabecera-impresion-pedido > div:last-child { text-align: right; }
+  .cabecera-impresion-pedido strong { font-size: 15pt; }
+  #impresion-pedido h1 { margin: 0 0 2mm; font-size: 20pt; }
+  #impresion-pedido h2 { margin: 0 0 2mm; font-size: 12pt; }
+  #impresion-pedido p { margin: 0 0 2mm; overflow-wrap: anywhere; }
+  .estado-impresion-pedido { padding-block: 4mm; }
+  .productos-impresion-pedido { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .productos-impresion-pedido thead { display: table-header-group; }
+  .productos-impresion-pedido tr { break-inside: avoid; }
+  .productos-impresion-pedido th, .productos-impresion-pedido td { padding: 2.5mm 1.5mm; vertical-align: top; border-bottom: 0.5pt solid #bbb; overflow-wrap: anywhere; }
+  .productos-impresion-pedido th { text-align: left; font-size: 8pt; border-bottom: 1pt solid #222; }
+  .productos-impresion-pedido th:first-child { width: 12%; }
+  .productos-impresion-pedido th:nth-child(2) { width: 40%; }
+  .productos-impresion-pedido th:nth-child(3) { width: 12%; }
+  .productos-impresion-pedido th:nth-child(4), .productos-impresion-pedido th:nth-child(5) { width: 18%; }
+  .productos-impresion-pedido th:nth-child(n+3), .productos-impresion-pedido td:nth-child(n+3) { text-align: right; }
+  .productos-impresion-pedido strong, .productos-impresion-pedido span, .productos-impresion-pedido small { display: block; }
+  .casillero-preparacion { text-align: center; font-size: 15pt; }
+  .totales-impresion-pedido { width: 78mm; max-width: 100%; margin: 5mm 0 5mm auto; break-inside: avoid; }
+  .totales-impresion-pedido > div { display: flex; justify-content: space-between; gap: 3mm; padding-block: 1mm; }
+  .totales-impresion-pedido dt { overflow-wrap: anywhere; }
+  .totales-impresion-pedido dd { flex-shrink: 0; margin: 0; }
+  .total-impresion-pedido { margin-top: 2mm; border-top: 1pt solid #222; font-size: 13pt; font-weight: bold; }
+  .nota-impresion-pedido { padding: 3mm; margin-block: 4mm; border: 0.5pt solid #aaa; break-inside: avoid; }
+  .nota-impresion-pedido p { white-space: pre-wrap; }
+  .localizador-pedido { margin-top: 9mm; padding: 5mm 4mm 3mm; border-top: 1pt dashed #555; break-inside: avoid; }
+  .linea-recorte-pedido { margin-top: -3mm !important; text-align: right; font-size: 7pt; color: #555; }
+  .marca-localizador-pedido { margin-top: 3mm !important; font-size: 8pt; letter-spacing: 1pt; }
+  .localizador-pedido h2 { font-size: 22pt !important; }
+  .nombre-localizador-pedido { display: block; margin-bottom: 2mm; font-size: 15pt; }
+}

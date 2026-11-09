@@ -8,16 +8,26 @@ const contenidoCarrito = document.querySelector('#contenido-carrito');
 const contadorCarrito = document.querySelector('#contador-carrito');
 const totalElementos = document.querySelector('#total-elementos-carrito');
 const totalDineroCarrito = document.querySelector('#total-dinero-carrito');
+const formularioCuponCarrito = document.querySelector('[data-formulario-cupon-carrito]');
+const estadoCuponCarrito = document.querySelector('[data-estado-cupon-carrito]');
+const resumenDescuento = document.querySelector('[data-resumen-descuento]');
+const descuentoCarrito = document.querySelector('[data-descuento-carrito]');
 const botonEnviar = document.querySelector('#enviar-carrito-whatsapp');
 const botonVaciar = document.querySelector('#vaciar-carrito');
 const dialogoDatosPedido = document.querySelector('#dialogo-datos-pedido');
 const formularioDatosPedido = document.querySelector('#formulario-datos-pedido');
 const errorDatosPedido = document.querySelector('#error-datos-pedido');
 const confirmacionPedido = document.querySelector('#confirmacion-pedido');
+const resumenCheckout = document.querySelector('[data-resumen-checkout]');
 const textos = obtenerTextosCarrito();
 
 let carrito = cargarCarrito();
 let claveSolicitud = null;
+let cotizacion = null;
+let cuponAplicado = '';
+let pasoPedido = 'datos';
+let registrandoPedido = false;
+let versionCotizacion = 0;
 
 function obtenerTextosCarrito() {
   try {
@@ -78,9 +88,23 @@ function normalizarProductoCarrito(producto) {
   };
 }
 
+function limpiarCotizacion(mensaje = '') {
+  versionCotizacion += 1;
+  cotizacion = null;
+  cuponAplicado = '';
+  if (resumenDescuento) resumenDescuento.hidden = true;
+  if (estadoCuponCarrito) {
+    estadoCuponCarrito.textContent = mensaje;
+    estadoCuponCarrito.hidden = !mensaje;
+    estadoCuponCarrito.classList.remove('correcto');
+  }
+}
+
 function guardarCarrito() {
   localStorage.setItem(CLAVE_CARRITO, JSON.stringify(carrito));
   claveSolicitud = null;
+  const codigo = formularioCuponCarrito?.elements.cupon.value.trim();
+  limpiarCotizacion(codigo ? 'La selección cambió. Volvé a aplicar el cupón.' : '');
 }
 
 function cantidadTotal() {
@@ -239,10 +263,17 @@ function renderizarCarrito() {
   }
 
   const total = cantidadTotal();
-  const totalEnDinero = totalDinero();
+  const totalEnDinero = cotizacion
+    ? Number(cotizacion.total_centavos || 0) / 100
+    : totalDinero();
   if (contadorCarrito) contadorCarrito.textContent = String(total);
   if (totalElementos) totalElementos.textContent = String(total);
   if (totalDineroCarrito) totalDineroCarrito.textContent = formatearDinero(totalEnDinero);
+  if (resumenDescuento && descuentoCarrito) {
+    const descuento = Number(cotizacion?.descuento_centavos || 0) / 100;
+    resumenDescuento.hidden = descuento <= 0;
+    descuentoCarrito.textContent = `−${formatearDinero(descuento)}`;
+  }
   if (botonEnviar) botonEnviar.disabled = total === 0;
 }
 
@@ -334,13 +365,115 @@ function endpointPedidosDisponible() {
   return Boolean(dialogoDatosPedido?.dataset.endpointPedidos && dialogoDatosPedido?.dataset.clavePublica);
 }
 
+function lineasParaServidor() {
+  return carrito.map(producto => ({
+    producto_id: producto.id,
+    variante_id: producto.variante_id || null,
+    cantidad: producto.cantidad,
+    opciones: {},
+  }));
+}
+
+async function invocarPedidos(cuerpo) {
+  if (!endpointPedidosDisponible()) throw new Error('El sistema de pedidos todavía no está disponible.');
+  const respuesta = await fetch(dialogoDatosPedido.dataset.endpointPedidos, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: dialogoDatosPedido.dataset.clavePublica,
+      Authorization: `Bearer ${dialogoDatosPedido.dataset.clavePublica}`,
+    },
+    body: JSON.stringify(cuerpo),
+  });
+  const resultado = await respuesta.json().catch(() => ({}));
+  if (!respuesta.ok || resultado.error) throw new Error(resultado.error || 'No pudimos procesar el pedido.');
+  return resultado.datos;
+}
+
+async function cotizarCupon(codigo) {
+  const normalizado = String(codigo || '').trim().toUpperCase();
+  if (!normalizado) {
+    limpiarCotizacion();
+    renderizarCarrito();
+    return null;
+  }
+  const seleccion = JSON.stringify(lineasParaServidor());
+  const version = ++versionCotizacion;
+  const datos = await invocarPedidos({
+    accion: 'cotizar_solicitud', cupon: normalizado, lineas: lineasParaServidor(),
+  });
+  if (version !== versionCotizacion || seleccion !== JSON.stringify(lineasParaServidor())) {
+    throw new Error('La selección cambió. Volvé a aplicar el cupón.');
+  }
+  cotizacion = datos;
+  cuponAplicado = normalizado;
+  if (formularioCuponCarrito) formularioCuponCarrito.elements.cupon.value = normalizado;
+  if (estadoCuponCarrito) {
+    estadoCuponCarrito.textContent = `Cupón ${normalizado} aplicado: ahorrás ${formatearDinero(Number(datos.descuento_centavos || 0) / 100)}.`;
+    estadoCuponCarrito.classList.add('correcto');
+    estadoCuponCarrito.hidden = false;
+  }
+  renderizarCarrito();
+  return datos;
+}
+
+function actualizarResumenCheckout() {
+  if (!resumenCheckout) return;
+  const subtotal = cotizacion ? Number(cotizacion.subtotal_centavos || 0) / 100 : totalDinero();
+  const descuento = Number(cotizacion?.descuento_centavos || 0) / 100;
+  const total = cotizacion ? Number(cotizacion.total_centavos || 0) / 100 : subtotal;
+  resumenCheckout.replaceChildren();
+  const titulo = document.createElement('strong');
+  titulo.textContent = `${cantidadTotal()} producto${cantidadTotal() === 1 ? '' : 's'}`;
+  const importe = document.createElement('span');
+  importe.textContent = `Total: ${formatearDinero(total)}`;
+  resumenCheckout.append(titulo, importe);
+  if (descuento > 0) {
+    const detalle = document.createElement('small');
+    detalle.textContent = `Cupón ${cuponAplicado}: −${formatearDinero(descuento)} sobre ${formatearDinero(subtotal)}`;
+    resumenCheckout.append(detalle);
+  }
+}
+
+function mostrarPasoPedido(paso) {
+  pasoPedido = paso;
+  const confirmado = paso === 'confirmado';
+  const indiceActual = paso === 'datos' ? 1 : 2;
+  const pasos = formularioDatosPedido?.querySelectorAll('.pasos-checkout li') || [];
+  pasos.forEach((paso, indice) => {
+    paso.classList.toggle('completado', confirmado || indice < indiceActual);
+    paso.classList.toggle('actual', !confirmado && indice === indiceActual);
+    if (!confirmado && indice === indiceActual) paso.setAttribute('aria-current', 'step');
+    else paso.removeAttribute('aria-current');
+  });
+  const campos = formularioDatosPedido?.querySelector('.formulario-pedido-publico');
+  const instrucciones = formularioDatosPedido?.querySelector('[data-instrucciones-checkout]');
+  const medios = formularioDatosPedido?.querySelector('[data-paso-pago]');
+  const volver = formularioDatosPedido?.querySelector('[data-volver-datos-pedido]');
+  const enviar = formularioDatosPedido?.querySelector('button[type="submit"]');
+  const titulo = document.querySelector('#titulo-datos-pedido');
+  if (campos) campos.hidden = paso !== 'datos';
+  if (medios) medios.hidden = paso !== 'pago';
+  if (volver) volver.hidden = paso !== 'pago';
+  if (instrucciones) instrucciones.hidden = paso !== 'datos';
+  if (resumenCheckout) resumenCheckout.hidden = confirmado;
+  if (titulo) titulo.textContent = paso === 'datos' ? 'Tus datos' : paso === 'pago' ? 'Forma de pago' : 'Pedido registrado';
+  if (enviar) {
+    enviar.hidden = confirmado;
+    enviar.textContent = paso === 'datos' ? 'Continuar a forma de pago' : 'Confirmar pedido';
+  }
+  errorDatosPedido.hidden = true;
+}
+
 function abrirFormularioPedido() {
   if (!dialogoDatosPedido || !formularioDatosPedido) return;
   errorDatosPedido.hidden = true;
   confirmacionPedido.hidden = true;
   confirmacionPedido.replaceChildren();
   formularioDatosPedido.querySelector('button[type="submit"]').hidden = false;
+  mostrarPasoPedido('datos');
   if (!claveSolicitud) claveSolicitud = `pedido:${crypto.randomUUID()}`;
+  actualizarResumenCheckout();
   cerrarPanelCarrito();
   dialogoDatosPedido.showModal();
 }
@@ -399,8 +532,39 @@ fondoCarrito?.addEventListener('click', cerrarPanelCarrito);
 
 botonVaciar?.addEventListener('click', () => {
   carrito = [];
+  if (formularioCuponCarrito) formularioCuponCarrito.elements.cupon.value = '';
   guardarCarrito();
   renderizarCarrito();
+});
+
+formularioCuponCarrito?.elements.cupon.addEventListener('input', (evento) => {
+  const control = evento.currentTarget;
+  const mayusculas = control.value.toUpperCase();
+  if (control.value !== mayusculas) control.value = mayusculas;
+  if (mayusculas.trim() !== cuponAplicado) {
+    limpiarCotizacion('El código cambió. Pulsá Aplicar para validarlo.');
+    renderizarCarrito();
+  }
+});
+
+formularioCuponCarrito?.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  if (!carrito.length) return;
+  const boton = formularioCuponCarrito.querySelector('button[type="submit"]');
+  boton.disabled = true;
+  if (estadoCuponCarrito) {
+    estadoCuponCarrito.textContent = 'Validando cupón…';
+    estadoCuponCarrito.classList.remove('correcto');
+    estadoCuponCarrito.hidden = false;
+  }
+  try {
+    await cotizarCupon(formularioCuponCarrito.elements.cupon.value);
+  } catch (error) {
+    limpiarCotizacion(error.message || 'No pudimos validar el cupón.');
+    renderizarCarrito();
+  } finally {
+    boton.disabled = false;
+  }
 });
 
 botonEnviar?.addEventListener('click', async () => {
@@ -427,7 +591,13 @@ botonEnviar?.addEventListener('click', async () => {
       return;
     }
     if (!carrito.length) return;
+    const codigoCupon = formularioCuponCarrito?.elements.cupon.value.trim().toUpperCase() || '';
+    if (codigoCupon) await cotizarCupon(codigoCupon);
   } catch (error) {
+    if (estadoCuponCarrito && formularioCuponCarrito?.elements.cupon.value.trim()) {
+      limpiarCotizacion(error.message || 'No pudimos validar el cupón.');
+      renderizarCarrito();
+    }
     mostrarNotificacion(error.message);
     return;
   } finally { botonEnviar.disabled = carrito.length === 0; }
@@ -437,56 +607,67 @@ botonEnviar?.addEventListener('click', async () => {
 });
 
 document.querySelectorAll?.('[data-cerrar-pedido-publico]').forEach((boton) => {
-  boton.addEventListener('click', () => dialogoDatosPedido?.close());
+  boton.addEventListener('click', () => { if (!registrandoPedido) dialogoDatosPedido?.close(); });
 });
+
+formularioDatosPedido?.querySelector('[data-volver-datos-pedido]')?.addEventListener('click', () => {
+  if (!registrandoPedido) mostrarPasoPedido('datos');
+});
+dialogoDatosPedido?.addEventListener('cancel', (evento) => { if (registrandoPedido) evento.preventDefault(); });
 
 formularioDatosPedido?.addEventListener('submit', async (evento) => {
   evento.preventDefault();
-  if (!carrito.length || !endpointPedidosDisponible()) return;
+  if (registrandoPedido || !carrito.length || !endpointPedidosDisponible()) return;
   errorDatosPedido.hidden = true;
+  const campos = formularioDatosPedido.elements;
+  const contactoValido = ['nombre', 'correo', 'whatsapp', 'observaciones'].every(nombre => campos[nombre].reportValidity());
+  if (!contactoValido) { mostrarPasoPedido('datos'); return; }
+  if (pasoPedido === 'datos') { mostrarPasoPedido('pago'); return; }
+  const medioPago = campos.medio_pago?.value;
+  if (!['transferencia', 'efectivo'].includes(medioPago)) {
+    errorDatosPedido.textContent = 'Elegí si vas a abonar por transferencia o en efectivo.';
+    errorDatosPedido.hidden = false;
+    return;
+  }
+  registrandoPedido = true;
   const boton = formularioDatosPedido.querySelector('button[type="submit"]');
-  boton.disabled = true;
+  const botones = [...formularioDatosPedido.querySelectorAll('button')];
+  botones.forEach(control => { control.disabled = true; });
   boton.textContent = 'Registrando…';
   const datos = new FormData(formularioDatosPedido);
   try {
-    const respuesta = await fetch(dialogoDatosPedido.dataset.endpointPedidos, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: dialogoDatosPedido.dataset.clavePublica,
-        Authorization: `Bearer ${dialogoDatosPedido.dataset.clavePublica}`,
+    const pedido = await invocarPedidos({
+      accion: 'crear_solicitud',
+      clave_idempotencia: claveSolicitud,
+      cliente: {
+        nombre: String(datos.get('nombre') || '').trim(),
+        correo: String(datos.get('correo') || '').trim(),
+        whatsapp: String(datos.get('whatsapp') || '').trim(),
       },
-      body: JSON.stringify({
-        accion: 'crear_solicitud',
-        clave_idempotencia: claveSolicitud,
-        cliente: {
-          nombre: String(datos.get('nombre') || '').trim(),
-          correo: String(datos.get('correo') || '').trim(),
-          whatsapp: String(datos.get('whatsapp') || '').trim(),
-        },
-        observaciones: String(datos.get('observaciones') || '').trim(),
-        cupon: String(datos.get('cupon') || '').trim(),
-        lineas: carrito.map(producto => ({
-          producto_id: producto.id,
-          variante_id: producto.variante_id || null,
-          cantidad: producto.cantidad,
-          opciones: {},
-        })),
-      }),
+      observaciones: String(datos.get('observaciones') || '').trim(),
+      medio_pago: medioPago,
+      cupon: cuponAplicado || null,
+      lineas: lineasParaServidor(),
     });
-    const resultado = await respuesta.json().catch(() => ({}));
-    if (!respuesta.ok || resultado.error) throw new Error(resultado.error || 'No pudimos registrar el pedido.');
     carrito = [];
+    if (formularioCuponCarrito) formularioCuponCarrito.elements.cupon.value = '';
     guardarCarrito();
     renderizarCarrito();
-    const pedido = resultado.datos;
     confirmacionPedido.replaceChildren();
     confirmacionPedido.append(
       Object.assign(document.createElement('h3'), { textContent: `Pedido #${pedido.numero} registrado` }),
       Object.assign(document.createElement('p'), {
         textContent: pedido.tipo === 'automatico'
-          ? `Total confirmado: ${formatearDinero(Number(pedido.total_centavos || 0) / 100)}. El pago todavía no está habilitado.`
-          : 'La solicitud se coordinará por WhatsApp. No se realizó ningún cobro.',
+          ? `Total del pedido: ${formatearDinero(Number(pedido.total_centavos || 0) / 100)}.`
+          : 'Recibimos tu solicitud. Coordinaremos los detalles por WhatsApp.',
+      }),
+      Object.assign(document.createElement('p'), {
+        textContent: `Forma de pago elegida: ${medioPago === 'efectivo' ? 'efectivo' : 'transferencia bancaria'}. El pago está pendiente.`,
+      }),
+      Object.assign(document.createElement('p'), {
+        textContent: pedido.correo_estado === 'enviado'
+          ? 'Te enviamos el enlace privado de seguimiento por correo.'
+          : 'Guardá el enlace privado de seguimiento. El correo todavía no está habilitado o quedó pendiente.',
       }),
     );
     const enlaces = document.createElement('div');
@@ -495,14 +676,16 @@ formularioDatosPedido?.addEventListener('submit', async (evento) => {
     agregarEnlaceConfirmacion(enlaces, 'Continuar por WhatsApp', pedido.whatsapp_url);
     confirmacionPedido.append(enlaces);
     confirmacionPedido.hidden = false;
+    mostrarPasoPedido('confirmado');
     boton.hidden = true;
     claveSolicitud = null;
   } catch (error) {
     errorDatosPedido.textContent = error.message || 'No pudimos registrar el pedido.';
     errorDatosPedido.hidden = false;
   } finally {
-    boton.disabled = false;
-    boton.textContent = 'Registrar pedido';
+    registrandoPedido = false;
+    botones.forEach(control => { control.disabled = false; });
+    boton.textContent = 'Confirmar pedido';
   }
 });
 

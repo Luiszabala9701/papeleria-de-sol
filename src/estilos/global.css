@@ -896,7 +896,7 @@ h3 {
   top: 0;
   right: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(100%, 440px);
   height: 100dvh;
   background: var(--blanco);
@@ -1090,9 +1090,27 @@ h3 {
 }
 
 .pie-carrito {
+  max-height: 58dvh;
+  overflow-y: auto;
   border-top: 1px solid var(--borde);
   background: var(--fondo);
 }
+
+.formulario-cupon-carrito {
+  display: grid;
+  padding-bottom: 0.9rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid var(--borde);
+  gap: 0.45rem;
+}
+
+.formulario-cupon-carrito > label { font-size: 0.82rem; font-weight: 800; }
+.fila-cupon-carrito { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; }
+.fila-cupon-carrito .campo { text-transform: uppercase; }
+.fila-cupon-carrito .boton { min-height: 46px; padding-inline: 1rem; }
+.estado-cupon-carrito { margin: 0; color: var(--peligro); font-size: 0.78rem; }
+.estado-cupon-carrito.correcto { color: #167447; }
+.resumen-descuento-carrito strong { color: #167447; }
 
 .resumen-carrito {
   display: flex;
@@ -1223,9 +1241,33 @@ h3 {
 .contenido-modal-pedido { max-height: calc(100dvh - 2rem); padding: clamp(1.25rem, 4vw, 2rem); overflow-y: auto; }
 .cabecera-modal-pedido { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .cabecera-modal-pedido h2 { margin-bottom: 0.6rem; }
+.pasos-checkout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0;
+  margin: 1rem 0 1.25rem;
+  list-style: none;
+  gap: 0.5rem;
+}
+.pasos-checkout li { display: grid; justify-items: center; color: var(--tinta-suave); font-size: 0.75rem; font-weight: 800; text-align: center; gap: 0.3rem; }
+.pasos-checkout span { display: grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid var(--borde); border-radius: 50%; background: var(--blanco); }
+.pasos-checkout .completado span,
+.pasos-checkout .actual span { border-color: var(--azul-profundo); color: var(--blanco); background: var(--azul-profundo); }
+.pasos-checkout .actual { color: var(--azul-profundo); }
+.resumen-checkout { display: flex; flex-wrap: wrap; justify-content: space-between; padding: 0.85rem 1rem; margin-block: 1rem; border-radius: 0.85rem; background: var(--fondo); gap: 0.3rem 1rem; }
+.resumen-checkout small { flex-basis: 100%; color: var(--tinta-suave); }
 .formulario-pedido-publico { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .formulario-pedido-publico label { display: grid; gap: 0.35rem; font-weight: 700; }
 .formulario-pedido-publico .campo-completo { grid-column: 1 / -1; }
+.formulario-pedido-publico small { color: var(--tinta-suave); font-size: 0.8rem; font-weight: 400; }
+.modal-pedido [hidden], .pie-carrito [hidden] { display: none !important; }
+.medios-pago-pedido { display: grid; gap: 0.8rem; padding: 0; margin: 1rem 0; border: 0; }
+.medios-pago-pedido legend { margin-bottom: 0.8rem; font-size: 1.15rem; font-weight: 800; }
+.opcion-medio-pago { display: flex; align-items: center; gap: 0.8rem; padding: 1rem; border: 1px solid var(--borde); border-radius: 0.9rem; cursor: pointer; }
+.opcion-medio-pago:has(input:checked) { border-color: var(--azul-profundo); background: var(--fondo); }
+.opcion-medio-pago input { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; accent-color: var(--azul-profundo); }
+.opcion-medio-pago span { display: grid; gap: 0.2rem; }
+.opcion-medio-pago small, .medios-pago-pedido > p { color: var(--tinta-suave); font-size: 0.82rem; }
 .acciones-modal-pedido,
 .acciones-confirmacion-pedido { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
 .confirmacion-pedido { padding: 1rem; margin-top: 1rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--azul-sol) 13%, var(--blanco)); }
@@ -1240,7 +1282,12 @@ h3 {
 .dato-seguimiento span,
 .dato-seguimiento strong { display: block; overflow-wrap: anywhere; }
 .dato-seguimiento span { color: var(--tinta-suave); font-size: 0.8rem; }
-.lista-seguimiento { display: grid; gap: 0.5rem; padding-left: 1.25rem; }
+.lista-seguimiento { display: grid; gap: 0.75rem; padding: 0; list-style: none; }
+.producto-seguimiento { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 1rem; padding-block: 0.75rem; border-bottom: 1px solid var(--borde); }
+.producto-seguimiento:last-child { border-bottom: 0; }
+.producto-seguimiento img { width: 80px; height: 80px; object-fit: contain; border-radius: 0.75rem; background: var(--fondo); }
+.detalle-producto-seguimiento { display: grid; gap: 0.2rem; overflow-wrap: anywhere; }
+.detalle-producto-seguimiento span { color: var(--tinta-suave); font-size: 0.9rem; }
 
 @media (max-width: 640px) {
   .formulario-pedido-publico,

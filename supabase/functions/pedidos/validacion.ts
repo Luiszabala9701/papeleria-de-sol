@@ -22,6 +22,35 @@ function ordenarObjeto(valor: unknown): unknown {
 export function normalizarCreacion(cuerpo: unknown) {
   if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) throw new Error('La solicitud no es válida.');
   const entrada = cuerpo as Record<string, unknown>;
+  const { lineas, cupon } = normalizarSeleccion(entrada);
+  const cliente = entrada.cliente;
+  if (!cliente || typeof cliente !== 'object' || Array.isArray(cliente)) throw new Error('Faltan los datos de contacto.');
+  const datosCliente = cliente as Record<string, unknown>;
+  const nombre = texto(datosCliente.nombre, 120, true);
+  const correo = texto(datosCliente.correo, 254, true).toLowerCase();
+  const whatsapp = texto(datosCliente.whatsapp, 30, true);
+  if (!CORREO.test(correo) || !WHATSAPP.test(whatsapp)) throw new Error('Los datos de contacto no son válidos.');
+  const idempotencia = texto(entrada.clave_idempotencia, 120, true);
+  if (idempotencia.length < 16 || !/^[A-Za-z0-9:_-]+$/.test(idempotencia)) throw new Error('La clave de la solicitud no es válida.');
+  const observaciones = texto(entrada.observaciones, 1000);
+  const medioPago = texto(entrada.medio_pago, 30, true);
+  if (!['transferencia', 'efectivo'].includes(medioPago)) throw new Error('El medio de pago debe ser transferencia o efectivo.');
+  return { lineas, cliente: { nombre, correo, whatsapp }, observaciones, cupon, medio_pago: medioPago, clave_idempotencia: idempotencia };
+}
+
+export function imagenDeArticulo(
+  item: { producto_id?: string; variante_id?: string | null },
+  imagenes: Array<{ producto_id: string; variante_id?: string | null; url_publica: string; es_principal?: boolean; orden?: number }>,
+) {
+  const candidatas = imagenes.filter(imagen => imagen.producto_id === item.producto_id
+    && (!imagen.variante_id || imagen.variante_id === item.variante_id));
+  candidatas.sort((a, b) => Number(Boolean(b.variante_id)) - Number(Boolean(a.variante_id))
+    || Number(Boolean(b.es_principal)) - Number(Boolean(a.es_principal))
+    || Number(a.orden || 0) - Number(b.orden || 0));
+  return candidatas[0]?.url_publica || null;
+}
+
+function normalizarSeleccion(entrada: Record<string, unknown>) {
   if (!Array.isArray(entrada.lineas) || entrada.lineas.length < 1 || entrada.lineas.length > 100) {
     throw new Error('La selección debe contener entre 1 y 100 artículos.');
   }
@@ -39,19 +68,14 @@ export function normalizarCreacion(cuerpo: unknown) {
     }
     return { producto_id: item.producto_id.toLowerCase(), variante_id: variante?.toLowerCase() || null, cantidad, opciones: ordenarObjeto(opciones) };
   });
-  const cliente = entrada.cliente;
-  if (!cliente || typeof cliente !== 'object' || Array.isArray(cliente)) throw new Error('Faltan los datos de contacto.');
-  const datosCliente = cliente as Record<string, unknown>;
-  const nombre = texto(datosCliente.nombre, 120, true);
-  const correo = texto(datosCliente.correo, 254, true).toLowerCase();
-  const whatsapp = texto(datosCliente.whatsapp, 30, true);
-  if (!CORREO.test(correo) || !WHATSAPP.test(whatsapp)) throw new Error('Los datos de contacto no son válidos.');
-  const idempotencia = texto(entrada.clave_idempotencia, 120, true);
-  if (idempotencia.length < 16 || !/^[A-Za-z0-9:_-]+$/.test(idempotencia)) throw new Error('La clave de la solicitud no es válida.');
-  const observaciones = texto(entrada.observaciones, 1000);
   const cupon = texto(entrada.cupon, 40).toUpperCase();
   if (cupon && !/^[A-Z0-9_-]{3,40}$/.test(cupon)) throw new Error('El código de cupón no es válido.');
-  return { lineas, cliente: { nombre, correo, whatsapp }, observaciones, cupon: cupon || null, clave_idempotencia: idempotencia };
+  return { lineas, cupon: cupon || null };
+}
+
+export function normalizarCotizacion(cuerpo: unknown) {
+  if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) throw new Error('La solicitud no es válida.');
+  return normalizarSeleccion(cuerpo as Record<string, unknown>);
 }
 
 export function validarTokenSeguimiento(valor: unknown) {

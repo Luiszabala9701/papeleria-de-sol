@@ -1,7 +1,9 @@
+import { estadoVisiblePedido, imagenSeguraPedido } from '../servicios/seguimiento-pedido.js';
+
 const raiz = document.querySelector('[data-seguimiento-pedido]');
-const formulario = document.querySelector('[data-formulario-seguimiento]');
 const error = document.querySelector('[data-error-seguimiento]');
 const resultado = document.querySelector('[data-resultado-seguimiento]');
+const estadoAcceso = document.querySelector('[data-estado-acceso-seguimiento]');
 const dinero = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const etiquetas = {
   automatico: 'Automático', coordinado: 'Coordinado', solicitud: 'Solicitud recibida', cotizando: 'Cotizando',
@@ -9,8 +11,8 @@ const etiquetas = {
   no_iniciada: 'No iniciada', espera_anticipo: 'Esperando anticipo', en_diseno: 'En diseño',
   espera_aprobacion: 'Esperando aprobación', en_preparacion: 'En preparación', listo: 'Listo',
   sin_definir: 'Sin definir', pendiente: 'Pendiente', listo_retiro: 'Listo para retirar', retirado: 'Retirado',
-  enviado: 'Enviado', entregado: 'Entregado', sin_cobro: 'Sin cobro', parcial: 'Pago parcial',
-  pagado: 'Pago aprobado', reembolsado_parcial: 'Reembolso parcial', reembolsado_total: 'Reembolso total',
+  enviado: 'Enviado', entregado: 'Entregado', sin_cobro: 'Sin cobro', anticipo_pagado: 'Anticipo / pago parcial',
+  pagado: 'Pago aprobado', parcialmente_reembolsado: 'Reembolso parcial', reembolsado: 'Reembolsado', incidencia: 'Incidencia',
 };
 
 function nodo(tipo, texto, clase) {
@@ -30,19 +32,33 @@ function renderizar(pedido) {
   resultado.replaceChildren();
   const resumen = nodo('div', '', 'grilla-seguimiento');
   resumen.replaceChildren(
-    dato('Pedido', `#${pedido.numero}`), dato('Tipo', etiquetas[pedido.tipo] || pedido.tipo),
-    dato('Estado', etiquetas[pedido.estado_comercial] || pedido.estado_comercial),
-    dato('Preparación', etiquetas[pedido.estado_preparacion] || pedido.estado_preparacion),
-    dato('Entrega', etiquetas[pedido.estado_entrega] || pedido.estado_entrega),
-    dato('Pago', etiquetas[pedido.estado_financiero] || pedido.estado_financiero),
+    dato('Estado del pedido', estadoVisiblePedido(pedido)),
+    dato('Forma de pago', pedido.medio_pago_solicitado === 'efectivo' ? 'Efectivo'
+      : pedido.medio_pago_solicitado === 'transferencia' ? 'Transferencia bancaria' : 'A coordinar'),
+    dato('Estado del pago', pedido.estado_financiero === 'sin_cobro' ? 'Pendiente de pago'
+      : etiquetas[pedido.estado_financiero] || pedido.estado_financiero),
     dato('Total', dinero.format(Number(pedido.total_centavos || 0) / 100)),
   );
   const lista = nodo('ul', '', 'lista-seguimiento');
   (pedido.pedido_items || []).forEach((item) => {
     const nombre = item.variante_nombre ? `${item.producto_nombre} · ${item.variante_nombre}` : item.producto_nombre;
-    lista.append(nodo('li', `${item.cantidad} × ${nombre} — ${dinero.format(Number(item.subtotal_centavos || 0) / 100)}`));
+    const fila = nodo('li', '', 'producto-seguimiento');
+    const imagen = document.createElement('img');
+    imagen.src = imagenSeguraPedido(item.imagen_url);
+    imagen.alt = nombre;
+    imagen.width = 80;
+    imagen.height = 80;
+    imagen.loading = 'lazy';
+    imagen.decoding = 'async';
+    imagen.referrerPolicy = 'no-referrer';
+    imagen.addEventListener('error', () => { imagen.src = '/marca/producto-sin-imagen.svg'; }, { once: true });
+    const detalle = nodo('div', '', 'detalle-producto-seguimiento');
+    detalle.append(nodo('strong', nombre), nodo('span', `Cantidad: ${item.cantidad}`),
+      nodo('span', dinero.format(Number(item.subtotal_centavos || 0) / 100)));
+    fila.append(imagen, detalle);
+    lista.append(fila);
   });
-  resultado.append(nodo('h2', 'Estado actual'), resumen, nodo('h2', 'Productos'), lista);
+  resultado.append(nodo('h2', `Orden #${pedido.numero}`), resumen, nodo('h2', 'Productos'), lista);
   resultado.hidden = false;
 }
 
@@ -56,18 +72,18 @@ async function consultar(token) {
   const cuerpo = await respuesta.json().catch(() => ({}));
   if (!respuesta.ok || cuerpo.error) throw new Error(cuerpo.error || 'No pudimos consultar el pedido.');
   renderizar(cuerpo.datos);
+  if (estadoAcceso) estadoAcceso.hidden = true;
 }
-
-formulario?.addEventListener('submit', async (evento) => {
-  evento.preventDefault(); error.hidden = true; resultado.hidden = true;
-  const boton = formulario.querySelector('button[type="submit"]'); boton.disabled = true;
-  try { await consultar(formulario.elements.token.value.trim()); }
-  catch (fallo) { error.textContent = fallo.message; error.hidden = false; }
-  finally { boton.disabled = false; }
-});
 
 const token = new URLSearchParams(location.search).get('token') || '';
 if (token) {
-  formulario.elements.token.value = token;
-  consultar(token).catch((fallo) => { error.textContent = fallo.message; error.hidden = false; });
+  consultar(token).catch((fallo) => {
+    if (estadoAcceso) estadoAcceso.hidden = true;
+    error.textContent = fallo.message;
+    error.hidden = false;
+  });
+} else {
+  if (estadoAcceso) estadoAcceso.hidden = true;
+  error.textContent = 'Abrí el enlace privado que recibiste por correo o WhatsApp para consultar tu pedido.';
+  error.hidden = false;
 }

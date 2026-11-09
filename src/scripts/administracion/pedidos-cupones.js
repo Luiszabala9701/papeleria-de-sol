@@ -1,13 +1,17 @@
+import { ESTADOS_PREPARACION, imagenSeguraPedido } from '../../servicios/seguimiento-pedido.js';
+import { imprimirPedido } from './imprimir-pedido.js';
+
 const DINERO = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const FECHA = new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' });
 const ETIQUETAS = {
   automatico: 'Automático', coordinado: 'Coordinado', sin_cobro: 'Sin cobro', pendiente: 'Pendiente',
-  parcial: 'Parcial', pagado: 'Pago aprobado', reembolsado_parcial: 'Reembolso parcial',
-  reembolsado_total: 'Reembolso total', no_iniciada: 'No iniciada', espera_anticipo: 'Espera anticipo',
+  anticipo_pagado: 'Anticipo / pago parcial', pagado: 'Pago aprobado', parcialmente_reembolsado: 'Reembolso parcial',
+  reembolsado: 'Reembolsado', incidencia: 'Incidencia', aprobado: 'Aprobado', no_iniciada: 'No iniciada', espera_anticipo: 'Espera anticipo',
   en_diseno: 'En diseño', espera_aprobacion: 'Espera aprobación', en_preparacion: 'En preparación',
   listo: 'Listo', solicitud: 'Solicitud', cotizando: 'Cotizando', espera_cliente: 'Espera cliente',
   confirmado: 'Confirmado', cancelado: 'Cancelado', finalizado: 'Finalizado', sin_definir: 'Sin definir',
   listo_retiro: 'Listo para retirar', retirado: 'Retirado', enviado: 'Enviado', entregado: 'Entregado',
+  ...ESTADOS_PREPARACION,
 };
 
 function dinero(centavos) {
@@ -115,13 +119,45 @@ export function inicializarModuloComercial({ invocar, notificar }) {
       cliente.append(elemento('strong', pedido.cliente_nombre), elemento('small', pedido.cliente_correo));
       const ver = boton('Ver detalle');
       ver.addEventListener('click', () => abrirPedido(pedido.id));
+      const imprimir = boton('Imprimir');
+      imprimir.setAttribute('aria-label', `Imprimir orden ${pedido.numero}`);
+      imprimir.addEventListener('click', async () => {
+        imprimir.disabled = true;
+        imprimir.textContent = 'Preparando…';
+        try {
+          const datos = await invocar('obtener_pedido', { id: pedido.id });
+          imprimirPedido(datos);
+        } catch (error) { notificar(error.message || 'No pudimos preparar la impresión.'); }
+        finally { imprimir.disabled = false; imprimir.textContent = 'Imprimir'; }
+      });
       [
         celdaNumero, cliente, elemento('td', ETIQUETAS[pedido.tipo] || pedido.tipo),
         elemento('td', dinero(pedido.total_centavos)), elemento('td', ETIQUETAS[pedido.estado_financiero] || pedido.estado_financiero),
         elemento('td', ETIQUETAS[pedido.estado_preparacion] || pedido.estado_preparacion), elemento('td', fecha(pedido.creado_en)),
       ].forEach(celda => fila.append(celda));
-      const acciones = document.createElement('td');
-      acciones.append(ver);
+      const acciones = elemento('td', null, 'acciones-tabla acciones-pedido-fila');
+      const preparar = boton('En preparación');
+      preparar.disabled = Boolean(pedido.archivado_en) || ['en_preparacion', 'listo'].includes(pedido.estado_preparacion);
+      preparar.addEventListener('click', async () => {
+        preparar.disabled = true;
+        try {
+          await invocar('actualizar_estado_pedido', { id: pedido.id, campo: 'estado_preparacion', valor: 'en_preparacion' });
+          notificar('Pedido marcado en preparación.');
+          await cargarPedidos();
+        } catch (error) { notificar(error.message); } finally { preparar.disabled = false; }
+      });
+      const gestionarPago = boton('Gestionar pago');
+      gestionarPago.addEventListener('click', () => abrirPedido(pedido.id, true));
+      const archivar = boton(pedido.archivado_en ? 'Reabrir' : 'Archivar');
+      archivar.addEventListener('click', async () => {
+        archivar.disabled = true;
+        try {
+          await invocar('archivar_pedido', { id: pedido.id, archivar: !pedido.archivado_en });
+          notificar(pedido.archivado_en ? 'Pedido reabierto.' : 'Pedido archivado.');
+          await cargarPedidos();
+        } catch (error) { notificar(error.message); } finally { archivar.disabled = false; }
+      });
+      acciones.append(ver, imprimir, preparar, gestionarPago, archivar);
       fila.append(acciones);
       cuerpo.append(fila);
     });
@@ -155,7 +191,40 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     return formulario;
   }
 
-  async function abrirPedido(id) {
+  function crearEditorNotaInterna(pedido) {
+    const formulario = elemento('form', null, 'editor-nota-interna-pedido');
+    const etiqueta = elemento('label', 'Nota interna (solo administración)');
+    const campo = document.createElement('textarea');
+    campo.className = 'area-texto'; campo.name = 'notas_internas'; campo.maxLength = 2000; campo.rows = 3;
+    campo.placeholder = 'Ej.: Impresa. Falta empaquetar.';
+    campo.value = pedido.notas_internas || '';
+    etiqueta.append(campo);
+    const ayuda = elemento('p', 'Esta nota no se muestra al cliente ni en el localizador impreso.', 'ayuda-nota-interna-pedido');
+    const guardar = elemento('button', 'Guardar nota interna', 'boton boton-secundario');
+    guardar.type = 'submit';
+    const mensaje = elemento('p', '');
+    mensaje.setAttribute('role', 'status');
+    mensaje.setAttribute('aria-live', 'polite');
+    formulario.append(etiqueta, ayuda, guardar, mensaje);
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      if (guardar.disabled) return;
+      guardar.disabled = true; campo.disabled = true;
+      mensaje.textContent = 'Guardando…';
+      try {
+        const resultado = await invocar('guardar_nota_interna_pedido', {
+          id: pedido.id, nota: campo.value, nota_anterior: pedido.notas_internas ?? null,
+        });
+        pedido.notas_internas = resultado.notas_internas;
+        campo.value = resultado.notas_internas || '';
+        mensaje.textContent = 'Nota interna guardada.';
+      } catch (error) { mensaje.textContent = error.message; }
+      finally { guardar.disabled = false; campo.disabled = false; }
+    });
+    return formulario;
+  }
+
+  async function abrirPedido(id, enfocarPago = false) {
     detallePedido.textContent = 'Cargando detalle…';
     if (!dialogoPedido.open) dialogoPedido.showModal();
     try {
@@ -168,15 +237,28 @@ export function inicializarModuloComercial({ invocar, notificar }) {
         bloqueDato('Cliente', pedido.cliente_nombre), bloqueDato('Correo', pedido.cliente_correo),
         bloqueDato('WhatsApp', pedido.cliente_whatsapp), bloqueDato('Tipo', ETIQUETAS[pedido.tipo] || pedido.tipo),
         bloqueDato('Total', dinero(pedido.total_centavos)), bloqueDato('Pago', ETIQUETAS[pedido.estado_financiero] || pedido.estado_financiero),
+        bloqueDato('Forma de pago elegida', pedido.medio_pago_solicitado === 'efectivo' ? 'Efectivo'
+          : pedido.medio_pago_solicitado === 'transferencia' ? 'Transferencia bancaria' : 'A coordinar'),
       );
       detallePedido.append(resumen);
-      if (pedido.observaciones_cliente) detallePedido.append(elemento('p', `Observaciones: ${pedido.observaciones_cliente}`, 'nota-pedido'));
+      const notaCliente = elemento('section', null, 'nota-pedido');
+      notaCliente.append(elemento('h3', 'Nota del cliente'),
+        elemento('p', pedido.observaciones_cliente || 'El cliente no dejó ninguna nota.'));
+      detallePedido.append(notaCliente);
+      detallePedido.append(crearEditorNotaInterna(pedido));
 
       const tituloItems = elemento('h3', 'Productos');
       const lista = elemento('ul', null, 'lista-items-pedido');
       datos.items.forEach(item => {
         const nombre = item.variante_nombre ? `${item.producto_nombre} · ${item.variante_nombre}` : item.producto_nombre;
-        lista.append(elemento('li', `${item.cantidad} × ${nombre} — ${dinero(item.subtotal_centavos)}`));
+        const fila = elemento('li', null, 'producto-pedido-admin');
+        const imagen = document.createElement('img');
+        imagen.src = imagenSeguraPedido(item.imagen_url_snapshot);
+        imagen.alt = nombre;
+        imagen.width = 64; imagen.height = 64; imagen.loading = 'lazy'; imagen.referrerPolicy = 'no-referrer';
+        imagen.addEventListener('error', () => { imagen.src = '/marca/producto-sin-imagen.svg'; }, { once: true });
+        fila.append(imagen, elemento('span', `${item.cantidad} × ${nombre} — ${dinero(item.subtotal_centavos)}`));
+        lista.append(fila);
       });
       detallePedido.append(tituloItems, lista);
 
@@ -227,7 +309,12 @@ export function inicializarModuloComercial({ invocar, notificar }) {
           await Promise.all([abrirPedido(pedido.id), cargarPedidos()]);
         } catch (error) { notificar(error.message); } finally { aprobar.disabled = false; }
       });
-      detallePedido.append(elemento('h3', 'Transferencia verificada'), elemento('p', 'Usá esta acción solo después de comprobar el ingreso en la cuenta.'), pago);
+      if (pedido.tipo === 'coordinado') {
+        detallePedido.append(elemento('h3', 'Transferencia verificada'), elemento('p', 'Usá esta acción solo después de comprobar el ingreso en la cuenta.'), pago);
+        if (enfocarPago) window.setTimeout(() => { pago.scrollIntoView({ behavior: 'smooth', block: 'center' }); importe.focus(); }, 0);
+      } else if (enfocarPago) {
+        detallePedido.append(elemento('p', 'Los pagos automáticos se confirmarán desde Mercado Pago cuando esa integración esté habilitada.', 'nota-pedido'));
+      }
 
       if (datos.pagos.length) {
         const historialPagos = elemento('ul', null, 'lista-items-pedido');
@@ -366,6 +453,38 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     campoProductos.disabled = !porProductos;
     formularioCupon.elements.categoria_productos.disabled = !porProductos;
     formularioCupon.elements.categoria_productos.required = porProductos;
+    validarCuponEnTiempoReal(false);
+  }
+
+  function validarCuponEnTiempoReal(mostrar = true) {
+    const campos = formularioCupon.elements;
+    [campos.porcentaje, campos.importe_fijo, campos.compra_minima, campos.inicia_en, campos.vence_en]
+      .forEach(control => control?.setCustomValidity(''));
+    const porcentaje = Number(campos.porcentaje.value || 0);
+    const importeFijo = centavos(campos.importe_fijo.value);
+    const compraMinima = centavos(campos.compra_minima.value);
+    let mensaje = '';
+    let controlInvalido = null;
+    if (campos.tipo_descuento.value === 'porcentaje' && campos.porcentaje.value && (porcentaje <= 0 || porcentaje > 100)) {
+      mensaje = 'El porcentaje debe ser mayor que 0 y no puede superar 100.';
+      controlInvalido = campos.porcentaje;
+    } else if (campos.tipo_descuento.value === 'fijo' && campos.importe_fijo.value && importeFijo <= 0) {
+      mensaje = 'Ingresá un importe de descuento mayor que 0.';
+      controlInvalido = campos.importe_fijo;
+    } else if (campos.tipo_descuento.value === 'fijo' && campos.importe_fijo.value && compraMinima < importeFijo) {
+      mensaje = 'La compra mínima debe ser igual o mayor que el importe del descuento.';
+      controlInvalido = campos.compra_minima;
+    } else if (campos.inicia_en.value && campos.vence_en.value
+      && new Date(campos.vence_en.value).getTime() <= new Date(campos.inicia_en.value).getTime()) {
+      mensaje = 'El vencimiento debe ser posterior al inicio del cupón.';
+      controlInvalido = campos.vence_en;
+    }
+    if (controlInvalido) controlInvalido.setCustomValidity(mensaje);
+    if (mostrar) {
+      errorCupon.textContent = mensaje;
+      errorCupon.hidden = !mensaje;
+    }
+    return { valida: !mensaje, mensaje };
   }
 
   function valoresSeleccionados(nombre) {
@@ -386,11 +505,18 @@ export function inicializarModuloComercial({ invocar, notificar }) {
   document.querySelector('[data-nuevo-cupon]')?.addEventListener('click', () => abrirCupon().catch(error => notificar(error.message)));
   document.querySelectorAll('[data-cerrar-pedido]').forEach(item => item.addEventListener('click', () => dialogoPedido.close()));
   document.querySelectorAll('[data-cerrar-cupon]').forEach(item => item.addEventListener('click', () => dialogoCupon.close()));
-  formularioCupon?.elements.tipo_descuento.addEventListener('change', actualizarCamposCupon);
+  formularioCupon?.elements.tipo_descuento.addEventListener('change', () => {
+    actualizarCamposCupon();
+    validarCuponEnTiempoReal(true);
+  });
   formularioCupon?.elements.alcance.addEventListener('change', actualizarCamposCupon);
   formularioCupon?.elements.categoria_productos.addEventListener('change', () => actualizarProductosPorCategoria());
   formularioCupon?.elements.codigo.addEventListener('input', (evento) => {
     evento.currentTarget.value = evento.currentTarget.value.toUpperCase();
+  });
+  ['porcentaje', 'importe_fijo', 'compra_minima', 'inicia_en', 'vence_en'].forEach((nombre) => {
+    formularioCupon?.elements[nombre]?.addEventListener('input', () => validarCuponEnTiempoReal(true));
+    formularioCupon?.elements[nombre]?.addEventListener('change', () => validarCuponEnTiempoReal(true));
   });
   ['pedidos', 'cupones'].forEach(recurso => {
     document.querySelector(`[data-${recurso}-anterior]`)?.addEventListener('click', () => { if (estado[recurso].pagina > 1) { estado[recurso].pagina -= 1; recurso === 'pedidos' ? cargarPedidos() : cargarCupones(); } });
@@ -405,10 +531,10 @@ export function inicializarModuloComercial({ invocar, notificar }) {
     const compraMinima = centavos(campos.compra_minima.value);
     const categorias = campos.alcance.value === 'categorias' ? valoresSeleccionados('categorias') : [];
     const productos = campos.alcance.value === 'productos' ? valoresSeleccionados('productos') : [];
-    let mensajeValidacion = '';
-    if (campos.tipo_descuento.value === 'porcentaje' && (porcentaje <= 0 || porcentaje > 100)) mensajeValidacion = 'El porcentaje debe ser mayor que 0 y no puede superar 100.';
-    if (campos.tipo_descuento.value === 'fijo' && importeFijo <= 0) mensajeValidacion = 'Ingresá un importe de descuento mayor que 0.';
-    if (campos.tipo_descuento.value === 'fijo' && compraMinima < importeFijo) mensajeValidacion = 'La compra mínima debe ser igual o mayor que el importe del descuento.';
+    let mensajeValidacion = validarCuponEnTiempoReal(true).mensaje;
+    if (!mensajeValidacion && campos.tipo_descuento.value === 'porcentaje' && (porcentaje <= 0 || porcentaje > 100)) mensajeValidacion = 'El porcentaje debe ser mayor que 0 y no puede superar 100.';
+    if (!mensajeValidacion && campos.tipo_descuento.value === 'fijo' && importeFijo <= 0) mensajeValidacion = 'Ingresá un importe de descuento mayor que 0.';
+    if (!mensajeValidacion && campos.tipo_descuento.value === 'fijo' && compraMinima < importeFijo) mensajeValidacion = 'La compra mínima debe ser igual o mayor que el importe del descuento.';
     if (campos.alcance.value === 'categorias' && !categorias.length) mensajeValidacion = 'Elegí al menos una categoría.';
     if (campos.alcance.value === 'productos' && !campos.categoria_productos.value) mensajeValidacion = 'Elegí primero una categoría de productos.';
     if (campos.alcance.value === 'productos' && !productos.length) mensajeValidacion = 'Elegí al menos un producto.';

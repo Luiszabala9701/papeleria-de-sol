@@ -44,9 +44,21 @@ const endpointPedidos = urlSupabase ? `${urlSupabase.replace(/\/$/, '')}/functio
   </div>
 
   <div class="pie-carrito">
+    <form class="formulario-cupon-carrito" data-formulario-cupon-carrito>
+      <label for="cupon-carrito">¿Tenés un cupón?</label>
+      <div class="fila-cupon-carrito">
+        <input id="cupon-carrito" class="campo" name="cupon" maxlength="40" pattern="[A-Z0-9_-]{3,40}" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO" />
+        <button class="boton boton-secundario" type="submit">Aplicar</button>
+      </div>
+      <p class="estado-cupon-carrito" data-estado-cupon-carrito aria-live="polite" hidden></p>
+    </form>
     <div class="resumen-carrito">
       <span>{obtenerTextoPublico(configuracion, 'carrito_productos_seleccionados')}</span>
       <strong id="total-elementos-carrito">0</strong>
+    </div>
+    <div class="resumen-carrito resumen-descuento-carrito" data-resumen-descuento hidden>
+      <span>Descuento</span>
+      <strong data-descuento-carrito>−$0</strong>
     </div>
     <div class="resumen-carrito resumen-total-carrito">
       <span>{obtenerTextoPublico(configuracion, 'carrito_total')}</span>
@@ -56,34 +68,47 @@ const endpointPedidos = urlSupabase ? `${urlSupabase.replace(/\/$/, '')}/functio
       Continuar pedido
     </button>
     <button id="vaciar-carrito" class="boton-texto" type="button">{obtenerTextoPublico(configuracion, 'carrito_vaciar')}</button>
-    <p class="aclaracion-carrito">{obtenerTextoPublico(configuracion, 'carrito_aclaracion')}</p>
+    <p class="aclaracion-carrito">Elegí cómo abonar en el siguiente paso. El pedido queda pendiente de pago hasta confirmar su recepción.</p>
   </div>
 </aside>
 
 <dialog
   id="dialogo-datos-pedido"
   class="modal-pedido"
+  aria-labelledby="titulo-datos-pedido"
   data-endpoint-pedidos={endpointPedidos}
   data-clave-publica={clavePublica}
 >
-  <form id="formulario-datos-pedido" class="contenido-modal-pedido">
+  <form id="formulario-datos-pedido" class="contenido-modal-pedido" novalidate>
     <div class="cabecera-modal-pedido">
-      <div><p class="etiqueta">Datos de contacto</p><h2>Registrar pedido</h2></div>
+      <div><p class="etiqueta">Tu compra</p><h2 id="titulo-datos-pedido">Tus datos</h2></div>
       <button class="boton-icono" type="button" data-cerrar-pedido-publico aria-label="Cerrar">×</button>
     </div>
-    <p>Confirmaremos los precios y el stock nuevamente en el servidor. En esta etapa no se realiza ningún cobro.</p>
+    <ol class="pasos-checkout" aria-label="Progreso del pedido">
+      <li class="completado"><span>1</span>Carrito</li>
+      <li class="actual" aria-current="step"><span>2</span>Tus datos</li>
+      <li><span>3</span>Pago</li>
+    </ol>
+    <p data-instrucciones-checkout>Completá tus datos. No pedimos dirección porque esta tienda no realiza envíos desde el checkout. En esta etapa no se realiza ningún cobro.</p>
+    <div class="resumen-checkout" data-resumen-checkout></div>
     <div class="formulario-pedido-publico">
       <label><span>Nombre y apellido</span><input class="campo" name="nombre" autocomplete="name" maxlength="120" required /></label>
       <label><span>Correo</span><input class="campo" name="correo" type="email" autocomplete="email" maxlength="254" required /></label>
       <label><span>WhatsApp</span><input class="campo" name="whatsapp" type="tel" autocomplete="tel" maxlength="30" required /></label>
-      <label><span>Cupón (opcional)</span><input class="campo" name="cupon" maxlength="40" pattern="[A-Za-z0-9_-]{3,40}" /></label>
-      <label class="campo-completo"><span>Observaciones (opcional)</span><textarea class="area-texto" name="observaciones" maxlength="1000" rows="3"></textarea></label>
+      <label class="campo-completo"><span>Nota para tu pedido (opcional)</span><textarea class="area-texto" name="observaciones" maxlength="1000" rows="3" placeholder="Contanos cualquier aclaración que debamos tener en cuenta."></textarea><small>Esta nota quedará guardada para que podamos verla al preparar tu pedido.</small></label>
     </div>
+    <fieldset class="medios-pago-pedido" data-paso-pago hidden>
+      <legend>¿Cómo querés abonar?</legend>
+      <label class="opcion-medio-pago"><input type="radio" name="medio_pago" value="transferencia" required /><span><strong>Transferencia bancaria</strong><small>Coordinaremos los datos de pago por WhatsApp.</small></span></label>
+      <label class="opcion-medio-pago"><input type="radio" name="medio_pago" value="efectivo" required /><span><strong>Efectivo</strong><small>Abonás al retirar tu pedido, según lo coordinado.</small></span></label>
+      <p>Elegir un medio de pago no confirma que ya hayas pagado.</p>
+    </fieldset>
     <p id="error-datos-pedido" class="mensaje-error" role="alert" hidden></p>
     <div id="confirmacion-pedido" class="confirmacion-pedido" hidden></div>
     <div class="acciones-modal-pedido">
       <button class="boton boton-secundario" type="button" data-cerrar-pedido-publico>Cancelar</button>
-      <button class="boton boton-principal" type="submit">Registrar pedido</button>
+      <button class="boton boton-secundario" type="button" data-volver-datos-pedido hidden>Volver a mis datos</button>
+      <button class="boton boton-principal" type="submit">Continuar a forma de pago</button>
     </div>
   </form>
 </dialog>

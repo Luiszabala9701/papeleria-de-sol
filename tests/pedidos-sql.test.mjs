@@ -7,6 +7,9 @@ const administrador = '00000000-0000-4000-8000-000000000001';
 const base = await readFile(new URL('../supabase/migrations/20260901000000_esquema_base_completo.sql', import.meta.url), 'utf8');
 const migracion = await readFile(new URL('../supabase/migrations/20260928000000_sistema_pedidos_etapa_1.sql', import.meta.url), 'utf8');
 const etapa2 = await readFile(new URL('../supabase/migrations/20260928120000_sistema_pedidos_etapa_2.sql', import.meta.url), 'utf8');
+const etapa3 = await readFile(new URL('../supabase/migrations/20261013000000_checkout_seguimiento_y_archivado.sql', import.meta.url), 'utf8');
+const checkout = await readFile(new URL('../supabase/migrations/20261109000000_medio_pago_y_fotos_pedido.sql', import.meta.url), 'utf8');
+const notas = await readFile(new URL('../supabase/migrations/20261109120000_notas_internas_pedido.sql', import.meta.url), 'utf8');
 
 const clave = sufijo => `idempotencia-prueba-${sufijo}`;
 
@@ -27,10 +30,19 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
   await db.exec(base.replace('create extension if not exists pgcrypto;', ''));
   // Columna incorporada por la migración de variantes; basta para aislar estas pruebas del dominio de pedidos.
   await db.exec('alter table public.productos add column usa_variantes boolean not null default false;');
+  await db.exec('alter table public.imagenes add column variante_id uuid references public.variantes(id);');
   await db.exec(migracion);
   await db.exec(migracion); // La estructura puede validarse de nuevo sin duplicar objetos ni flags.
   await db.exec(etapa2);
   await db.exec(etapa2); // También es repetible sobre una Etapa 1 ya aplicada.
+  await db.exec(etapa3);
+  await db.exec(etapa3); // Cotización y archivado también son incrementales y repetibles.
+  await db.exec(checkout);
+  await db.exec(checkout);
+  await db.exec(notas);
+  await db.exec(notas);
+  assert.equal((await db.query("select has_function_privilege('anon','guardar_nota_interna_pedido_administracion(uuid,text,uuid,text)','execute') permiso")).rows[0].permiso, false);
+  assert.equal((await db.query("select has_function_privilege('anon','crear_solicitud_pedido_checkout(jsonb,text,text,text,text,text,text,bytea,bytea,bytea,text)','execute') permiso")).rows[0].permiso, false);
 
   const tablas = [
     'pedidos', 'pedido_items', 'reservas_stock', 'pagos', 'transferencias_pago', 'eventos_pago',
@@ -45,6 +57,8 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
   assert.equal((await db.query("select has_function_privilege('anon','reservar_stock_pedido(uuid,text,integer)','execute') permiso")).rows[0].permiso, false);
   assert.equal((await db.query("select has_function_privilege('authenticated','marcar_transferencia_pago_aprobado(uuid,bigint,tipo_pago_pedido,uuid,text,text,text)','execute') permiso")).rows[0].permiso, false);
   assert.equal((await db.query("select has_function_privilege('service_role','reservar_stock_pedido(uuid,text,integer)','execute') permiso")).rows[0].permiso, true);
+  assert.equal((await db.query("select has_function_privilege('anon','cotizar_solicitud_pedido(jsonb,text)','execute') permiso")).rows[0].permiso, false);
+  assert.equal((await db.query("select has_function_privilege('service_role','cotizar_solicitud_pedido(jsonb,text)','execute') permiso")).rows[0].permiso, true);
   assert.equal((await db.query("select count(*)::int n from productos where compra_automatica_habilitada")).rows[0].n, 0);
   assert.deepEqual(
     (await db.query("select clave,valor from configuraciones_sitio where clave in ('transferencias_checkout_habilitadas','mercado_pago_checkout_habilitado','correos_transaccionales_habilitados') order by clave")).rows,
@@ -78,12 +92,13 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
     /personalizado no puede usar compra automática/,
   );
   await db.query('select configurar_modo_compra_producto_administracion($1,false,false,$2)', [productoCoordinadoEtapa2, administrador]);
-  const crearSolicitud = async ({ sufijo, lineas, cupon = null, hash = 0x10 }) => (await db.query(`
-    select crear_solicitud_pedido($1::jsonb,'Cliente Etapa 2','cliente-etapa2@example.test','+5491155555555',
-      'Prueba sin dinero real',$2,$3,$4,$5,$6) pedido
+  await db.query("insert into imagenes(producto_id,url_publica,texto_alternativo,es_principal) values ($1,'/foto-original.webp','Foto',true)", [productoCoordinadoEtapa2]);
+  const crearSolicitud = async ({ sufijo, lineas, cupon = null, hash = 0x10, medio = 'transferencia' }) => (await db.query(`
+    select crear_solicitud_pedido_checkout($1::jsonb,'Cliente Etapa 2','cliente-etapa2@example.test','+5491155555555',
+      'Prueba sin dinero real',$2,$3,$4,$5,$6,$7) pedido
   `, [
     JSON.stringify(lineas), cupon, clave(`solicitud-${sufijo}`), Buffer.alloc(32, hash),
-    Buffer.alloc(32, 0x20), Buffer.alloc(32, hash + 1),
+    Buffer.alloc(32, 0x20), Buffer.alloc(32, hash + 1), medio,
   ])).rows[0].pedido;
 
   const solicitudCoordinada = await crearSolicitud({
@@ -91,6 +106,23 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
   });
   assert.equal(solicitudCoordinada.tipo, 'coordinado');
   assert.equal(solicitudCoordinada.total_centavos, 40000);
+  const notaGuardada = (await db.query('select guardar_nota_interna_pedido_administracion($1,$2,$3,null) nota', [solicitudCoordinada.id, 'Impresa', administrador])).rows[0].nota;
+  assert.equal(notaGuardada.notas_internas, 'Impresa');
+  await assert.rejects(db.query('select guardar_nota_interna_pedido_administracion($1,$2,$3,null)', [solicitudCoordinada.id, 'Otra nota', administrador]), /cambió en otra sesión/);
+  await assert.rejects(db.query('select guardar_nota_interna_pedido_administracion($1,$2,$3,$4)', [solicitudCoordinada.id, 'Otra nota', '00000000-0000-4000-8000-000000000099', 'Impresa']), /permisos/);
+  await assert.rejects(db.query('select guardar_nota_interna_pedido_administracion($1,$2,$3,$4)', [solicitudCoordinada.id, 'a'.repeat(2001), administrador, 'Impresa']), /2000/);
+  assert.equal((await db.query('select notas_internas from pedidos where id=$1', [solicitudCoordinada.id])).rows[0].notas_internas, 'Impresa');
+  assert.deepEqual((await db.query('select observaciones_cliente,medio_pago_solicitado,estado_financiero from pedidos where id=$1', [solicitudCoordinada.id])).rows[0], {
+    observaciones_cliente: 'Prueba sin dinero real', medio_pago_solicitado: 'transferencia', estado_financiero: 'sin_cobro',
+  });
+  await db.query("update imagenes set url_publica='/foto-nueva.webp' where producto_id=$1", [productoCoordinadoEtapa2]);
+  assert.equal((await db.query('select imagen_url_snapshot from pedido_items where pedido_id=$1', [solicitudCoordinada.id])).rows[0].imagen_url_snapshot, '/foto-original.webp');
+  await assert.rejects(db.query("update pedido_items set imagen_url_snapshot='/alterada.webp' where pedido_id=$1", [solicitudCoordinada.id]), /inmutables/);
+  await assert.rejects(crearSolicitud({ sufijo: 'coordinada', lineas: [{ producto_id: productoCoordinadoEtapa2, cantidad: 2 }], medio: 'efectivo' }), /otra forma de pago/);
+  const efectivo = await crearSolicitud({ sufijo: 'efectivo', lineas: [{ producto_id: productoCoordinadoEtapa2, cantidad: 1 }], medio: 'efectivo', hash: 0x62 });
+  assert.equal(efectivo.medio_pago_solicitado, 'efectivo');
+  assert.equal((await db.query('select count(*)::int n from pagos where pedido_id=$1', [efectivo.id])).rows[0].n, 0);
+  await assert.rejects(crearSolicitud({ sufijo: 'medio-invalido', lineas: [{ producto_id: productoCoordinadoEtapa2, cantidad: 1 }], medio: 'pagado' }), /medio de pago/);
   const snapshotCoordinado = (await db.query('select producto_nombre,precio_unitario_centavos,cantidad from pedido_items where pedido_id=$1', [solicitudCoordinada.id])).rows[0];
   assert.deepEqual(snapshotCoordinado, { producto_nombre: 'Coordinado etapa 2', precio_unitario_centavos: 20000, cantidad: 2 });
 
@@ -128,6 +160,19 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
     }), administrador,
   ])).rows[0].id;
   assert.equal((await db.query('select codigo_normalizado from cupones where id=$1', [cuponEtapa2])).rows[0].codigo_normalizado, 'ETAPA2-10');
+  const cotizacionConCupon = (await db.query(
+    'select cotizar_solicitud_pedido($1::jsonb,$2) cotizacion',
+    [JSON.stringify([{ producto_id: productoAutomaticoEtapa2, cantidad: 1 }]), 'etapa2-10'],
+  )).rows[0].cotizacion;
+  assert.equal(cotizacionConCupon.subtotal_centavos, 12345);
+  assert.equal(cotizacionConCupon.descuento_centavos, 1234);
+  assert.equal(cotizacionConCupon.total_centavos, 11111);
+  await db.query('update cupones set compra_minima_centavos=20000 where id=$1', [cuponEtapa2]);
+  await assert.rejects(
+    db.query('select cotizar_solicitud_pedido($1::jsonb,$2)', [JSON.stringify([{ producto_id: productoAutomaticoEtapa2, cantidad: 1 }]), 'ETAPA2-10']),
+    /compra mínima de \$200/,
+  );
+  await db.query('update cupones set compra_minima_centavos=0 where id=$1', [cuponEtapa2]);
   const solicitudConCupon = await crearSolicitud({
     sufijo: 'con-cupon', lineas: [{ producto_id: productoAutomaticoEtapa2, cantidad: 1 }], cupon: 'eTaPa2-10', hash: 0x50,
   });
@@ -144,6 +189,13 @@ test('Etapa 1: migración repetible, RLS, dinero derivado, stock y cupones idemp
     "select count(*)::int n from historial_pedidos where pedido_id=$1 and evento='estado_actualizado'",
     [solicitudCoordinada.id],
   )).rows[0].n, 1);
+  assert.equal((await db.query(
+    'select archivar_pedido_administracion($1,true,$2) archivado', [solicitudCoordinada.id, administrador],
+  )).rows[0].archivado, true);
+  assert.equal((await db.query('select archivado_en is not null archivado from pedidos where id=$1', [solicitudCoordinada.id])).rows[0].archivado, true);
+  assert.equal((await db.query(
+    'select archivar_pedido_administracion($1,false,$2) archivado', [solicitudCoordinada.id, administrador],
+  )).rows[0].archivado, false);
 
   const tokenAnterior = (await db.query(
     'select id from tokens_consulta_pedido where pedido_id=$1 and revocado_en is null',

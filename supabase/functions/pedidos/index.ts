@@ -1,12 +1,15 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   bytesHex, crearTokenDeterminista, hmacSha256, normalizarCreacion,
-  serializarCanonico, sha256, validarTokenSeguimiento,
+  normalizarCotizacion, serializarCanonico, sha256, validarTokenSeguimiento, imagenDeArticulo,
 } from './validacion.ts';
 
 const URL_SUPABASE = Deno.env.get('SUPABASE_URL') || '';
 const CLAVE_SERVICIO = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const SECRETO_TOKENS = Deno.env.get('PEDIDOS_TOKEN_SECRET') || '';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
+const RESEND_FROM = Deno.env.get('RESEND_FROM') || '';
+const RESEND_REPLY_TO = Deno.env.get('RESEND_REPLY_TO') || '';
 const URL_SITIO = (Deno.env.get('URL_SITIO') || 'https://papeleria-de-sol-pruebas.netlify.app').replace(/\/$/, '');
 const ORIGENES = new Set([
   URL_SITIO,
@@ -40,7 +43,7 @@ function mensajeSeguro(error: unknown) {
   const mensaje = error instanceof Error
     ? error.message
     : error && typeof error === 'object' && 'message' in error ? String(error.message || '') : '';
-  return /^(La |Las |El |Los |Un |Una |Falta|Faltan|Uno |No hay|Ya )/.test(mensaje)
+  return /^(La |Las |El |Los |Un |Una |Este |Esta |Falta|Faltan|Uno |No hay|Ya )/.test(mensaje)
     ? mensaje
     : 'No pudimos procesar la solicitud. Intentá nuevamente.';
 }
@@ -63,6 +66,78 @@ async function leerCuerpo(solicitud: Request) {
   try { return JSON.parse(texto); } catch { throw new Error('La solicitud no es válida.'); }
 }
 
+function escaparHtml(valor: unknown) {
+  const entidades: Record<string, string> = {
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  };
+  return String(valor ?? '').replace(/[&<>'"]/g, caracter => entidades[caracter] || caracter);
+}
+
+async function marcarOutbox(pedidoId: string, cambios: Record<string, unknown>) {
+  await cliente.from('notificaciones_outbox').update(cambios)
+    .eq('pedido_id', pedidoId).eq('evento', 'solicitud_recibida');
+}
+
+async function enviarCorreoSeguimiento(
+  pedido: Record<string, any>, destinatario: string, seguimientoUrl: string,
+) {
+  const { data: configuracion } = await cliente.from('configuraciones_sitio')
+    .select('valor').eq('clave', 'correos_transaccionales_habilitados').maybeSingle();
+  if (configuracion?.valor !== true) return 'deshabilitado';
+
+  const { data: notificacion } = await cliente.from('notificaciones_outbox')
+    .select('id,estado,intentos').eq('pedido_id', pedido.id)
+    .eq('evento', 'solicitud_recibida').maybeSingle();
+  if (notificacion?.estado === 'enviada') return 'enviado';
+  const intentos = Math.min(20, Number(notificacion?.intentos || 0) + 1);
+  if (!RESEND_API_KEY || !RESEND_FROM) {
+    await marcarOutbox(pedido.id, {
+      estado: 'error', intentos, ultimo_error_seguro: 'Resend no está configurado en la función.',
+      proximo_intento_en: new Date(Date.now() + 15 * 60_000).toISOString(),
+    });
+    return 'pendiente';
+  }
+
+  try {
+    const respuesta = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: [destinatario],
+        reply_to: RESEND_REPLY_TO || undefined,
+        subject: `Seguimiento de tu pedido #${pedido.numero} · Papelería de Sol`,
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#242130;max-width:600px;margin:auto"><h1 style="color:#7b3fc6">Recibimos tu pedido #${escaparHtml(pedido.numero)}</h1><p>Podés consultar su estado cuando quieras desde este enlace privado:</p><p><a href="${escaparHtml(seguimientoUrl)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#6547b8;color:#fff;text-decoration:none;font-weight:700">Ver seguimiento del pedido</a></p><p style="font-size:13px;color:#666">No compartas este enlace: permite consultar el estado del pedido.</p></div>`,
+      }),
+    });
+    if (!respuesta.ok) throw new Error(`Resend respondió ${respuesta.status}.`);
+    const enviado = await respuesta.json().catch(() => ({}));
+    await marcarOutbox(pedido.id, {
+      estado: 'enviada', intentos, enviado_en: new Date().toISOString(), ultimo_error_seguro: null,
+      datos: { pedido_id: pedido.id, numero: pedido.numero, proveedor_id: enviado.id || null },
+    });
+    return 'enviado';
+  } catch (error) {
+    const mensaje = error instanceof Error ? error.message.slice(0, 300) : 'No se pudo enviar el correo.';
+    await marcarOutbox(pedido.id, {
+      estado: 'error', intentos, ultimo_error_seguro: mensaje,
+      proximo_intento_en: new Date(Date.now() + 15 * 60_000).toISOString(),
+    });
+    return 'pendiente';
+  }
+}
+
+async function cotizarSolicitud(solicitud: Request, cuerpo: unknown) {
+  await consumirLimite(solicitud, 'cotizar_pedido', 30);
+  const datos = normalizarCotizacion(cuerpo);
+  const { data, error } = await cliente.rpc('cotizar_solicitud_pedido', {
+    p_lineas: datos.lineas,
+    p_codigo_cupon: datos.cupon,
+  });
+  if (error) throw error;
+  return data;
+}
+
 async function crearSolicitud(solicitud: Request, cuerpo: unknown) {
   await consumirLimite(solicitud, 'crear_pedido', 10);
   const datos = normalizarCreacion(cuerpo);
@@ -72,12 +147,13 @@ async function crearSolicitud(solicitud: Request, cuerpo: unknown) {
     hmacSha256(SECRETO_TOKENS, `comprador:${datos.cliente.correo}`),
     sha256(serializarCanonico(datos)),
   ]);
-  const { data, error } = await cliente.rpc('crear_solicitud_pedido', {
+  const { data, error } = await cliente.rpc('crear_solicitud_pedido_checkout', {
     p_lineas: datos.lineas,
     p_cliente_nombre: datos.cliente.nombre,
     p_cliente_correo: datos.cliente.correo,
     p_cliente_whatsapp: datos.cliente.whatsapp,
     p_observaciones: datos.observaciones || null,
+    p_medio_pago_solicitado: datos.medio_pago,
     p_codigo_cupon: datos.cupon,
     p_clave_idempotencia: datos.clave_idempotencia,
     p_solicitud_hash: bytesHex(solicitudHash),
@@ -91,10 +167,13 @@ async function crearSolicitud(solicitud: Request, cuerpo: unknown) {
   const mensaje = data.tipo === 'coordinado'
     ? `Hola, registré la solicitud #${data.numero} en Papelería de Sol. Quisiera coordinar los detalles.`
     : `Hola, registré el pedido #${data.numero} en Papelería de Sol. Quisiera continuar con la compra.`;
+  const seguimientoUrl = `${URL_SITIO}/seguimiento?token=${encodeURIComponent(token)}`;
+  const correoEstado = await enviarCorreoSeguimiento(data, datos.cliente.correo, seguimientoUrl);
   return {
     ...data,
-    seguimiento_url: `${URL_SITIO}/seguimiento?token=${encodeURIComponent(token)}`,
+    seguimiento_url: seguimientoUrl,
     whatsapp_url: whatsapp ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(mensaje)}` : null,
+    correo_estado: correoEstado,
   };
 }
 
@@ -110,13 +189,28 @@ async function consultarSeguimiento(solicitud: Request, cuerpo: Record<string, u
   }
   const { data, error } = await cliente.from('pedidos').select(`
     numero,tipo,moneda,subtotal_centavos,descuento_centavos,envio_centavos,total_centavos,
-    estado_comercial,estado_preparacion,estado_entrega,estado_financiero,creado_en,actualizado_en,
-    pedido_items(producto_nombre,variante_nombre,sku,precio_unitario_centavos,cantidad,subtotal_centavos),
+    estado_comercial,estado_preparacion,estado_entrega,estado_financiero,medio_pago_solicitado,creado_en,actualizado_en,
+    pedido_items(producto_id,variante_id,producto_nombre,variante_nombre,sku,precio_unitario_centavos,cantidad,subtotal_centavos,imagen_url_snapshot),
     pedido_cupones(codigo_snapshot,descuento_centavos)
   `).eq('id', acceso.pedido_id).single();
   if (error) throw error;
+  // Los pedidos anteriores a la migración conservan sus snapshots económicos;
+  // sólo completamos la miniatura de la respuesta con fotos actuales del catálogo.
+  const idsSinFoto = [...new Set((data.pedido_items || [])
+    .filter((item: any) => !item.imagen_url_snapshot && item.producto_id)
+    .map((item: any) => item.producto_id))];
+  let imagenes: any[] = [];
+  if (idsSinFoto.length) {
+    const consulta = await cliente.from('imagenes')
+      .select('producto_id,variante_id,url_publica,es_principal,orden').in('producto_id', idsSinFoto);
+    if (!consulta.error) imagenes = consulta.data || [];
+  }
+  const itemsConImagen = (data.pedido_items || []).map((item: any) => {
+    const { producto_id, variante_id, imagen_url_snapshot, ...detalle } = item;
+    return { ...detalle, imagen_url: imagen_url_snapshot || imagenDeArticulo({ producto_id, variante_id }, imagenes) };
+  });
   await cliente.from('tokens_consulta_pedido').update({ ultimo_uso_en: new Date().toISOString() }).eq('id', acceso.id);
-  return data;
+  return { ...data, pedido_items: itemsConImagen };
 }
 
 Deno.serve(async (solicitud) => {
@@ -130,6 +224,7 @@ Deno.serve(async (solicitud) => {
   try {
     const cuerpo = await leerCuerpo(solicitud);
     const accion = String(cuerpo?.accion || '');
+    if (accion === 'cotizar_solicitud') return responder(solicitud, { datos: await cotizarSolicitud(solicitud, cuerpo) });
     if (accion === 'crear_solicitud') return responder(solicitud, { datos: await crearSolicitud(solicitud, cuerpo) });
     if (accion === 'consultar_seguimiento') return responder(solicitud, { datos: await consultarSeguimiento(solicitud, cuerpo) });
     return responder(solicitud, { error: 'La acción solicitada no existe.' }, 400);

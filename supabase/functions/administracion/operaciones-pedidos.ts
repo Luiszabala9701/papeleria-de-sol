@@ -4,7 +4,8 @@ const CAMPOS_PEDIDO = [
   'requiere_envio', 'envio_definido', 'direccion_entrega', 'subtotal_centavos',
   'descuento_centavos', 'envio_centavos', 'total_centavos', 'anticipo_objetivo_centavos',
   'estado_comercial', 'estado_preparacion', 'estado_entrega', 'estado_financiero',
-  'observaciones_cliente', 'notas_internas', 'incidencia_codigo', 'creado_en', 'actualizado_en',
+  'observaciones_cliente', 'medio_pago_solicitado', 'notas_internas', 'incidencia_codigo', 'archivado_en', 'archivado_por',
+  'creado_en', 'actualizado_en',
 ].join(',');
 
 type ClienteServicio = {
@@ -58,10 +59,13 @@ async function listarPedidos(cuerpo: Record<string, any>, cliente: ClienteServic
   const porPagina = entero(cuerpo.por_pagina, 10, 50, 25);
   const desde = (pagina - 1) * porPagina;
   let consulta = cliente.from('pedidos').select(CAMPOS_PEDIDO, { count: 'exact' });
+  const archivo = texto(cuerpo.archivo, 20) || 'activos';
+  if (archivo === 'archivados') consulta = consulta.not('archivado_en', 'is', null);
+  else consulta = consulta.is('archivado_en', null);
 
   const filtros: Array<[string, string[]]> = [
     ['tipo', ['automatico', 'coordinado']],
-    ['estado_financiero', ['sin_cobro', 'pendiente', 'parcial', 'pagado', 'reembolsado_parcial', 'reembolsado_total']],
+    ['estado_financiero', ['sin_cobro', 'pendiente', 'anticipo_pagado', 'pagado', 'parcialmente_reembolsado', 'reembolsado', 'incidencia']],
     ['estado_preparacion', ['no_iniciada', 'espera_anticipo', 'en_diseno', 'espera_aprobacion', 'en_preparacion', 'listo']],
     ['estado_entrega', ['sin_definir', 'pendiente', 'listo_retiro', 'retirado', 'enviado', 'entregado']],
   ];
@@ -95,7 +99,7 @@ async function obtenerPedido(cuerpo: Record<string, any>, cliente: ClienteServic
   const pedidoId = uuid(cuerpo.id, 'El pedido');
   const [pedido, items, pagos, reservas, historial] = await Promise.all([
     cliente.from('pedidos').select(CAMPOS_PEDIDO).eq('id', pedidoId).single(),
-    cliente.from('pedido_items').select('id,producto_id,variante_id,producto_nombre,variante_nombre,sku,descripcion,precio_unitario_centavos,cantidad,subtotal_centavos,opciones_personalizadas,compra_automatica,requiere_personalizacion').eq('pedido_id', pedidoId).order('creado_en'),
+    cliente.from('pedido_items').select('id,producto_id,variante_id,producto_nombre,variante_nombre,sku,descripcion,precio_unitario_centavos,cantidad,subtotal_centavos,imagen_url_snapshot,opciones_personalizadas,compra_automatica,requiere_personalizacion').eq('pedido_id', pedidoId).order('creado_en'),
     cliente.from('pagos').select('id,metodo,tipo,estado,importe_centavos,referencia,nota,aprobado_en,creado_en,transferencias_pago(comprobante_referencia,recibido_en)').eq('pedido_id', pedidoId).order('creado_en'),
     cliente.from('reservas_stock').select('id,cantidad,estado,vence_en,consumida_en,liberada_en,producto_id,variante_id').eq('pedido_id', pedidoId).order('creado_en'),
     cliente.from('historial_pedidos').select('id,evento,actor,estado_anterior,estado_nuevo,nota,creado_en').eq('pedido_id', pedidoId).order('creado_en', { ascending: false }).limit(100),
@@ -128,6 +132,17 @@ async function actualizarEstado(cuerpo: Record<string, any>, cliente: ClienteSer
   }));
 }
 
+async function guardarNotaInterna(cuerpo: Record<string, any>, cliente: ClienteServicio, usuarioId: string) {
+  if (typeof cuerpo.nota !== 'string' || cuerpo.nota.length > 2000
+    || (cuerpo.nota_anterior != null && (typeof cuerpo.nota_anterior !== 'string' || cuerpo.nota_anterior.length > 2000))) {
+    throw new Error('La nota interna debe ser texto de hasta 2000 caracteres.');
+  }
+  return sinError(await cliente.rpc('guardar_nota_interna_pedido_administracion', {
+    p_pedido_id: uuid(cuerpo.id, 'El pedido'), p_nota: cuerpo.nota,
+    p_usuario: usuarioId, p_nota_anterior: cuerpo.nota_anterior ?? null,
+  }));
+}
+
 async function aprobarTransferencia(cuerpo: Record<string, any>, cliente: ClienteServicio, usuarioId: string) {
   const importe = Number(cuerpo.importe_centavos);
   if (!Number.isSafeInteger(importe) || importe <= 0 || importe > 999_999_999_00) {
@@ -143,6 +158,14 @@ async function aprobarTransferencia(cuerpo: Record<string, any>, cliente: Client
     p_referencia: texto(cuerpo.referencia, 300) || null,
     p_nota: texto(cuerpo.nota, 1000) || null,
     p_clave_idempotencia: `transferencia-admin:${crypto.randomUUID()}`,
+  }));
+}
+
+async function archivarPedido(cuerpo: Record<string, any>, cliente: ClienteServicio, usuarioId: string) {
+  return sinError(await cliente.rpc('archivar_pedido_administracion', {
+    p_pedido_id: uuid(cuerpo.id, 'El pedido'),
+    p_archivar: cuerpo.archivar !== false,
+    p_usuario: usuarioId,
   }));
 }
 
@@ -219,11 +242,20 @@ async function guardarCupon(cuerpo: Record<string, any>, cliente: ClienteServici
   if (!['todos', 'categorias', 'productos'].includes(alcance)) throw new Error('Elegí el alcance del cupón.');
   const aplica = texto(datosEntrada.aplica_tipo_pedido, 20) || 'automatico';
   if (!['automatico', 'coordinado', 'ambos'].includes(aplica)) throw new Error('Elegí a qué pedidos aplica el cupón.');
+  const iniciaEn = fechaIso(datosEntrada.inicia_en);
+  const venceEn = fechaIso(datosEntrada.vence_en);
+  if (iniciaEn && venceEn && new Date(venceEn).getTime() <= new Date(iniciaEn).getTime()) {
+    throw new Error('El vencimiento debe ser posterior al inicio del cupón.');
+  }
+  const porcentajeEntrada = Number(datosEntrada.porcentaje_puntos_base);
+  if (tipo === 'porcentaje' && (!Number.isInteger(porcentajeEntrada) || porcentajeEntrada < 1 || porcentajeEntrada > 10000)) {
+    throw new Error('El porcentaje debe ser mayor que 0 y no puede superar 100.');
+  }
   const datos = {
     codigo: texto(datosEntrada.codigo, 40).toUpperCase(), descripcion_interna: texto(datosEntrada.descripcion_interna, 500),
-    activo: datosEntrada.activo !== false, inicia_en: fechaIso(datosEntrada.inicia_en), vence_en: fechaIso(datosEntrada.vence_en),
+    activo: datosEntrada.activo !== false, inicia_en: iniciaEn, vence_en: venceEn,
     tipo_descuento: tipo,
-    porcentaje_puntos_base: tipo === 'porcentaje' ? entero(datosEntrada.porcentaje_puntos_base, 1, 10000, 0) : null,
+    porcentaje_puntos_base: tipo === 'porcentaje' ? porcentajeEntrada : null,
     importe_fijo_centavos: tipo === 'fijo' ? entero(datosEntrada.importe_fijo_centavos, 1, 999_999_999_00, 0) : null,
     compra_minima_centavos: entero(datosEntrada.compra_minima_centavos, 0, 999_999_999_00, 0),
     descuento_maximo_centavos: tipo === 'porcentaje' && datosEntrada.descuento_maximo_centavos
@@ -259,7 +291,9 @@ export async function gestionarAccionComercial(contexto: Contexto) {
     listar_pedidos: () => listarPedidos(cuerpo, cliente),
     obtener_pedido: () => obtenerPedido(cuerpo, cliente),
     actualizar_estado_pedido: () => actualizarEstado(cuerpo, cliente, usuarioId),
+    guardar_nota_interna_pedido: () => guardarNotaInterna(cuerpo, cliente, usuarioId),
     aprobar_transferencia: () => aprobarTransferencia(cuerpo, cliente, usuarioId),
+    archivar_pedido: () => archivarPedido(cuerpo, cliente, usuarioId),
     crear_enlace_seguimiento: () => crearEnlaceSeguimiento(cuerpo, cliente, usuarioId, urlSitio),
     listar_cupones: () => listarCupones(cuerpo, cliente),
     obtener_catalogo_cupones: () => obtenerCatalogoCupones(cliente),
