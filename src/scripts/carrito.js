@@ -9,6 +9,8 @@ const contadorCarrito = document.querySelector('#contador-carrito');
 const totalElementos = document.querySelector('#total-elementos-carrito');
 const totalDineroCarrito = document.querySelector('#total-dinero-carrito');
 const formularioCuponCarrito = document.querySelector('[data-formulario-cupon-carrito]');
+const desplegableCupon = document.querySelector('[data-cupon-desplegable]');
+const tituloCupon = document.querySelector('[data-titulo-cupon-carrito]');
 const estadoCuponCarrito = document.querySelector('[data-estado-cupon-carrito]');
 const resumenDescuento = document.querySelector('[data-resumen-descuento]');
 const descuentoCarrito = document.querySelector('[data-descuento-carrito]');
@@ -92,6 +94,8 @@ function limpiarCotizacion(mensaje = '') {
   versionCotizacion += 1;
   cotizacion = null;
   cuponAplicado = '';
+  if (tituloCupon) tituloCupon.textContent = mensaje ? 'Revisá tu cupón' : '¿Tenés un cupón?';
+  desplegableCupon?.classList.remove('aplicado');
   if (resumenDescuento) resumenDescuento.hidden = true;
   if (estadoCuponCarrito) {
     estadoCuponCarrito.textContent = mensaje;
@@ -275,6 +279,10 @@ function renderizarCarrito() {
     descuentoCarrito.textContent = `−${formatearDinero(descuento)}`;
   }
   if (botonEnviar) botonEnviar.disabled = total === 0;
+  if (desplegableCupon) {
+    desplegableCupon.hidden = total === 0;
+    if (!total) desplegableCupon.open = false;
+  }
 }
 
 function agregarProducto(producto, cantidadSolicitada = 1) {
@@ -407,6 +415,13 @@ async function cotizarCupon(codigo) {
   }
   cotizacion = datos;
   cuponAplicado = normalizado;
+  if (tituloCupon) tituloCupon.textContent = `Cupón ${normalizado} aplicado`;
+  if (desplegableCupon) {
+    const teniaFoco = desplegableCupon.contains(document.activeElement);
+    desplegableCupon.classList.add('aplicado');
+    desplegableCupon.open = false;
+    if (teniaFoco) desplegableCupon.querySelector('summary')?.focus();
+  }
   if (formularioCuponCarrito) formularioCuponCarrito.elements.cupon.value = normalizado;
   if (estadoCuponCarrito) {
     estadoCuponCarrito.textContent = `Cupón ${normalizado} aplicado: ahorrás ${formatearDinero(Number(datos.descuento_centavos || 0) / 100)}.`;
@@ -561,6 +576,7 @@ formularioCuponCarrito?.addEventListener('submit', async (evento) => {
     await cotizarCupon(formularioCuponCarrito.elements.cupon.value);
   } catch (error) {
     limpiarCotizacion(error.message || 'No pudimos validar el cupón.');
+    if (desplegableCupon) desplegableCupon.open = true;
     renderizarCarrito();
   } finally {
     boton.disabled = false;

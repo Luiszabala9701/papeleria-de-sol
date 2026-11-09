@@ -1,4 +1,5 @@
 import { obtenerClienteSupabase } from '../servicios/cliente-supabase.js';
+import { obtenerMensajeErrorFuncion } from '../servicios/errores-administracion.js';
 import { crearEditorVariantes } from './administracion/variantes.js';
 import { inicializarModuloComercial } from './administracion/pedidos-cupones.js';
 import {
@@ -83,17 +84,6 @@ new MutationObserver(sincronizarBloqueoModal).observe(document.body, {
 
 function registrarActividadUsuario() {
   if (!panelAdministracion?.hidden) ultimaActividadUsuario = Date.now();
-}
-
-async function obtenerMensajeErrorFuncion(error) {
-  const respuesta = error?.context;
-
-  if (respuesta instanceof Response) {
-    const cuerpo = await respuesta.clone().json().catch(() => null);
-    if (cuerpo?.error) return cuerpo.error;
-  }
-
-  return error?.message || 'No se pudo completar la operación.';
 }
 
 async function invocar(accion, contenido = {}) {

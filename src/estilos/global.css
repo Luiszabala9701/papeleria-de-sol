@@ -911,7 +911,7 @@ h3 {
 
 .cabecera-carrito,
 .pie-carrito {
-  padding: 1.25rem;
+  padding: 0.85rem 1rem;
 }
 
 .cabecera-carrito {
@@ -923,7 +923,10 @@ h3 {
 
 .cabecera-carrito h2 {
   margin-bottom: 0;
+  font-size: 1.4rem;
 }
+
+.cabecera-carrito .etiqueta { margin-bottom: 0.25rem; font-size: 0.65rem; }
 
 .boton-icono {
   display: grid;
@@ -975,8 +978,10 @@ h3 {
 }
 
 .contenido-carrito {
-  padding: 1rem;
+  min-height: 0;
+  padding: 0.35rem 1rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .elemento-carrito {
@@ -1090,24 +1095,43 @@ h3 {
 }
 
 .pie-carrito {
-  max-height: 58dvh;
+  max-height: 48dvh;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid var(--borde);
   background: var(--fondo);
 }
 
+.cupon-desplegable-carrito { margin-bottom: 0.5rem; border-bottom: 1px solid var(--borde); }
+.cupon-desplegable-carrito > summary {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.4rem;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+.cupon-desplegable-carrito > summary::-webkit-details-marker { display: none; }
+.cupon-desplegable-carrito > summary:focus-visible { outline: 2px solid var(--azul-profundo); outline-offset: 2px; border-radius: 0.25rem; }
+.indicador-cupon-carrito { font-size: 1.15rem; transition: transform 160ms ease; }
+.cupon-desplegable-carrito[open] .indicador-cupon-carrito { transform: rotate(45deg); }
+.cupon-desplegable-carrito.aplicado > summary { color: var(--exito); }
+
 .formulario-cupon-carrito {
   display: grid;
-  padding-bottom: 0.9rem;
-  margin-bottom: 0.9rem;
-  border-bottom: 1px solid var(--borde);
-  gap: 0.45rem;
+  padding-bottom: 0.65rem;
+  gap: 0.3rem;
 }
 
-.formulario-cupon-carrito > label { font-size: 0.82rem; font-weight: 800; }
+.formulario-cupon-carrito > label { font-size: 0.74rem; font-weight: 750; }
 .fila-cupon-carrito { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; }
-.fila-cupon-carrito .campo { text-transform: uppercase; }
-.fila-cupon-carrito .boton { min-height: 46px; padding-inline: 1rem; }
+.fila-cupon-carrito .campo { min-width: 0; min-height: 42px; padding: 0.55rem 0.75rem; font-size: 1rem; text-transform: uppercase; }
+.fila-cupon-carrito .boton { min-height: 42px; padding: 0.45rem 0.85rem; font-size: 0.8rem; }
 .estado-cupon-carrito { margin: 0; color: var(--peligro); font-size: 0.78rem; }
 .estado-cupon-carrito.correcto { color: #167447; }
 .resumen-descuento-carrito strong { color: #167447; }
@@ -1115,11 +1139,13 @@ h3 {
 .resumen-carrito {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.8rem;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
 }
 
 .resumen-total-carrito {
-  padding-top: 0.65rem;
+  padding-top: 0.35rem;
   border-top: 1px solid var(--borde);
   font-size: 1rem;
 }
@@ -1130,10 +1156,20 @@ h3 {
 }
 
 .aclaracion-carrito {
-  margin: 0.7rem 0 0;
+  margin: 0.25rem 0 0;
   color: var(--tinta-suave);
-  font-size: 0.72rem;
+  font-size: 0.65rem;
+  line-height: 1.4;
   text-align: center;
+}
+
+.pie-carrito > .boton-ancho { min-height: 44px; padding: 0.55rem 0.85rem; font-size: 0.9rem; box-shadow: var(--sombra-suave); }
+.pie-carrito > .boton-texto { min-height: 32px; padding: 0.2rem 0; font-size: 0.76rem; }
+
+@media (max-height: 600px) {
+  .cabecera-carrito, .pie-carrito { padding-top: 0.5rem; padding-inline: 0.8rem; }
+  .cabecera-carrito h2 { font-size: 1.2rem; }
+  .pie-carrito { max-height: 50dvh; }
 }
 
 .contenedor-notificaciones {

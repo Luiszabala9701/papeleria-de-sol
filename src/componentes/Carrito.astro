@@ -44,14 +44,17 @@ const endpointPedidos = urlSupabase ? `${urlSupabase.replace(/\/$/, '')}/functio
   </div>
 
   <div class="pie-carrito">
-    <form class="formulario-cupon-carrito" data-formulario-cupon-carrito>
-      <label for="cupon-carrito">¿Tenés un cupón?</label>
-      <div class="fila-cupon-carrito">
-        <input id="cupon-carrito" class="campo" name="cupon" maxlength="40" pattern="[A-Z0-9_-]{3,40}" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO" />
-        <button class="boton boton-secundario" type="submit">Aplicar</button>
-      </div>
-      <p class="estado-cupon-carrito" data-estado-cupon-carrito aria-live="polite" hidden></p>
-    </form>
+    <details class="cupon-desplegable-carrito" data-cupon-desplegable>
+      <summary><span data-titulo-cupon-carrito aria-live="polite">¿Tenés un cupón?</span><span class="indicador-cupon-carrito" aria-hidden="true">+</span></summary>
+      <form class="formulario-cupon-carrito" data-formulario-cupon-carrito>
+        <label for="cupon-carrito">Código de descuento</label>
+        <div class="fila-cupon-carrito">
+          <input id="cupon-carrito" class="campo" name="cupon" maxlength="40" pattern="[A-Z0-9_-]{3,40}" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO" />
+          <button class="boton boton-secundario" type="submit">Aplicar</button>
+        </div>
+        <p class="estado-cupon-carrito" data-estado-cupon-carrito aria-live="polite" hidden></p>
+      </form>
+    </details>
     <div class="resumen-carrito">
       <span>{obtenerTextoPublico(configuracion, 'carrito_productos_seleccionados')}</span>
       <strong id="total-elementos-carrito">0</strong>
@@ -68,7 +71,7 @@ const endpointPedidos = urlSupabase ? `${urlSupabase.replace(/\/$/, '')}/functio
       Continuar pedido
     </button>
     <button id="vaciar-carrito" class="boton-texto" type="button">{obtenerTextoPublico(configuracion, 'carrito_vaciar')}</button>
-    <p class="aclaracion-carrito">Elegí cómo abonar en el siguiente paso. El pedido queda pendiente de pago hasta confirmar su recepción.</p>
+    <p class="aclaracion-carrito">Elegís cómo abonar en el siguiente paso. Pago pendiente de confirmación.</p>
   </div>
 </aside>
 

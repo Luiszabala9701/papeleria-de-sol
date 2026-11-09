@@ -1,6 +1,6 @@
 # Ajustes de carrito, notas, forma de pago y seguimiento
 
-Rama: `pruebas`. La web publicada se comprobó y todavía mostraba el formulario de seguimiento y carrito anteriores.
+Rama: `pruebas`. La interfaz se publica en Netlify; las funciones de Supabase se actualizan por separado.
 
 ## Activación en pruebas
 
@@ -31,3 +31,9 @@ No hacen falta nuevos secretos. La elección entre transferencia y efectivo se g
 | Ver productos en seguimiento | Fotos de la variante elegida, o generales si no tiene foto propia; miniatura neutra si no hay foto. |
 
 Las fotos nuevas se guardan desde el catálogo en un snapshot del artículo. Los pedidos antiguos usan las fotos actuales disponibles sin modificar sus importes ni sus artículos históricos. Las notas y los datos de contacto sólo están disponibles en administración; no se publican en el seguimiento.
+
+## Cupón desplegable y acceso al panel
+
+El cupón del carrito empieza plegado. Se abre pulsando «¿Tenés un cupón?» y se cierra después de aplicarlo correctamente; el código aplicado y el descuento siguen visibles. Si hay un error, el formulario permanece abierto. El encabezado y el pie se compactaron para priorizar la lista de productos, con desplazamiento independiente en pantallas bajas. Estos ajustes no requieren SQL ni secretos nuevos.
+
+Si el acceso al panel muestra `Failed to send a request to the Edge Function`, revisar los Logs de `administracion`. Un `503 BOOT_ERROR` con `does not provide an export named 'gestionarAccionComercial'` indica que la versión desplegada de `operaciones-pedidos.ts` está incompleta o no corresponde al archivo actual. Reemplazar **todo** su contenido por `supabase/functions/administracion/operaciones-pedidos.ts` y pulsar **Deploy updates**. El archivo debe incluir `export async function gestionarAccionComercial(contexto: Contexto)` y su cuerpo completo. No modificar JWT, RLS, claves ni contraseñas para corregirlo.
